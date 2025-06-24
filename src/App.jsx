@@ -49,7 +49,14 @@ export default function App() {
     }
 
     window.addEventListener('resize', resizeCanvas);
-    return () => window.removeEventListener('resize', resizeCanvas);
+
+    const handlePointerUp = () => setIsDrawing(false);
+    window.addEventListener('pointerup', handlePointerUp);
+
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
   }, []);
 
   useEffect(() => {
@@ -153,6 +160,7 @@ export default function App() {
         onPointerDown={startDrawing}
         onPointerUp={finishDrawing}
         onPointerMove={draw}
+        onPointerLeave={finishDrawing}
         className="absolute top-0 left-0 z-0 touch-none"
       />
 
