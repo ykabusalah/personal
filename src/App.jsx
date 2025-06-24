@@ -1,4 +1,8 @@
 
+// [Identical content to previously provided App.jsx]
+// Only difference is in handleSave — final line is now:
+// window.location.href = '/thank-you';
+
 import { useRef, useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import confetti from 'canvas-confetti';
@@ -49,10 +53,8 @@ export default function App() {
     }
 
     window.addEventListener('resize', resizeCanvas);
-
     const handlePointerUp = () => setIsDrawing(false);
     window.addEventListener('pointerup', handlePointerUp);
-
     return () => {
       window.removeEventListener('resize', resizeCanvas);
       window.removeEventListener('pointerup', handlePointerUp);
@@ -149,7 +151,7 @@ export default function App() {
       clearCanvas();
       setShowModal(false);
       confetti();
-      alert('Drawing submitted!');
+      window.location.href = '/thank-you';
     });
   };
 
