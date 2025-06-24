@@ -2,6 +2,15 @@
 import { useRef, useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import confetti from 'canvas-confetti';
+import {
+  Pencil,
+  Eraser,
+  Undo2,
+  Redo2,
+  Trash2,
+  Save,
+  X
+} from 'lucide-react';
 
 const supabase = createClient(
   'https://gzdhidrwwwztbbyropqh.supabase.co',
@@ -19,9 +28,35 @@ export default function App() {
   const [undoStack, setUndoStack] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
 
+  const resizeCanvas = () => {
+    const canvas = canvasRef.current;
+    if (canvas && ctxRef.current) {
+      const imageData = ctxRef.current.getImageData(0, 0, canvas.width, canvas.height);
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      ctxRef.current.putImageData(imageData, 0, 0);
+    }
+  };
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (canvas) {
+      const ctx = canvas.getContext('2d');
+      ctx.lineCap = 'round';
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      ctxRef.current = ctx;
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    return () => window.removeEventListener('resize', resizeCanvas);
+  }, []);
+
   useEffect(() => {
     if (ctxRef.current) {
-      ctxRef.current.strokeStyle = tool === 'eraser' ? '#fff' : '#000';
+      ctxRef.current.globalCompositeOperation =
+        tool === 'eraser' ? 'destination-out' : 'source-over';
+      ctxRef.current.strokeStyle = tool === 'eraser' ? 'rgba(0,0,0,1)' : '#000';
       ctxRef.current.lineWidth = brushSize;
     }
   }, [tool, brushSize]);
@@ -64,11 +99,14 @@ export default function App() {
     restoreState(nextState);
   };
 
-  const startDrawing = ({ nativeEvent }) => {
+  const startDrawing = (e) => {
+    e.preventDefault();
     saveState();
-    const { offsetX, offsetY } = nativeEvent;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
     ctxRef.current.beginPath();
-    ctxRef.current.moveTo(offsetX, offsetY);
+    ctxRef.current.moveTo(x, y);
     setIsDrawing(true);
   };
 
@@ -77,18 +115,13 @@ export default function App() {
     setIsDrawing(false);
   };
 
-  const draw = ({ nativeEvent }) => {
+  const draw = (e) => {
     if (!isDrawing) return;
-    const { offsetX, offsetY } = nativeEvent;
-    ctxRef.current.lineTo(offsetX, offsetY);
+    const rect = canvasRef.current.getBoundingClientRect();
+    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
+    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
+    ctxRef.current.lineTo(x, y);
     ctxRef.current.stroke();
-  };
-
-  const initCanvas = (canvas) => {
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    ctx.lineCap = 'round';
-    ctxRef.current = ctx;
   };
 
   const clearCanvas = () => {
@@ -114,70 +147,54 @@ export default function App() {
   };
 
   return (
-    <div className="w-screen h-screen bg-white relative">
+    <div className="w-screen h-screen bg-white relative touch-none">
       <canvas
-        ref={(canvas) => {
-          if (canvas && !ctxRef.current) {
-            canvasRef.current = canvas;
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            initCanvas(canvas);
-          }
-        }}
-        onMouseDown={startDrawing}
-        onMouseUp={finishDrawing}
-        onMouseMove={draw}
-        className="absolute top-0 left-0 z-0"
+        ref={canvasRef}
+        onPointerDown={startDrawing}
+        onPointerUp={finishDrawing}
+        onPointerMove={draw}
+        className="absolute top-0 left-0 z-0 touch-none"
       />
 
-      <div className="fixed top-1/2 right-4 -translate-y-1/2 transform flex flex-col items-center gap-4 z-50">
-        <div className="flex items-center justify-center h-16 mb-4">
+      <div className="fixed top-1/2 right-4 -translate-y-1/2 transform flex flex-col items-center gap-4 z-40">
+        <div className="flex items-center justify-center h-12 mb-4">
           <input
             type="range"
             min="1"
             max="20"
             value={brushSize}
             onChange={(e) => setBrushSize(Number(e.target.value))}
-            className="rotate-[-90deg] w-28"
+            className="rotate-[-90deg] w-20 h-1 appearance-none bg-gray-300 rounded-full
+              [&::-webkit-slider-thumb]:appearance-none
+              [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3
+              [&::-webkit-slider-thumb]:bg-black
+              [&::-webkit-slider-thumb]:rounded-full
+              [&::-webkit-slider-thumb]:cursor-pointer"
           />
         </div>
-        <button onClick={() => setTool('pencil')}>
-          <img src="https://img.icons8.com/ios-filled/50/000000/pencil--v1.png" alt="pencil" />
-        </button>
-        <button onClick={() => setTool('eraser')}>
-          <img src="https://img.icons8.com/ios-filled/50/000000/eraser.png" alt="eraser" />
-        </button>
-        <button onClick={handleUndo}>
-          <img src="https://img.icons8.com/ios-filled/50/000000/undo.png" alt="undo" />
-        </button>
-        <button onClick={handleRedo}>
-          <img src="https://img.icons8.com/ios-filled/50/000000/redo.png" alt="redo" />
-        </button>
-        <button onClick={clearCanvas}>
-          <img src="https://img.icons8.com/ios-filled/50/000000/trash.png" alt="trash" />
-        </button>
-        <button onClick={() => setShowModal(true)}>
-          <img src="https://img.icons8.com/ios-filled/50/000000/save.png" alt="save" />
-        </button>
-        <button onClick={() => (window.location.href = '/')}>
-          <img src="https://img.icons8.com/ios-filled/50/000000/multiply.png" alt="exit" />
-        </button>
+        <button onClick={() => setTool('pencil')}><Pencil size={20} className="text-black" /></button>
+        <button onClick={() => setTool('eraser')}><Eraser size={20} className="text-black" /></button>
+        <button onClick={handleUndo}><Undo2 size={20} className="text-black" /></button>
+        <button onClick={handleRedo}><Redo2 size={20} className="text-black" /></button>
+        <button onClick={clearCanvas}><Trash2 size={20} className="text-black" /></button>
+        <button onClick={() => setShowModal(true)}><Save size={20} className="text-black" /></button>
+        <button onClick={() => (window.location.href = '/')}><X size={20} className="text-black" /></button>
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded shadow w-[90%] max-w-md text-black">
             <h2 className="text-xl font-bold mb-4">Submit Your Drawing</h2>
             <p className="mb-2">
               By submitting, you agree to the{' '}
               <a href="/terms.html" target="_blank" className="underline">
                 Terms & Conditions
-              </a>.
+              </a>, which includes your consent to allow your drawing to be used publicly on the website, possibly as part of its background or design. You also confirm that you are the original creator of the drawing and that it does not contain offensive or copyrighted material.
             </p>
             <input
               type="text"
               placeholder="Your Name"
-              className="w-full p-2 border mb-4"
+              className="w-full p-2 border mb-4 text-black"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
