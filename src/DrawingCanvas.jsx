@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+
+import { useRef, useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import confetti from 'canvas-confetti';
 
@@ -15,6 +16,13 @@ export default function DrawingCanvas() {
   const [brushSize, setBrushSize] = useState(4);
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
+
+  useEffect(() => {
+    if (ctxRef.current) {
+      ctxRef.current.strokeStyle = tool === 'eraser' ? '#fff' : '#000';
+      ctxRef.current.lineWidth = brushSize;
+    }
+  }, [tool, brushSize]);
 
   const startDrawing = ({ nativeEvent }) => {
     const { offsetX, offsetY } = nativeEvent;
@@ -39,8 +47,6 @@ export default function DrawingCanvas() {
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
     ctx.lineCap = 'round';
-    ctx.strokeStyle = tool === 'eraser' ? '#fff' : '#000';
-    ctx.lineWidth = brushSize;
     ctxRef.current = ctx;
   };
 
@@ -68,8 +74,8 @@ export default function DrawingCanvas() {
     <div className="w-screen h-screen bg-white relative">
       <canvas
         ref={(canvas) => {
-          canvasRef.current = canvas;
-          if (canvas) {
+          if (canvas && !ctxRef.current) {
+            canvasRef.current = canvas;
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
             initCanvas(canvas);
@@ -81,7 +87,6 @@ export default function DrawingCanvas() {
         className="absolute top-0 left-0 z-0"
       />
 
-      {/* Toolbar */}
       <div className="fixed right-4 top-1/2 transform -translate-y-1/2 flex flex-col items-center gap-4 z-10">
         <input type="range" min="1" max="20" value={brushSize} onChange={e => setBrushSize(Number(e.target.value))} className="rotate-[-90deg] w-32" />
         <button onClick={() => setTool('pencil')}><img src="https://img.icons8.com/ios/50/000000/pencil-tip.png" alt="pencil" /></button>
@@ -94,7 +99,6 @@ export default function DrawingCanvas() {
         <button onClick={() => window.location.href = '/'}><img src="https://img.icons8.com/ios/50/000000/hand.png" alt="home" /></button>
       </div>
 
-      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20">
           <div className="bg-white p-6 rounded shadow w-[90%] max-w-md text-black">
