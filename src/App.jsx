@@ -144,10 +144,10 @@ export default function App() {
     const canvas = canvasRef.current;
     canvas.toBlob(async (blob) => {
       const filename = `drawing-${Date.now()}.png`;
-      const { error } = await supabase.storage.from('drawings').upload(filename, blob);
+      const { error } = await supabase.storage.from('drawings-bucket').upload(filename, blob);
       if (error) return alert('Upload error');
-      const { data: urlData } = supabase.storage.from('drawings').getPublicUrl(filename);
-      await supabase.from('drawings').insert([{ name, image_url: urlData.publicUrl, status: 'pending' }]);
+      const { data: urlData } = supabase.storage.from('drawings-bucket').getPublicUrl(filename);
+      await supabase.from('drawings-bucket').insert([{ name, image_url: urlData.publicUrl, status: 'pending' }]);
       clearCanvas();
       setShowModal(false);
       confetti();
