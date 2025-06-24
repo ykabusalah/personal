@@ -131,14 +131,16 @@ export default function App() {
       />
 
       <div className="fixed top-1/2 right-4 -translate-y-1/2 transform flex flex-col items-center gap-4 z-50">
-        <input
-          type="range"
-          min="1"
-          max="20"
-          value={brushSize}
-          onChange={(e) => setBrushSize(Number(e.target.value))}
-          className="rotate-[-90deg] w-32"
-        />
+        <div className="flex items-center justify-center h-16 mb-4">
+          <input
+            type="range"
+            min="1"
+            max="20"
+            value={brushSize}
+            onChange={(e) => setBrushSize(Number(e.target.value))}
+            className="rotate-[-90deg] w-28"
+          />
+        </div>
         <button onClick={() => setTool('pencil')}>
           <img src="https://img.icons8.com/ios-filled/50/000000/pencil--v1.png" alt="pencil" />
         </button>
