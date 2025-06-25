@@ -6,7 +6,7 @@ export default function Info() {
 
   return (
     <div className="w-screen h-screen flex flex-col items-center justify-center bg-white p-8 text-center">
-      <h1 className="text-2xl font-bold mb-6">Before You Start Drawing</h1>
+      <h1 className="text-2xl font-bold mb-6">Info</h1>
       <p className="mb-4 max-w-xl">
         The basic idea is that your drawing can become part of my website design.
         The drawings will be displayed at random whenever you visit the site.
