@@ -17,6 +17,7 @@ const supabase = createClient(
   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6ZGhpZHJ3d3d6dGJieXJvcHFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3MjEyOTYsImV4cCI6MjA2NjI5NzI5Nn0.ZRX0_tXgqho-0i_mXZ2g44MD3r_ZuuZvdHIM9jJg-uI'
 );
 
+
 export default function App() {
   const canvasRef = useRef(null);
   const ctxRef = useRef(null);
@@ -28,32 +29,17 @@ export default function App() {
   const [undoStack, setUndoStack] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
 
-  const resizeCanvas = () => {
-    const canvas = canvasRef.current;
-    if (canvas && ctxRef.current) {
-      const imageData = ctxRef.current.getImageData(0, 0, canvas.width, canvas.height);
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      ctxRef.current.putImageData(imageData, 0, 0);
-    }
-  };
-
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (canvas) {
-      const ctx = canvas.getContext('2d');
-      ctx.lineCap = 'round';
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      ctxRef.current = ctx;
-    }
+    const ctx = canvas.getContext('2d');
+    ctx.lineCap = 'round';
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    ctxRef.current = ctx;
 
-    window.addEventListener('resize', resizeCanvas);
-    const handlePointerUp = () => setIsDrawing(false);
-    window.addEventListener('pointerup', handlePointerUp);
+    window.addEventListener('pointerup', () => setIsDrawing(false));
     return () => {
-      window.removeEventListener('resize', resizeCanvas);
-      window.removeEventListener('pointerup', handlePointerUp);
+      window.removeEventListener('pointerup', () => setIsDrawing(false));
     };
   }, []);
 
@@ -72,63 +58,6 @@ export default function App() {
     setRedoStack([]);
   };
 
-  const restoreState = (imgData) => {
-    const canvas = canvasRef.current;
-    const ctx = ctxRef.current;
-    const img = new Image();
-    img.src = imgData;
-    img.onload = () => ctx.drawImage(img, 0, 0);
-  };
-
-  const handleUndo = () => {
-    if (undoStack.length === 0) return;
-    const canvas = canvasRef.current;
-    const ctx = ctxRef.current;
-    const newUndo = [...undoStack];
-    const lastState = newUndo.pop();
-    setUndoStack(newUndo);
-    setRedoStack((prev) => [...prev, canvas.toDataURL()]);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    restoreState(lastState);
-  };
-
-  const handleRedo = () => {
-    if (redoStack.length === 0) return;
-    const canvas = canvasRef.current;
-    const ctx = ctxRef.current;
-    const newRedo = [...redoStack];
-    const nextState = newRedo.pop();
-    setRedoStack(newRedo);
-    setUndoStack((prev) => [...prev, canvas.toDataURL()]);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    restoreState(nextState);
-  };
-
-  const startDrawing = (e) => {
-    e.preventDefault();
-    saveState();
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-    ctxRef.current.beginPath();
-    ctxRef.current.moveTo(x, y);
-    setIsDrawing(true);
-  };
-
-  const finishDrawing = () => {
-    ctxRef.current.closePath();
-    setIsDrawing(false);
-  };
-
-  const draw = (e) => {
-    if (!isDrawing) return;
-    const rect = canvasRef.current.getBoundingClientRect();
-    const x = (e.touches ? e.touches[0].clientX : e.clientX) - rect.left;
-    const y = (e.touches ? e.touches[0].clientY : e.clientY) - rect.top;
-    ctxRef.current.lineTo(x, y);
-    ctxRef.current.stroke();
-  };
-
   const clearCanvas = () => {
     const canvas = canvasRef.current;
     ctxRef.current.clearRect(0, 0, canvas.width, canvas.height);
@@ -140,7 +69,7 @@ export default function App() {
     const canvas = canvasRef.current;
     canvas.toBlob(async (blob) => {
       const filename = `drawing-${Date.now()}.png`;
-      console.log("Uploading to Supabase:", filename, blob);
+      console.log("Uploading to Supabase:", filename);
 
       const { data, error } = await supabase
         .storage
@@ -157,16 +86,20 @@ export default function App() {
         return;
       }
 
-      console.log('✅ Upload succeeded:', data);
-
       const { data: urlData } = supabase
         .storage
         .from('drawing-bucket')
         .getPublicUrl(filename);
 
-      await supabase
+      const { error: insertError } = await supabase
         .from('drawings')
         .insert([{ name, image_url: urlData.publicUrl, status: 'pending' }]);
+
+      if (insertError) {
+        console.error("❌ Insert to drawings table failed:", insertError);
+        alert("Error saving metadata to Supabase.");
+        return;
+      }
 
       clearCanvas();
       setShowModal(false);
@@ -179,10 +112,28 @@ export default function App() {
     <div className="w-screen h-screen bg-white relative touch-none">
       <canvas
         ref={canvasRef}
-        onPointerDown={startDrawing}
-        onPointerUp={finishDrawing}
-        onPointerMove={draw}
-        onPointerLeave={finishDrawing}
+        onPointerDown={(e) => {
+          saveState();
+          const rect = canvasRef.current.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          ctxRef.current.beginPath();
+          ctxRef.current.moveTo(x, y);
+          setIsDrawing(true);
+        }}
+        onPointerUp={() => {
+          ctxRef.current.closePath();
+          setIsDrawing(false);
+        }}
+        onPointerMove={(e) => {
+          if (!isDrawing) return;
+          const rect = canvasRef.current.getBoundingClientRect();
+          const x = e.clientX - rect.left;
+          const y = e.clientY - rect.top;
+          ctxRef.current.lineTo(x, y);
+          ctxRef.current.stroke();
+        }}
+        onPointerLeave={() => setIsDrawing(false)}
         className="absolute top-0 left-0 z-0 touch-none"
       />
 
@@ -194,21 +145,34 @@ export default function App() {
             max="20"
             value={brushSize}
             onChange={(e) => setBrushSize(Number(e.target.value))}
-            className="rotate-[-90deg] w-20 h-1 appearance-none bg-gray-300 rounded-full
-              [&::-webkit-slider-thumb]:appearance-none
-              [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:h-3
-              [&::-webkit-slider-thumb]:bg-black
-              [&::-webkit-slider-thumb]:rounded-full
-              [&::-webkit-slider-thumb]:cursor-pointer"
+            className="rotate-[-90deg] w-20 h-1 bg-gray-300"
           />
         </div>
-        <button onClick={() => setTool('pencil')}><Pencil size={20} className="text-black" /></button>
-        <button onClick={() => setTool('eraser')}><Eraser size={20} className="text-black" /></button>
-        <button onClick={handleUndo}><Undo2 size={20} className="text-black" /></button>
-        <button onClick={handleRedo}><Redo2 size={20} className="text-black" /></button>
-        <button onClick={clearCanvas}><Trash2 size={20} className="text-black" /></button>
-        <button onClick={() => setShowModal(true)}><Save size={20} className="text-black" /></button>
-        <button onClick={() => (window.location.href = '/')}><X size={20} className="text-black" /></button>
+        <button onClick={() => setTool('pencil')}><Pencil /></button>
+        <button onClick={() => setTool('eraser')}><Eraser /></button>
+        <button onClick={() => {
+          if (undoStack.length > 0) {
+            const prev = undoStack.pop();
+            const img = new Image();
+            img.src = prev;
+            img.onload = () => ctxRef.current.drawImage(img, 0, 0);
+            setUndoStack([...undoStack]);
+            setRedoStack((prev) => [...prev, canvasRef.current.toDataURL()]);
+          }
+        }}><Undo2 /></button>
+        <button onClick={() => {
+          if (redoStack.length > 0) {
+            const next = redoStack.pop();
+            const img = new Image();
+            img.src = next;
+            img.onload = () => ctxRef.current.drawImage(img, 0, 0);
+            setRedoStack([...redoStack]);
+            setUndoStack((prev) => [...prev, canvasRef.current.toDataURL()]);
+          }
+        }}><Redo2 /></button>
+        <button onClick={clearCanvas}><Trash2 /></button>
+        <button onClick={() => setShowModal(true)}><Save /></button>
+        <button onClick={() => (window.location.href = '/')}><X /></button>
       </div>
 
       {showModal && (
@@ -219,7 +183,7 @@ export default function App() {
               By submitting, you agree to the{' '}
               <a href="/terms.html" target="_blank" className="underline">
                 Terms & Conditions
-              </a>, which includes your consent to allow your drawing to be used publicly on the website, possibly as part of its background or design. You also confirm that you are the original creator of the drawing and that it does not contain offensive or copyrighted material.
+              </a>.
             </p>
             <input
               type="text"
@@ -229,7 +193,7 @@ export default function App() {
               onChange={(e) => setName(e.target.value)}
             />
             <button onClick={handleSave} className="bg-black text-white px-4 py-2 rounded mr-2">
-              I agree & submit
+              Let's Draw!
             </button>
             <button onClick={() => setShowModal(false)} className="ml-2 underline">
               Cancel
