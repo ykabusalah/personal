@@ -1,7 +1,42 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 body {
   @apply bg-green-300;
+}
+
+/* Brush size slider - vertical, top-heavy visual cue */
+input[type="range"] {
+  -webkit-appearance: none;
+  writing-mode: bt-lr; /* Forces vertical orientation */
+  height: 160px;
+  width: 8px;
+  background: linear-gradient(to top, #000 5%, #444 95%);
+  border-radius: 5px;
+  outline: none;
+  margin: 0;
+  padding: 0;
+  transform: rotate(180deg); /* So small = bottom, large = top */
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  height: 16px;
+  width: 16px;
+  background: #000;
+  border-radius: 50%;
+  cursor: pointer;
+  margin-top: -4px;
+  box-shadow: 0 0 0 2px #fff; /* Optional: white ring for clarity */
+}
+
+input[type="range"]::-moz-range-thumb,
+input[type="range"]::-ms-thumb {
+  height: 16px;
+  width: 16px;
+  background: #000;
+  border-radius: 50%;
+  cursor: pointer;
 }
