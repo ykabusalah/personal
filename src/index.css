@@ -7,36 +7,38 @@ body {
   @apply bg-green-300;
 }
 
-/* Brush size slider - vertical, top-heavy visual cue */
+/* Brush size slider - triangle visual, shorter and thicker */
 input[type="range"] {
   -webkit-appearance: none;
-  writing-mode: bt-lr; /* Forces vertical orientation */
-  height: 160px;
-  width: 8px;
-  background: linear-gradient(to top, #000 5%, #444 95%);
-  border-radius: 5px;
+  writing-mode: bt-lr;
+  height: 70px;
+  width: 16px;
+  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="70"><polygon points="8,0 16,70 0,70" fill="black"/></svg>') no-repeat center;
+  background-size: contain;
+  border-radius: 0;
   outline: none;
-  margin: 0;
-  padding: 0;
-  transform: rotate(180deg); /* So small = bottom, large = top */
+  transform: rotate(180deg); /* small = bottom, large = top */
+  margin-left: 0px;
+  margin-top: 17px;
 }
 
 input[type="range"]::-webkit-slider-thumb {
   -webkit-appearance: none;
-  height: 16px;
-  width: 16px;
-  background: #000;
+  height: 14px;
+  width: 14px;
+  background: black;
   border-radius: 50%;
   cursor: pointer;
   margin-top: -4px;
-  box-shadow: 0 0 0 2px #fff; /* Optional: white ring for clarity */
+  border: 1px solid white;
 }
 
 input[type="range"]::-moz-range-thumb,
 input[type="range"]::-ms-thumb {
-  height: 16px;
-  width: 16px;
-  background: #000;
+  height: 14px;
+  width: 14px;
+  background: black;
   border-radius: 50%;
+  border: 1px solid white;
   cursor: pointer;
 }
