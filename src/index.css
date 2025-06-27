@@ -19,7 +19,7 @@ input[type="range"] {
   outline: none;
   transform: rotate(180deg); /* small = bottom, large = top */
   margin-left: 0px;
-  margin-top: 17px;
+  margin-top: 2px;
 }
 
 input[type="range"]::-webkit-slider-thumb {
