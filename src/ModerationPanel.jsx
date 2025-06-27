@@ -27,6 +27,7 @@ export default function ModerationPanel() {
     const { data, error } = await supabase
       .from('drawings')
       .select('*')
+      .eq('status', 'pending')
       .order('created_at', { ascending: false });
 
     console.log('🎯 Moderation fetched:', data);
