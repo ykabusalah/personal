@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import confetti from 'canvas-confetti';
@@ -14,9 +13,8 @@ import {
 
 const supabase = createClient(
   'https://gzdhidrwwwztbbyropqh.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6ZGhpZHJ3d3d6dGJieXJvcHFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3MjEyOTYsImV4cCI6MjA2NjI5NzI5Nn0.ZRX0_tXgqho-0i_mXZ2g44MD3r_ZuuZvdHIM9jJg-uI'
+  'YOUR_SUPABASE_ANON_KEY'
 );
-
 
 export default function App() {
   const canvasRef = useRef(null);
@@ -47,7 +45,7 @@ export default function App() {
     if (ctxRef.current) {
       ctxRef.current.globalCompositeOperation =
         tool === 'eraser' ? 'destination-out' : 'source-over';
-      ctxRef.current.strokeStyle = tool === 'eraser' ? 'rgba(0,0,0,1)' : '#000';
+      ctxRef.current.strokeStyle = tool === 'eraser' ? '#fff' : '#000';
       ctxRef.current.lineWidth = brushSize;
     }
   }, [tool, brushSize]);
@@ -69,8 +67,6 @@ export default function App() {
     const canvas = canvasRef.current;
     canvas.toBlob(async (blob) => {
       const filename = `drawing-${Date.now()}.png`;
-      console.log("Uploading to Supabase:", filename);
-
       const { data, error } = await supabase
         .storage
         .from('drawing-bucket')
@@ -81,7 +77,6 @@ export default function App() {
         });
 
       if (error) {
-        console.error('❌ Upload error:', error.message, error);
         alert('Upload error: ' + error.message);
         return;
       }
@@ -96,7 +91,6 @@ export default function App() {
         .insert([{ name, image_url: urlData.publicUrl, status: 'pending' }]);
 
       if (insertError) {
-        console.error("❌ Insert to drawings table failed:", insertError);
         alert("Error saving metadata to Supabase.");
         return;
       }
@@ -137,67 +131,138 @@ export default function App() {
         className="absolute top-0 left-0 z-0 touch-none"
       />
 
-      <div className="fixed top-1/2 right-4 -translate-y-1/2 transform flex flex-col items-center gap-4 z-40">
-        <div className="flex items-center justify-center h-12 mb-4">
-          <input
-            type="range"
-            min="1"
-            max="20"
-            value={brushSize}
-            onChange={(e) => setBrushSize(Number(e.target.value))}
-            className="rotate-[-90deg] w-20 h-1 bg-gray-300"
-          />
+            <div className="fixed top-1/2 right-4 -translate-y-1/2 transform z-40">
+        <div className="flex flex-col items-center border border-black rounded overflow-hidden">
+
+          {/* Brush Size */}
+          <div className="w-16 flex justify-center items-center p-2 border-b border-black">
+            <input
+              type="range"
+              min="1"
+              max="20"
+              value={brushSize}
+              onChange={(e) => setBrushSize(parseInt(e.target.value))}
+              className="h-32 w-2 appearance-none bg-black rounded-full [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-1 [&::-webkit-slider-thumb]:w-1 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full mt-[-2px]"
+              style={{
+                writingMode: 'bt-lr',
+                WebkitAppearance: 'slider-vertical',
+                accentColor: 'black'
+              }}
+            />
+          </div>
+
+          {/* Pencil */}
+          <button
+            className={`w-16 h-12 flex items-center justify-center border-b border-black ${tool === 'pencil' ? 'bg-black text-white' : ''}`}
+            title="Pencil"
+            onClick={() => setTool('pencil')}
+          >
+            <Pencil />
+          </button>
+
+          {/* Eraser */}
+          <button
+            className={`w-16 h-12 flex items-center justify-center border-b border-black ${tool === 'eraser' ? 'bg-black text-white' : ''}`}
+            title="Eraser"
+            onClick={() => setTool('eraser')}
+          >
+            <Eraser />
+          </button>
+
+          {/* Undo */}
+          <button
+            className="w-16 h-12 flex items-center justify-center border-b border-black"
+            title="Undo"
+            onClick={() => {
+              if (undoStack.length > 0) {
+                const img = new Image();
+                const last = undoStack[undoStack.length - 1];
+                img.onload = () => {
+                  clearCanvas();
+                  ctxRef.current.drawImage(img, 0, 0);
+                };
+                img.src = last;
+                setRedoStack((r) => [...r, canvasRef.current.toDataURL()]);
+                setUndoStack((prev) => prev.slice(0, -1));
+              }
+            }}
+          >
+            <Undo2 />
+          </button>
+
+          {/* Redo */}
+          <button
+            className="w-16 h-12 flex items-center justify-center border-b border-black"
+            title="Redo"
+            onClick={() => {
+              if (redoStack.length > 0) {
+                const img = new Image();
+                const next = redoStack[redoStack.length - 1];
+                img.onload = () => {
+                  clearCanvas();
+                  ctxRef.current.drawImage(img, 0, 0);
+                };
+                img.src = next;
+                setUndoStack((u) => [...u, canvasRef.current.toDataURL()]);
+                setRedoStack((r) => r.slice(0, -1));
+              }
+            }}
+          >
+            <Redo2 />
+          </button>
+
+          {/* Trash */}
+          <button
+            className="w-16 h-12 flex items-center justify-center border-b border-black"
+            title="Clear"
+            onClick={clearCanvas}
+          >
+            <Trash2 />
+          </button>
+
+          {/* Save */}
+          <button
+            className="w-16 h-12 flex items-center justify-center border-b border-black"
+            title="Save"
+            onClick={() => setShowModal(true)}
+          >
+            <Save />
+          </button>
+
+          {/* Exit */}
+          <button
+            className="w-16 h-12 flex items-center justify-center"
+            title="Exit"
+            onClick={clearCanvas}
+          >
+            <X />
+          </button>
         </div>
-        <button onClick={() => setTool('pencil')}><Pencil /></button>
-        <button onClick={() => setTool('eraser')}><Eraser /></button>
-        <button onClick={() => {
-          if (undoStack.length > 0) {
-            const prev = undoStack.pop();
-            const img = new Image();
-            img.src = prev;
-            img.onload = () => ctxRef.current.drawImage(img, 0, 0);
-            setUndoStack([...undoStack]);
-            setRedoStack((prev) => [...prev, canvasRef.current.toDataURL()]);
-          }
-        }}><Undo2 /></button>
-        <button onClick={() => {
-          if (redoStack.length > 0) {
-            const next = redoStack.pop();
-            const img = new Image();
-            img.src = next;
-            img.onload = () => ctxRef.current.drawImage(img, 0, 0);
-            setRedoStack([...redoStack]);
-            setUndoStack((prev) => [...prev, canvasRef.current.toDataURL()]);
-          }
-        }}><Redo2 /></button>
-        <button onClick={clearCanvas}><Trash2 /></button>
-        <button onClick={() => setShowModal(true)}><Save /></button>
-        <button onClick={() => (window.location.href = '/')}><X /></button>
       </div>
+
 
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded shadow w-[90%] max-w-md text-black">
             <h2 className="text-xl font-bold mb-4">Submit Your Drawing</h2>
-            <p className="mb-2">
-              By submitting, you agree to the{' '}
-              <a href="/terms.html" target="_blank" className="underline">
-                Terms & Conditions
-              </a>.
-            </p>
             <input
               type="text"
               placeholder="Your Name"
-              className="w-full p-2 border mb-4 text-black"
               value={name}
               onChange={(e) => setName(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded mb-4"
             />
-            <button onClick={handleSave} className="bg-black text-white px-4 py-2 rounded mr-2">
-              Let's Draw!
-            </button>
-            <button onClick={() => setShowModal(false)} className="ml-2 underline">
-              Cancel
-            </button>
+            <div className="flex justify-between items-center">
+              <a href="/terms.html" target="_blank" className="text-sm underline">
+                Terms & Conditions
+              </a>
+              <button
+                onClick={handleSave}
+                className="bg-black text-white px-4 py-2 rounded"
+              >
+                I agree & Submit
+              </button>
+            </div>
           </div>
         </div>
       )}
