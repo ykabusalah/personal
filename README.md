@@ -1,4 +1,4 @@
-# ✏️ Drawing Canvas Web App
+# ✏️ Personal Website: Drawing Function
 
 A minimalist fullscreen web canvas where users can draw and submit their artwork to potentially be featured on a personal portfolio site.
 
