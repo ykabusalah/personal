@@ -33,18 +33,42 @@ export default function App() {
   const [name, setName] = useState('');
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    ctx.lineCap = 'round';
+  const canvas = canvasRef.current;
+  const ctx = canvas.getContext('2d');
+  ctx.lineCap = 'round';
+  ctxRef.current = ctx;
+
+  const resizeCanvas = () => {
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.drawImage(canvas, 0, 0);
+
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    ctxRef.current = ctx;
 
-    window.addEventListener('pointerup', () => setIsDrawing(false));
-    return () => {
-      window.removeEventListener('pointerup', () => setIsDrawing(false));
-    };
-  }, []);
+    ctx.drawImage(tempCanvas, 0, 0);
+
+    // Reapply brush settings
+    ctx.lineCap = 'round';
+    ctx.lineWidth = brushSize;
+    ctx.strokeStyle = tool === 'eraser' ? '#fff' : '#000';
+    ctx.globalCompositeOperation = tool === 'eraser' ? 'destination-out' : 'source-over';
+  };
+
+  // Initial sizing
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('pointerup', () => setIsDrawing(false));
+
+  return () => {
+    window.removeEventListener('resize', resizeCanvas);
+    window.removeEventListener('pointerup', () => setIsDrawing(false));
+  };
+}, [brushSize, tool]);
 
   useEffect(() => {
     if (ctxRef.current) {
