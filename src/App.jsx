@@ -1,10 +1,11 @@
-
 import { useRef, useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import confetti from 'canvas-confetti';
 import {
   Pencil,
   Eraser,
+  Undo2,
+  Redo2,
   Trash2,
   Save,
   X
@@ -31,44 +32,22 @@ export default function App() {
   const [brushSize, setBrushSize] = useState(4);
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
+  const [undoStack, setUndoStack] = useState([]);
+  const [redoStack, setRedoStack] = useState([]);
 
   useEffect(() => {
-  const canvas = canvasRef.current;
-  const ctx = canvas.getContext('2d');
-  ctx.lineCap = 'round';
-  ctxRef.current = ctx;
-
-  const resizeCanvas = () => {
-    const tempCanvas = document.createElement('canvas');
-    tempCanvas.width = canvas.width;
-    tempCanvas.height = canvas.height;
-    const tempCtx = tempCanvas.getContext('2d');
-    tempCtx.drawImage(canvas, 0, 0);
-
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    ctx.lineCap = 'round';
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
+    ctxRef.current = ctx;
 
-    ctx.drawImage(tempCanvas, 0, 0);
-
-    // Reapply brush settings
-    ctx.lineCap = 'round';
-    ctx.lineWidth = brushSize;
-    ctx.strokeStyle = tool === 'eraser' ? '#fff' : '#000';
-    ctx.globalCompositeOperation = tool === 'eraser' ? 'destination-out' : 'source-over';
-  };
-
-  // Initial sizing
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
-
-  window.addEventListener('resize', resizeCanvas);
-  window.addEventListener('pointerup', () => setIsDrawing(false));
-
-  return () => {
-    window.removeEventListener('resize', resizeCanvas);
-    window.removeEventListener('pointerup', () => setIsDrawing(false));
-  };
-}, [brushSize, tool]);
+    window.addEventListener('pointerup', () => setIsDrawing(false));
+    return () => {
+      window.removeEventListener('pointerup', () => setIsDrawing(false));
+    };
+  }, []);
 
   useEffect(() => {
     if (ctxRef.current) {
@@ -79,9 +58,18 @@ export default function App() {
     }
   }, [tool, brushSize]);
 
+  const saveState = () => {
+  const canvas = canvasRef.current;
+  const ctx = ctxRef.current;
+  const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  setUndoStack((prev) => [...prev, snapshot]);
+};
+
   const clearCanvas = () => {
     const canvas = canvasRef.current;
     ctxRef.current.clearRect(0, 0, canvas.width, canvas.height);
+    setUndoStack([]);
+    setRedoStack([]);
   };
 
   const handleSave = async () => {
@@ -128,6 +116,7 @@ export default function App() {
       <canvas
         ref={canvasRef}
         onPointerDown={(e) => {
+          saveState();
           const rect = canvasRef.current.getBoundingClientRect();
           const x = e.clientX - rect.left;
           const y = e.clientY - rect.top;
@@ -151,9 +140,10 @@ export default function App() {
         className="absolute top-0 left-0 z-0 touch-none"
       />
 
-      <div className="fixed top-1/2 right-4 -translate-y-1/2 transform z-40">
+            <div className="fixed top-1/2 right-4 -translate-y-1/2 transform z-40">
         <div className="flex flex-col items-center border border-black rounded overflow-hidden">
 
+          {/* Brush Size */}
           <div className="w-16 flex justify-center items-center p-2 border-b border-black">
             <input
               type="range"
@@ -161,7 +151,7 @@ export default function App() {
               max="20"
               value={brushSize}
               onChange={(e) => setBrushSize(parseInt(e.target.value))}
-              className="h-32 w-2 appearance-none bg-black rounded-full mt-[-2px]"
+              className="h-32 w-2 appearance-none bg-black rounded-full [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-1 [&::-webkit-slider-thumb]:w-1 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full mt-[-2px]"
               style={{
                 writingMode: 'bt-lr',
                 WebkitAppearance: 'slider-vertical',
@@ -170,47 +160,89 @@ export default function App() {
             />
           </div>
 
+          {/* Pencil */}
           <button
             className={`w-16 h-12 flex items-center justify-center border-b border-black ${tool === 'pencil' ? 'bg-black text-white' : ''}`}
             title="Pencil"
             onClick={() => setTool('pencil')}
           >
-            <Pencil />
+            <Pencil className="w-5 h-5" />
           </button>
 
+          {/* Eraser */}
           <button
             className={`w-16 h-12 flex items-center justify-center border-b border-black ${tool === 'eraser' ? 'bg-black text-white' : ''}`}
             title="Eraser"
             onClick={() => setTool('eraser')}
           >
-            <Eraser />
+            <Eraser className="w-5 h-5" />
           </button>
 
+          {/* Undo */}
+          <button
+  className="w-16 h-12 flex items-center justify-center border-b border-black"
+  title="Undo"
+  onClick={() => {
+    if (undoStack.length > 0) {
+      const lastImage = undoStack[undoStack.length - 1];
+      ctxRef.current.putImageData(lastImage, 0, 0);
+      setUndoStack((prev) => prev.slice(0, -1));
+    }
+  }}
+>
+  <Undo2 className="w-5 h-5" />
+</button>
+
+          {/* Redo */}
+          <button
+            className="w-16 h-12 flex items-center justify-center border-b border-black"
+            title="Redo"
+            onClick={() => {
+              if (redoStack.length > 0) {
+                const img = new Image();
+                const next = redoStack[redoStack.length - 1];
+                img.onload = () => {
+                  clearCanvas();
+                  ctxRef.current.drawImage(img, 0, 0);
+                };
+                img.src = next;
+                setUndoStack((u) => [...u, canvasRef.current.toDataURL()]);
+                setRedoStack((r) => r.slice(0, -1));
+              }
+            }}
+          >
+            <Redo2 className="w-5 h-5" />
+          </button>
+
+          {/* Trash */}
           <button
             className="w-16 h-12 flex items-center justify-center border-b border-black"
             title="Clear"
             onClick={clearCanvas}
           >
-            <Trash2 />
+            <Trash2 className="w-5 h-5" />
           </button>
 
+          {/* Save */}
           <button
             className="w-16 h-12 flex items-center justify-center border-b border-black"
             title="Save"
             onClick={() => setShowModal(true)}
           >
-            <Save />
+            <Save className="w-5 h-5" />
           </button>
 
+          {/* Exit */}
           <button
             className="w-16 h-12 flex items-center justify-center"
             title="Exit"
             onClick={handleExitClick}
           >
-            <X />
+            <X className="w-5 h-5" />
           </button>
         </div>
       </div>
+
 
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -237,7 +269,7 @@ export default function App() {
           </div>
         </div>
       )}
-
+    
       {showExitPrompt && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded shadow w-[90%] max-w-md text-black">
@@ -249,6 +281,6 @@ export default function App() {
           </div>
         </div>
       )}
-    </div>
+</div>
   );
 }
