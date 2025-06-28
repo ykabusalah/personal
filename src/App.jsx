@@ -35,18 +35,41 @@ export default function App() {
   const [undoStack, setUndoStack] = useState([]);
   
   useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    ctx.lineCap = 'round';
+  const canvas = canvasRef.current;
+  const ctx = canvas.getContext('2d');
+  ctx.lineCap = 'round';
+  ctxRef.current = ctx;
+
+  const resizeCanvas = () => {
+    const tempCanvas = document.createElement('canvas');
+    tempCanvas.width = canvas.width;
+    tempCanvas.height = canvas.height;
+    const tempCtx = tempCanvas.getContext('2d');
+    tempCtx.drawImage(canvas, 0, 0);
+
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    ctxRef.current = ctx;
 
-    window.addEventListener('pointerup', () => setIsDrawing(false));
-    return () => {
-      window.removeEventListener('pointerup', () => setIsDrawing(false));
-    };
-  }, []);
+    ctx.drawImage(tempCanvas, 0, 0);
+
+    // Reapply settings
+    ctx.lineCap = 'round';
+    ctx.lineWidth = brushSize;
+    ctx.strokeStyle = tool === 'eraser' ? '#fff' : '#000';
+    ctx.globalCompositeOperation = tool === 'eraser' ? 'destination-out' : 'source-over';
+  };
+
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+
+  window.addEventListener('resize', resizeCanvas);
+  window.addEventListener('pointerup', () => setIsDrawing(false));
+
+  return () => {
+    window.removeEventListener('resize', resizeCanvas);
+    window.removeEventListener('pointerup', () => setIsDrawing(false));
+  };
+}, [brushSize, tool]);
 
   useEffect(() => {
     if (ctxRef.current) {
@@ -178,7 +201,8 @@ export default function App() {
 
           {/* Undo */}
           <button
-  className="w-16 h-12 flex items-center justify-center border-b border-black"
+  type="button"
+  className="w-16 h-12 flex items-center justify-center border-b border-black bg-white text-black active:bg-black active:text-white transition-colors duration-150"
   title="Undo"
   onClick={() => {
     if (undoStack.length > 0) {
@@ -194,30 +218,33 @@ export default function App() {
           {/* Redo */}
           {/* Trash */}
           <button
-            className="w-16 h-12 flex items-center justify-center border-b border-black"
-            title="Clear"
-            onClick={clearCanvas}
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
+  type="button"
+  className="w-16 h-12 flex items-center justify-center border-b border-black bg-white text-black active:bg-black active:text-white transition-colors duration-150"
+  title="Clear"
+  onClick={clearCanvas}
+>
+  <Trash2 className="w-5 h-5" />
+</button>
 
           {/* Save */}
           <button
-            className="w-16 h-12 flex items-center justify-center border-b border-black"
-            title="Save"
-            onClick={() => setShowModal(true)}
-          >
-            <Save className="w-5 h-5" />
-          </button>
+  type="button"
+  className="w-16 h-12 flex items-center justify-center border-b border-black bg-white text-black active:bg-black active:text-white transition-colors duration-150"
+  title="Save"
+  onClick={() => setShowModal(true)}
+>
+  <Save className="w-5 h-5" />
+</button>
 
           {/* Exit */}
           <button
-            className="w-16 h-12 flex items-center justify-center"
-            title="Exit"
-            onClick={handleExitClick}
-          >
-            <X className="w-5 h-5" />
-          </button>
+  type="button"
+  className="w-16 h-12 flex items-center justify-center bg-white text-black active:bg-black active:text-white transition-colors duration-150"
+  title="Exit"
+  onClick={handleExitClick}
+>
+  <X className="w-5 h-5" />
+</button>
         </div>
       </div>
 
