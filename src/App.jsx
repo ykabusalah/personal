@@ -5,7 +5,7 @@ import {
   Pencil,
   Eraser,
   Undo2,
-  Redo2,
+  
   Trash2,
   Save,
   X
@@ -33,8 +33,7 @@ export default function App() {
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
   const [undoStack, setUndoStack] = useState([]);
-  const [redoStack, setRedoStack] = useState([]);
-
+  
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -69,7 +68,6 @@ export default function App() {
     const canvas = canvasRef.current;
     ctxRef.current.clearRect(0, 0, canvas.width, canvas.height);
     setUndoStack([]);
-    setRedoStack([]);
   };
 
   const handleSave = async () => {
@@ -194,26 +192,6 @@ export default function App() {
 </button>
 
           {/* Redo */}
-          <button
-            className="w-16 h-12 flex items-center justify-center border-b border-black"
-            title="Redo"
-            onClick={() => {
-              if (redoStack.length > 0) {
-                const img = new Image();
-                const next = redoStack[redoStack.length - 1];
-                img.onload = () => {
-                  clearCanvas();
-                  ctxRef.current.drawImage(img, 0, 0);
-                };
-                img.src = next;
-                setUndoStack((u) => [...u, canvasRef.current.toDataURL()]);
-                setRedoStack((r) => r.slice(0, -1));
-              }
-            }}
-          >
-            <Redo2 className="w-5 h-5" />
-          </button>
-
           {/* Trash */}
           <button
             className="w-16 h-12 flex items-center justify-center border-b border-black"
