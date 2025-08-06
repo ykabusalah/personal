@@ -44,17 +44,25 @@ export default function App() {
     ctxRef.current = ctx;
 
     const checkScreenSize = () => {
-      // Check if device is mobile
-      const mobileCheck = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-      setIsMobile(mobileCheck);
+      // First, check if it's actually a mobile device (not just small window)
+      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(userAgent);
+      
+      // Also check for touch capability as additional mobile indicator
+      const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      
+      // Combine both checks - must be mobile device AND have touch
+      const isActualMobile = isMobileDevice && hasTouchScreen;
+      
+      setIsMobile(isActualMobile);
 
-      // If mobile, always show mobile message
-      if (mobileCheck) {
+      // If it's a real mobile device, block drawing
+      if (isActualMobile) {
         setIsFullscreen(false);
         return;
       }
 
-      // For desktop, check minimum size
+      // For desktop devices, check window size requirements
       const minWidth = 800;
       const minHeight = 600;
       setIsFullscreen(window.innerWidth >= minWidth && window.innerHeight >= minHeight);
