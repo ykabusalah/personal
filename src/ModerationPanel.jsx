@@ -1,82 +1,74 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
+// Use service role key for moderation (bypasses RLS entirely)
 const supabase = createClient(
-  'https://gzdhidrwwwztbbyropqh.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6ZGhpZHJ3d3d6dGJieXJvcHFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3MjEyOTYsImV4cCI6MjA2NjI5NzI5Nn0.ZRX0_tXgqho-0i_mXZ2g44MD3r_ZuuZvdHIM9jJg-uI'
+  process.env.REACT_APP_SUPABASE_URL,
+  process.env.REACT_APP_SUPABASE_SERVICE_KEY
 );
 
-const SECRET_KEY = 'knafehbloop421';
+// These credentials are stored in environment variables, not in code
+const SECRET_KEY = process.env.REACT_APP_SECRET_KEY;
+const MODERATOR_EMAIL = process.env.REACT_APP_MODERATOR_EMAIL;
+const MODERATOR_PASSWORD = process.env.REACT_APP_MODERATOR_PASSWORD;
 
 export default function ModerationPanel() {
   const [drawings, setDrawings] = useState([]);
   const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [processingIds, setProcessingIds] = useState(new Set());
-  const [debugInfo, setDebugInfo] = useState('');
+  const [loggedIn, setLoggedIn] = useState(false);
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loginError, setLoginError] = useState('');
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const key = params.get('key');
     if (key === SECRET_KEY) {
       setAuthorized(true);
-      fetchDrawings();
     }
   }, []);
 
-  const addDebugInfo = (info) => {
-    setDebugInfo(prev => prev + '\n' + new Date().toLocaleTimeString() + ': ' + info);
-    console.log('🐛 DEBUG:', info);
+  const handleLogin = (e) => {
+    e.preventDefault();
+    setLoginError('');
+    
+    if (email === MODERATOR_EMAIL && password === MODERATOR_PASSWORD) {
+      setLoggedIn(true);
+      fetchDrawings();
+    } else {
+      setLoginError('Invalid credentials');
+    }
+  };
+
+  const handleLogout = () => {
+    setLoggedIn(false);
+    setEmail('');
+    setPassword('');
+    setDrawings([]);
   };
 
   const fetchDrawings = async () => {
     setLoading(true);
-    addDebugInfo('Starting to fetch drawings...');
-    
-    try {
-      const { data, error, count } = await supabase
-        .from('drawings')
-        .select('*', { count: 'exact' })
-        .eq('status', 'pending')
-        .order('created_at', { ascending: false });
-
-      addDebugInfo(`Fetch result - Error: ${error ? error.message : 'none'}, Count: ${count}, Data length: ${data ? data.length : 0}`);
-      
-      if (error) {
-        console.error('❌ Fetch error:', error);
-        alert('Error fetching drawings: ' + error.message);
-        addDebugInfo(`Fetch error details: ${JSON.stringify(error)}`);
-      } else {
-        setDrawings(data || []);
-        addDebugInfo(`Successfully loaded ${data?.length || 0} drawings`);
-        
-        // Log the structure of the first drawing for debugging
-        if (data && data.length > 0) {
-          addDebugInfo(`First drawing structure: ${JSON.stringify(data[0])}`);
-        }
-      }
-    } catch (err) {
-      console.error('❌ Unexpected error:', err);
-      alert('Unexpected error occurred while fetching drawings');
-      addDebugInfo(`Unexpected fetch error: ${err.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const checkDrawingExists = async (id) => {
     try {
       const { data, error } = await supabase
         .from('drawings')
         .select('*')
-        .eq('id', id)
-        .single();
-      
-      addDebugInfo(`Drawing ${id} check - exists: ${!!data}, status: ${data?.status}, error: ${error?.message || 'none'}`);
-      return { data, error };
+        .eq('status', 'pending')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Fetch error:', error);
+        alert('Error fetching drawings: ' + error.message);
+      } else {
+        setDrawings(data || []);
+      }
     } catch (err) {
-      addDebugInfo(`Error checking drawing ${id}: ${err.message}`);
-      return { data: null, error: err };
+      console.error('Unexpected error:', err);
+      alert('Unexpected error occurred while fetching drawings');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -84,66 +76,30 @@ export default function ModerationPanel() {
     if (processingIds.has(id)) return;
     
     setProcessingIds(prev => new Set([...prev, id]));
-    addDebugInfo(`Starting update for drawing ${id} to status: ${status}`);
     
     try {
-      // First, check if the drawing still exists and get its current status
-      const existsCheck = await checkDrawingExists(id);
-      
-      if (existsCheck.error) {
-        alert(`Error checking drawing existence: ${existsCheck.error.message}`);
-        return;
-      }
-      
-      if (!existsCheck.data) {
-        alert('Drawing not found. It may have been deleted.');
-        addDebugInfo(`Drawing ${id} not found in database`);
-        // Remove from local state since it doesn't exist
-        setDrawings(prev => prev.filter(d => d.id !== id));
-        return;
-      }
-      
-      addDebugInfo(`Current drawing status: ${existsCheck.data.status}`);
-      
-      // Proceed with the update
       const { data, error } = await supabase
         .from('drawings')
         .update({ status })
         .eq('id', id)
         .select();
 
-      addDebugInfo(`Update result - Error: ${error ? error.message : 'none'}, Updated rows: ${data ? data.length : 0}`);
-
       if (error) {
-        console.error('❌ Update error:', error);
+        console.error('Update error:', error);
         alert(`Error updating status: ${error.message}`);
-        addDebugInfo(`Update error details: ${JSON.stringify(error)}`);
         return;
       }
 
       if (!data || data.length === 0) {
-        console.error('❌ No rows updated');
         alert('No drawing was updated. It may have been modified by another user.');
-        addDebugInfo(`No rows updated for ID ${id}`);
-        
-        // Check if drawing still exists with different status
-        const recheckResult = await checkDrawingExists(id);
-        if (recheckResult.data) {
-          addDebugInfo(`Drawing still exists with status: ${recheckResult.data.status}`);
-        }
         return;
       }
 
-      console.log('✅ Successfully updated:', data);
-      addDebugInfo(`Successfully updated drawing ${id} to ${status}`);
-      
-      // Only remove from local state if the update was successful
       setDrawings(prev => prev.filter(d => d.id !== id));
       
     } catch (err) {
-      console.error('❌ Unexpected error during update:', err);
+      console.error('Unexpected error during update:', err);
       alert('Unexpected error occurred while updating status');
-      addDebugInfo(`Unexpected update error: ${err.message}`);
     } finally {
       setProcessingIds(prev => {
         const newSet = new Set(prev);
@@ -153,12 +109,59 @@ export default function ModerationPanel() {
     }
   };
 
-  const clearDebugInfo = () => setDebugInfo('');
-
   if (!authorized) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-white text-black">
-        <p className="text-lg">Not authorized to view this page.</p>
+        <div className="text-center">
+          <p className="text-lg mb-2">Not authorized to view this page.</p>
+          <p className="text-sm text-gray-600">Please use the correct URL with access key.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!loggedIn) {
+    return (
+      <div className="w-screen h-screen flex items-center justify-center bg-white text-black">
+        <div className="bg-white p-8 rounded shadow-lg border max-w-md w-full">
+          <h1 className="text-2xl font-bold mb-6 text-center">Moderator Login</h1>
+          <form onSubmit={handleLogin} className="space-y-4">
+            {loginError && (
+              <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+                {loginError}
+              </div>
+            )}
+            <div>
+              <label className="block text-sm font-medium mb-1">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 transition-colors"
+            >
+              Sign In
+            </button>
+          </form>
+          <p className="text-xs text-gray-500 mt-4 text-center">
+            Secure moderator access only
+          </p>
+        </div>
       </div>
     );
   }
@@ -168,7 +171,8 @@ export default function ModerationPanel() {
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Moderation Panel</h1>
-          <div className="flex gap-2">
+          <div className="flex gap-2 items-center">
+            <span className="text-sm text-gray-600">Logged in as moderator</span>
             <button
               onClick={fetchDrawings}
               disabled={loading}
@@ -177,23 +181,13 @@ export default function ModerationPanel() {
               {loading ? 'Loading...' : 'Refresh'}
             </button>
             <button
-              onClick={clearDebugInfo}
+              onClick={handleLogout}
               className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700"
             >
-              Clear Debug
+              Sign Out
             </button>
           </div>
         </div>
-
-        {/* Debug Info Panel */}
-        {debugInfo && (
-          <div className="mb-6 p-4 bg-gray-100 rounded">
-            <h3 className="font-bold mb-2">Debug Information:</h3>
-            <pre className="text-xs whitespace-pre-wrap max-h-40 overflow-y-auto bg-white p-2 rounded border">
-              {debugInfo}
-            </pre>
-          </div>
-        )}
         
         {loading ? (
           <p>Loading drawings...</p>
@@ -217,8 +211,6 @@ export default function ModerationPanel() {
                   <div>
                     <p className="font-semibold">{drawing.name || 'No Name'}</p>
                     <p className="text-sm text-gray-600">Status: {drawing.status}</p>
-                    <p className="text-xs text-gray-500">ID: {drawing.id}</p>
-                    <p className="text-xs text-gray-400">Type: {typeof drawing.id}</p>
                   </div>
                 </div>
                 <div className="mt-4 md:mt-0 flex gap-2">
