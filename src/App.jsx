@@ -5,15 +5,14 @@ import {
   Pencil,
   Eraser,
   Undo2,
-  
   Trash2,
   Save,
   X
 } from 'lucide-react';
 
 const supabase = createClient(
-  'https://gzdhidrwwwztbbyropqh.supabase.co',
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6ZGhpZHJ3d3d6dGJieXJvcHFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3MjEyOTYsImV4cCI6MjA2NjI5NzI5Nn0.ZRX0_tXgqho-0i_mXZ2g44MD3r_ZuuZvdHIM9jJg-uI'
+  process.env.REACT_APP_SUPABASE_URL,
+  process.env.REACT_APP_SUPABASE_ANON_KEY
 );
 
 export default function App() {
@@ -192,7 +191,6 @@ export default function App() {
   <Undo2 className="w-5 h-5" />
 </button>
 
-          {/* Redo */}
           {/* Trash */}
           <button
   type="button"
