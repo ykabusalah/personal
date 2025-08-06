@@ -32,7 +32,6 @@ export default function App() {
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
   const [undoStack, setUndoStack] = useState([]);
-  const [isFullscreen, setIsFullscreen] = useState(true);
   
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -42,31 +41,8 @@ export default function App() {
     canvas.height = window.innerHeight;
     ctxRef.current = ctx;
 
-    const checkFullscreen = () => {
-      // Safety check for server-side rendering
-      if (typeof window === 'undefined') return;
-      
-      // Consider it "fullscreen" if window is at least 800px wide and 600px tall
-      const minWidth = 800;
-      const minHeight = 600;
-      setIsFullscreen(window.innerWidth >= minWidth && window.innerHeight >= minHeight);
-    };
-
-    const handleResize = () => {
-      if (typeof window === 'undefined') return;
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
-      checkFullscreen();
-    };
-
-    // Add a small delay to ensure everything is loaded
-    setTimeout(checkFullscreen, 100);
-    
-    window.addEventListener('resize', handleResize);
     window.addEventListener('pointerup', () => setIsDrawing(false));
-    
     return () => {
-      window.removeEventListener('resize', handleResize);
       window.removeEventListener('pointerup', () => setIsDrawing(false));
     };
   }, []);
@@ -137,7 +113,6 @@ export default function App() {
       <canvas
         ref={canvasRef}
         onPointerDown={(e) => {
-          if (!isFullscreen) return; // Prevent drawing if not fullscreen
           saveState();
           const rect = canvasRef.current.getBoundingClientRect();
           const x = e.clientX - rect.left;
@@ -151,7 +126,7 @@ export default function App() {
           setIsDrawing(false);
         }}
         onPointerMove={(e) => {
-          if (!isDrawing || !isFullscreen) return; // Prevent drawing if not fullscreen
+          if (!isDrawing) return;
           const rect = canvasRef.current.getBoundingClientRect();
           const x = e.clientX - rect.left;
           const y = e.clientY - rect.top;
@@ -283,23 +258,6 @@ export default function App() {
               <button onClick={confirmExit} className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800">Yes</button>
               <button onClick={cancelExit} className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">No</button>
             </div>
-          </div>
-        </div>
-      )}
-
-      {!isFullscreen && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded shadow w-[90%] max-w-lg text-black text-center">
-            <h2 className="text-2xl font-bold mb-4">📏 Window Too Small</h2>
-            <p className="text-lg mb-4">
-              Please make your browser window fullscreen or larger to draw properly.
-            </p>
-            <p className="text-sm text-gray-600 mb-6">
-              This ensures your drawing looks great when displayed on the website!
-            </p>
-            <p className="text-xs text-gray-500">
-              Minimum size: 800px wide × 600px tall
-            </p>
           </div>
         </div>
       )}
