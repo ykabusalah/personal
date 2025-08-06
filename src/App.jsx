@@ -43,6 +43,9 @@ export default function App() {
     ctxRef.current = ctx;
 
     const checkFullscreen = () => {
+      // Safety check for server-side rendering
+      if (typeof window === 'undefined') return;
+      
       // Consider it "fullscreen" if window is at least 800px wide and 600px tall
       const minWidth = 800;
       const minHeight = 600;
@@ -50,12 +53,15 @@ export default function App() {
     };
 
     const handleResize = () => {
+      if (typeof window === 'undefined') return;
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
       checkFullscreen();
     };
 
-    checkFullscreen(); // Check on initial load
+    // Add a small delay to ensure everything is loaded
+    setTimeout(checkFullscreen, 100);
+    
     window.addEventListener('resize', handleResize);
     window.addEventListener('pointerup', () => setIsDrawing(false));
     
