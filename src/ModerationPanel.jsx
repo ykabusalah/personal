@@ -1,57 +1,83 @@
 import { useEffect, useState } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
-// Use service role key for moderation (bypasses RLS entirely)
 const supabase = createClient(
   process.env.REACT_APP_SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_SERVICE_KEY
+  process.env.REACT_APP_SUPABASE_ANON_KEY
 );
-
-// These credentials are stored in environment variables, not in code
-const SECRET_KEY = process.env.REACT_APP_SECRET_KEY;
-const MODERATOR_EMAIL = process.env.REACT_APP_MODERATOR_EMAIL;
-const MODERATOR_PASSWORD = process.env.REACT_APP_MODERATOR_PASSWORD;
 
 export default function ModerationPanel() {
   const [drawings, setDrawings] = useState([]);
-  const [authorized, setAuthorized] = useState(false);
   const [loading, setLoading] = useState(false);
   const [processingIds, setProcessingIds] = useState(new Set());
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [user, setUser] = useState(null);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loginError, setLoginError] = useState('');
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const key = params.get('key');
-    if (key === SECRET_KEY) {
-      setAuthorized(true);
-    }
+    // Check if user is already logged in
+    const getSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchDrawings();
+      }
+    };
+
+    getSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchDrawings();
+      } else {
+        setDrawings([]);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setLoginError('');
+    setLoading(true);
     
-    if (email === MODERATOR_EMAIL && password === MODERATOR_PASSWORD) {
-      setLoggedIn(true);
-      fetchDrawings();
-    } else {
-      setLoginError('Invalid credentials');
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        setLoginError(error.message);
+      } else if (data.user) {
+        // User will be set via onAuthStateChange
+        setEmail('');
+        setPassword('');
+      }
+    } catch (err) {
+      setLoginError('An unexpected error occurred');
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    setLoggedIn(false);
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
     setEmail('');
     setPassword('');
     setDrawings([]);
   };
 
   const fetchDrawings = async () => {
+    if (!user) return;
+    
     setLoading(true);
     try {
+      // RLS allows authenticated users to see all drawings
       const { data, error } = await supabase
         .from('drawings')
         .select('*')
@@ -73,11 +99,12 @@ export default function ModerationPanel() {
   };
 
   const updateStatus = async (id, status) => {
-    if (processingIds.has(id)) return;
+    if (processingIds.has(id) || !user) return;
     
     setProcessingIds(prev => new Set([...prev, id]));
     
     try {
+      // RLS allows authenticated users to update drawing status
       const { data, error } = await supabase
         .from('drawings')
         .update({ status })
@@ -109,18 +136,8 @@ export default function ModerationPanel() {
     }
   };
 
-  if (!authorized) {
-    return (
-      <div className="w-screen h-screen flex items-center justify-center bg-white text-black">
-        <div className="text-center">
-          <p className="text-lg mb-2">Not authorized to view this page.</p>
-          <p className="text-sm text-gray-600">Please use the correct URL with access key.</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (!loggedIn) {
+  // If not logged in, show login form
+  if (!user) {
     return (
       <div className="w-screen h-screen flex items-center justify-center bg-white text-black">
         <div className="bg-white p-8 rounded shadow-lg border max-w-md w-full">
@@ -139,6 +156,7 @@ export default function ModerationPanel() {
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
                 required
+                disabled={loading}
               />
             </div>
             <div>
@@ -149,30 +167,33 @@ export default function ModerationPanel() {
                 onChange={(e) => setPassword(e.target.value)}
                 className="w-full p-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
                 required
+                disabled={loading}
               />
             </div>
             <button
               type="submit"
-              className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 transition-colors"
+              disabled={loading}
+              className="w-full bg-black text-white py-2 rounded hover:bg-gray-800 transition-colors disabled:opacity-50"
             >
-              Sign In
+              {loading ? 'Signing In...' : 'Sign In'}
             </button>
           </form>
           <p className="text-xs text-gray-500 mt-4 text-center">
-            Secure moderator access only
+            Secure moderator access with Supabase Auth
           </p>
         </div>
       </div>
     );
   }
 
+  // If logged in, show moderation panel
   return (
     <div className="min-h-screen w-full bg-white text-black px-6 py-12">
       <div className="max-w-4xl mx-auto">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Moderation Panel</h1>
           <div className="flex gap-2 items-center">
-            <span className="text-sm text-gray-600">Logged in as moderator</span>
+            <span className="text-sm text-gray-600">Logged in as {user.email}</span>
             <button
               onClick={fetchDrawings}
               disabled={loading}
