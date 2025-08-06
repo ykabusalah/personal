@@ -32,6 +32,8 @@ export default function App() {
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
   const [undoStack, setUndoStack] = useState([]);
+  const [isFullscreen, setIsFullscreen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -41,8 +43,37 @@ export default function App() {
     canvas.height = window.innerHeight;
     ctxRef.current = ctx;
 
+    const checkScreenSize = () => {
+      // Check if device is mobile
+      const mobileCheck = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+      setIsMobile(mobileCheck);
+
+      // If mobile, always show mobile message
+      if (mobileCheck) {
+        setIsFullscreen(false);
+        return;
+      }
+
+      // For desktop, check minimum size
+      const minWidth = 800;
+      const minHeight = 600;
+      setIsFullscreen(window.innerWidth >= minWidth && window.innerHeight >= minHeight);
+    };
+
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      checkScreenSize();
+    };
+
+    // Small delay to ensure DOM is ready
+    setTimeout(checkScreenSize, 100);
+    
+    window.addEventListener('resize', handleResize);
     window.addEventListener('pointerup', () => setIsDrawing(false));
+    
     return () => {
+      window.removeEventListener('resize', handleResize);
       window.removeEventListener('pointerup', () => setIsDrawing(false));
     };
   }, []);
@@ -113,6 +144,7 @@ export default function App() {
       <canvas
         ref={canvasRef}
         onPointerDown={(e) => {
+          if (!isFullscreen) return; // Prevent drawing if not fullscreen
           saveState();
           const rect = canvasRef.current.getBoundingClientRect();
           const x = e.clientX - rect.left;
@@ -126,7 +158,7 @@ export default function App() {
           setIsDrawing(false);
         }}
         onPointerMove={(e) => {
-          if (!isDrawing) return;
+          if (!isDrawing || !isFullscreen) return; // Prevent drawing if not fullscreen
           const rect = canvasRef.current.getBoundingClientRect();
           const x = e.clientX - rect.left;
           const y = e.clientY - rect.top;
@@ -258,6 +290,43 @@ export default function App() {
               <button onClick={confirmExit} className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800">Yes</button>
               <button onClick={cancelExit} className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">No</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {!isFullscreen && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded shadow w-[90%] max-w-lg text-black text-center">
+            {isMobile ? (
+              <>
+                <h2 className="text-2xl font-bold mb-4">📱 Mobile Device Detected</h2>
+                <p className="text-lg mb-4">
+                  The experience is far better on PC. I promise!
+                </p>
+                <p className="text-sm text-gray-600 mb-6">
+                  Please visit this page on a desktop or laptop computer for the best drawing experience.
+                </p>
+                <button
+                  onClick={confirmExit}
+                  className="bg-black text-white px-6 py-3 rounded hover:bg-gray-800"
+                >
+                  Go Back
+                </button>
+              </>
+            ) : (
+              <>
+                <h2 className="text-2xl font-bold mb-4">📏 Window Too Small</h2>
+                <p className="text-lg mb-4">
+                  Please make your browser window fullscreen or larger to draw properly.
+                </p>
+                <p className="text-sm text-gray-600 mb-6">
+                  This ensures your drawing looks great when displayed on the website!
+                </p>
+                <p className="text-xs text-gray-500">
+                  Minimum size: 800px wide × 600px tall
+                </p>
+              </>
+            )}
           </div>
         </div>
       )}
