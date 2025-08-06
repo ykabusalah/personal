@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -7,38 +6,55 @@ body {
   @apply bg-green-300;
 }
 
-/* Brush size slider - triangle visual, shorter and thicker */
-input[type="range"] {
+/* Triangle brush size slider */
+.brush-slider-triangle {
   -webkit-appearance: none;
-  writing-mode: bt-lr;
-  height: 70px;
-  width: 16px;
-  background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="16" height="70"><polygon points="8,0 16,70 0,70" fill="black"/></svg>') no-repeat center;
-  background-size: contain;
-  border-radius: 0;
+  appearance: none;
+  width: 24px;
+  height: 64px;
+  background: transparent;
   outline: none;
-  transform: rotate(180deg); /* small = bottom, large = top */
-  margin-left: 0px;
-  margin-top: 2px;
+  writing-mode: bt-lr;
+  -webkit-writing-mode: vertical-rl;
+  /* No rotation needed since we want top=max, bottom=min naturally */
+  position: relative;
+  z-index: 10;
 }
 
-input[type="range"]::-webkit-slider-thumb {
+.brush-slider-triangle::-webkit-slider-track {
   -webkit-appearance: none;
-  height: 14px;
-  width: 14px;
-  background: black;
-  border-radius: 50%;
-  cursor: pointer;
-  margin-top: -4px;
-  border: 1px solid white;
+  width: 64px;
+  height: 4px;
+  background: transparent;
+  border: none;
 }
 
-input[type="range"]::-moz-range-thumb,
-input[type="range"]::-ms-thumb {
-  height: 14px;
-  width: 14px;
-  background: black;
+.brush-slider-triangle::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #000;
   border-radius: 50%;
-  border: 1px solid white;
   cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  position: relative;
+  z-index: 20;
+}
+
+.brush-slider-triangle::-moz-range-track {
+  width: 64px;
+  height: 4px;
+  background: transparent;
+  border: none;
+}
+
+.brush-slider-triangle::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: #000;
+  border-radius: 50%;
+  border: 2px solid white;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }

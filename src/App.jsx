@@ -5,6 +5,7 @@ import {
   Pencil,
   Eraser,
   Undo2,
+  Redo2,
   Trash2,
   Save,
   X
@@ -28,10 +29,11 @@ export default function App() {
   const ctxRef = useRef(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [tool, setTool] = useState('pencil');
-  const [brushSize, setBrushSize] = useState(4);
+  const [brushSize, setBrushSize] = useState(1); // Start with smallest brush at bottom
   const [showModal, setShowModal] = useState(false);
   const [name, setName] = useState('');
   const [undoStack, setUndoStack] = useState([]);
+  const [redoStack, setRedoStack] = useState([]);
   const [isFullscreen, setIsFullscreen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   
@@ -96,16 +98,51 @@ export default function App() {
   }, [tool, brushSize]);
 
   const saveState = () => {
-  const canvas = canvasRef.current;
-  const ctx = ctxRef.current;
-  const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  setUndoStack((prev) => [...prev, snapshot]);
-};
+    const canvas = canvasRef.current;
+    const ctx = ctxRef.current;
+    const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    setUndoStack((prev) => [...prev, snapshot]);
+    // Clear redo stack when new action is taken
+    setRedoStack([]);
+  };
+
+  const handleUndo = () => {
+    if (undoStack.length > 0) {
+      const canvas = canvasRef.current;
+      const ctx = ctxRef.current;
+      
+      // Save current state to redo stack
+      const currentState = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      setRedoStack((prev) => [...prev, currentState]);
+      
+      // Restore previous state
+      const lastState = undoStack[undoStack.length - 1];
+      ctx.putImageData(lastState, 0, 0);
+      setUndoStack((prev) => prev.slice(0, -1));
+    }
+  };
+
+  const handleRedo = () => {
+    if (redoStack.length > 0) {
+      const canvas = canvasRef.current;
+      const ctx = ctxRef.current;
+      
+      // Save current state to undo stack
+      const currentState = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      setUndoStack((prev) => [...prev, currentState]);
+      
+      // Restore redo state
+      const redoState = redoStack[redoStack.length - 1];
+      ctx.putImageData(redoState, 0, 0);
+      setRedoStack((prev) => prev.slice(0, -1));
+    }
+  };
 
   const clearCanvas = () => {
     const canvas = canvasRef.current;
     ctxRef.current.clearRect(0, 0, canvas.width, canvas.height);
     setUndoStack([]);
+    setRedoStack([]);
   };
 
   const handleSave = async () => {
@@ -180,21 +217,28 @@ export default function App() {
             <div className="fixed top-1/2 right-4 -translate-y-1/2 transform z-40">
         <div className="flex flex-col items-center border border-black rounded overflow-hidden">
 
-          {/* Brush Size */}
-          <div className="w-16 flex justify-center items-center p-2 border-b border-black">
-            <input
-              type="range"
-              min="1"
-              max="20"
-              value={brushSize}
-              onChange={(e) => setBrushSize(parseInt(e.target.value))}
-              className="h-32 w-2 appearance-none bg-black rounded-full [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:h-1 [&::-webkit-slider-thumb]:w-1 [&::-webkit-slider-thumb]:bg-white [&::-webkit-slider-thumb]:rounded-full mt-[-2px]"
-              style={{
-                writingMode: 'bt-lr',
-                WebkitAppearance: 'slider-vertical',
-                accentColor: 'black'
-              }}
-            />
+          {/* Brush Size with Triangle Wedge */}
+          <div className="w-16 h-20 flex justify-center items-center p-2 border-b border-black bg-white">
+            <div className="relative h-16 w-6 flex justify-center">
+              {/* Flipped Triangle background - wide at top (big brush), tip at bottom (small brush) */}
+              <div 
+                className="absolute inset-0 pointer-events-none"
+                style={{
+                  background: 'linear-gradient(to bottom, transparent 0%, transparent 5%, #e5e7eb 5%, #e5e7eb 95%, transparent 95%)',
+                  clipPath: 'polygon(15% 5%, 85% 5%, 50% 95%)'
+                }}
+              />
+              
+              <input
+                type="range"
+                min="1"
+                max="20"
+                value={21 - brushSize} // Reverse the value so bottom=small, top=big
+                onChange={(e) => setBrushSize(21 - parseInt(e.target.value))} // Reverse it back
+                className="brush-slider-triangle"
+                orient="vertical"
+              />
+            </div>
           </div>
 
           {/* Pencil */}
@@ -217,19 +261,25 @@ export default function App() {
 
           {/* Undo */}
           <button
-  type="button"
-  className="w-16 h-12 flex items-center justify-center border-b border-black bg-white text-black active:bg-black active:text-white transition-colors duration-150"
-  title="Undo"
-  onClick={() => {
-    if (undoStack.length > 0) {
-      const lastImage = undoStack[undoStack.length - 1];
-      ctxRef.current.putImageData(lastImage, 0, 0);
-      setUndoStack((prev) => prev.slice(0, -1));
-    }
-  }}
->
-  <Undo2 className="w-5 h-5" />
-</button>
+            type="button"
+            className="w-16 h-12 flex items-center justify-center border-b border-black bg-white text-black active:bg-black active:text-white transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Undo"
+            onClick={handleUndo}
+            disabled={undoStack.length === 0}
+          >
+            <Undo2 className="w-5 h-5" />
+          </button>
+
+          {/* Redo */}
+          <button
+            type="button"
+            className="w-16 h-12 flex items-center justify-center border-b border-black bg-white text-black active:bg-black active:text-white transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+            title="Redo"
+            onClick={handleRedo}
+            disabled={redoStack.length === 0}
+          >
+            <Redo2 className="w-5 h-5" />
+          </button>
 
           {/* Trash */}
           <button
