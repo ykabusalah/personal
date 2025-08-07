@@ -37,6 +37,11 @@ export default function App() {
   const [isFullscreen, setIsFullscreen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
   
+  // New state for drawing preservation
+  const [hasDrawingContent, setHasDrawingContent] = useState(false);
+  const [savedDrawingData, setSavedDrawingData] = useState(null);
+  const [showResizeMessage, setShowResizeMessage] = useState(false);
+  
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext('2d');
@@ -61,18 +66,60 @@ export default function App() {
       // If it's a real mobile device, block drawing
       if (isActualMobile) {
         setIsFullscreen(false);
+        setShowResizeMessage(false); // Don't show resize message for mobile
         return;
       }
 
       // For desktop devices, check window size requirements
       const minWidth = 800;
       const minHeight = 600;
-      setIsFullscreen(window.innerWidth >= minWidth && window.innerHeight >= minHeight);
+      const newIsFullscreen = window.innerWidth >= minWidth && window.innerHeight >= minHeight;
+      
+      // Handle drawing preservation on resize
+      if (hasDrawingContent) {
+        if (isFullscreen && !newIsFullscreen) {
+          // Going from large to small - save the drawing
+          console.log('💾 Saving drawing before resize');
+          saveDrawingForResize();
+          setShowResizeMessage(true);
+        } else if (!isFullscreen && newIsFullscreen && savedDrawingData) {
+          // Going from small back to large - restore the drawing
+          console.log('🔄 Restoring drawing after resize');
+          setTimeout(() => {
+            restoreDrawingAfterResize();
+            setShowResizeMessage(false);
+            setSavedDrawingData(null); // Clear saved data after successful restore
+          }, 200); // Increased delay for better reliability
+        }
+      }
+      
+      setIsFullscreen(newIsFullscreen);
     };
 
     const handleResize = () => {
+      // Store the previous drawing if it exists
+      const tempImageData = hasDrawingContent && ctxRef.current ? 
+        ctxRef.current.getImageData(0, 0, canvas.width, canvas.height) : null;
+      
+      // Update canvas size
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
+      
+      // Restore the drawing after resize if we had content
+      if (tempImageData && hasDrawingContent) {
+        // Create a temporary canvas to hold the old drawing
+        const tempCanvas = document.createElement('canvas');
+        const tempCtx = tempCanvas.getContext('2d');
+        tempCanvas.width = tempImageData.width;
+        tempCanvas.height = tempImageData.height;
+        tempCtx.putImageData(tempImageData, 0, 0);
+        
+        // Draw the old content back scaled to new size
+        ctxRef.current.drawImage(tempCanvas, 0, 0, tempCanvas.width, tempCanvas.height, 
+                                  0, 0, canvas.width, canvas.height);
+      }
+      
+      // Now check screen size for fullscreen status
       checkScreenSize();
     };
 
@@ -86,7 +133,7 @@ export default function App() {
       window.removeEventListener('resize', handleResize);
       window.removeEventListener('pointerup', () => setIsDrawing(false));
     };
-  }, []);
+  }, [isFullscreen, hasDrawingContent, savedDrawingData]);
 
   useEffect(() => {
     if (ctxRef.current) {
@@ -97,6 +144,52 @@ export default function App() {
     }
   }, [tool, brushSize]);
 
+  // Save drawing data before resize
+  const saveDrawingForResize = () => {
+    if (canvasRef.current && ctxRef.current) {
+      const canvas = canvasRef.current;
+      const ctx = ctxRef.current;
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      setSavedDrawingData({
+        imageData,
+        width: canvas.width,
+        height: canvas.height,
+        undoStack: [...undoStack],
+        redoStack: [...redoStack]
+      });
+    }
+  };
+
+  // Restore drawing data after resize
+  const restoreDrawingAfterResize = () => {
+    if (canvasRef.current && ctxRef.current && savedDrawingData) {
+      const canvas = canvasRef.current;
+      const ctx = ctxRef.current;
+      
+      // Create a temporary canvas to scale the saved drawing
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+      tempCanvas.width = savedDrawingData.width;
+      tempCanvas.height = savedDrawingData.height;
+      
+      // Put the saved image on temp canvas
+      tempCtx.putImageData(savedDrawingData.imageData, 0, 0);
+      
+      // Clear main canvas and draw the scaled image
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(tempCanvas, 0, 0, tempCanvas.width, tempCanvas.height, 0, 0, canvas.width, canvas.height);
+      
+      // Restore undo/redo stacks
+      setUndoStack(savedDrawingData.undoStack);
+      setRedoStack(savedDrawingData.redoStack);
+      
+      // Ensure we still mark that we have content
+      setHasDrawingContent(true);
+      
+      console.log('✅ Drawing restored successfully');
+    }
+  };
+
   const saveState = () => {
     const canvas = canvasRef.current;
     const ctx = ctxRef.current;
@@ -104,6 +197,8 @@ export default function App() {
     setUndoStack((prev) => [...prev, snapshot]);
     // Clear redo stack when new action is taken
     setRedoStack([]);
+    // Mark that we have drawing content
+    setHasDrawingContent(true);
   };
 
   const handleUndo = () => {
@@ -143,6 +238,10 @@ export default function App() {
     ctxRef.current.clearRect(0, 0, canvas.width, canvas.height);
     setUndoStack([]);
     setRedoStack([]);
+    // Reset drawing content state
+    setHasDrawingContent(false);
+    setSavedDrawingData(null);
+    setShowResizeMessage(false);
   };
 
   const handleSave = async () => {
@@ -352,7 +451,26 @@ export default function App() {
         </div>
       )}
 
-      {!isFullscreen && (
+      {/* Resize message for drawings in progress */}
+      {showResizeMessage && hasDrawingContent && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+          <div className="bg-white p-8 rounded shadow w-[90%] max-w-lg text-black text-center">
+            <h2 className="text-2xl font-bold mb-4">🎨 Keep Drawing!</h2>
+            <p className="text-lg mb-4">
+              Your masterpiece is safely preserved!
+            </p>
+            <p className="text-sm text-gray-600 mb-6">
+              Go back to full-screen to finish your drawing.
+            </p>
+            <p className="text-xs text-gray-500">
+              Minimum size: 800px wide × 600px tall
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Original size blocking messages */}
+      {!isFullscreen && !showResizeMessage && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded shadow w-[90%] max-w-lg text-black text-center">
             {isMobile ? (
