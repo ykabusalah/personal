@@ -1,0 +1,409 @@
+# Super.so Configuration by: Yousef Abu-Salah 2025
+
+This file contains all the configuration needed to set up the Super.so website with random background drawings.
+
+## Global Settings
+
+### Global Head
+```html
+<script 
+  src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.7.8/lottie_svg.min.js" 
+  type="text/javascript">
+</script>
+<script 
+  src="https://api.minymon.com/minymon.js" 
+  defer
+  type="text/javascript">
+</script>
+```
+
+### Global Body (Chat Widget)
+```html
+<div style="position:relative;z-index:2147483647">
+  <minymon-body enableFeed="false" enableTalk="true" idsString="MWFkZmVkMjctYmM0Ny00ZjgyLWEwMGQtYjI2ODUyOWUzY2JkLkZqSmhHNHl0eHp6TE5NNmpkQ3VDVw==" infoTitle="Hi there!" theme="gray">
+    <minymon-question question="How do I draw on this website?" theme="gray">
+      <minymon-answer answer="Click the draw button below and have at it!" question="How do I draw on this website?" theme="gray">
+      </minymon-answer>
+    </minymon-question>
+    <minymon-question question="What are you up to nowadays?" theme="gray">
+      <minymon-answer answer="Recently finished exploring El Salvador and training to climb Everest Base Camp!" question="What are you up to nowadays?" theme="gray">
+      </minymon-answer>
+    </minymon-question>
+    <minymon-question question="What's the best way to contact you?" theme="gray">
+      <minymon-answer answer="ykabusalah@gmail.com" question="What's the best way to contact you?" theme="gray">
+      </minymon-answer>
+    </minymon-question>
+  </minymon-body>
+</div>
+```
+
+### Global CSS (Transparent Navbar)
+```css
+/* 1. Make the navbar itself transparent & remove its shadow/padding */
+.super-navbar {
+  background: transparent !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+}
+/* 2. Inside the navbar "content" area, hide every child that isn't the logo */
+.super-navbar__content > *:not(.super-navbar__logo) {
+  display: none !important;
+}
+/* 3. Also hide the viewport-wrapper (the right-hand menu/icons area) */
+.super-navbar__viewport-wrapper {
+  display: none !important;
+}
+```
+
+## Home Page Settings
+
+### Home Page Head
+```html
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+```
+
+### Home Page Body
+```html
+<!-- Simple home-only background drawing script with mobile email adjustment -->
+<script>
+(function() {
+  console.log('🏠 Simple drawing script loaded');
+
+  // Check if home page
+  function isHomePage() {
+    const path = location.pathname.replace(/\/$/, '');
+    const hash = location.hash;
+    const url = location.href;
+    
+    const isRootPath = path === '' || path === '/';
+    const hasNoHash = !hash || hash === '#';
+    const isNotAboutPage = !url.includes('about') && !url.includes('About') && !hash.includes('about');
+    
+    return isRootPath && hasNoHash && isNotAboutPage;
+  }
+
+  // Check if screen is large enough for drawings
+  function isScreenLargeEnough() {
+    const minWidth = 1024;
+    const minHeight = 768;
+    return window.innerWidth >= minWidth && window.innerHeight >= minHeight;
+  }
+
+  // Check if device is actually mobile OR half-view desktop
+  function isMobileOrHalfView() {
+    const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+    const isMobileUserAgent = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile/i.test(userAgent);
+    const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const isSmallScreen = window.innerWidth <= 768;
+    
+    // True mobile device
+    const isRealMobile = isMobileUserAgent && hasTouchScreen && isSmallScreen;
+    
+    // Any screen smaller than full desktop (even if it's desktop)
+    const isNotFullDesktop = window.innerWidth < 1024;
+    
+    // Half-view desktop: small screen but not a real mobile device
+    const isHalfViewDesktop = isNotFullDesktop && !isRealMobile;
+    
+    console.log('🔍 Screen detection:', {
+      width: window.innerWidth,
+      isMobileUserAgent,
+      hasTouchScreen,
+      isRealMobile,
+      isNotFullDesktop,
+      isHalfViewDesktop,
+      result: isRealMobile || isHalfViewDesktop
+    });
+    
+    return isRealMobile || isHalfViewDesktop;
+  }
+
+  if (!isHomePage()) {
+    console.log('⛔ Not on home page, exiting');
+    return;
+  }
+  console.log('✅ On home page, proceeding');
+
+  let backgroundElement = null;
+  let creditElement = null;
+  let messageElement = null;
+  let lastUrl = location.href;
+  let messageDismissed = false;
+
+  // Move email footer for mobile and half-view
+  function adjustEmailFooterForMobile() {
+    const emailFooter = document.getElementById('email-footer');
+    if (!emailFooter) return;
+    
+    if (isMobileOrHalfView()) {
+      console.log('📱 Mobile/Half-view detected - moving email to left corner');
+      emailFooter.style.textAlign = 'left';
+      emailFooter.style.padding = '10px';
+      emailFooter.style.bottom = '10px';
+      emailFooter.style.left = '10px';
+      emailFooter.style.right = 'auto';
+      emailFooter.style.background = 'rgba(0,0,0,0.6)';
+      emailFooter.style.borderRadius = '4px';
+      emailFooter.style.width = 'auto';
+      emailFooter.style.maxWidth = '250px';
+      
+      const p = emailFooter.querySelector('p');
+      if (p) {
+        p.style.color = 'white';
+        p.style.fontSize = '0.9rem';
+      }
+    } else {
+      console.log('🖥️ Full desktop - using center email position');
+      emailFooter.style.textAlign = 'center';
+      emailFooter.style.padding = '1rem';
+      emailFooter.style.bottom = '0';
+      emailFooter.style.left = '0';
+      emailFooter.style.right = '0';
+      emailFooter.style.background = 'transparent';
+      emailFooter.style.borderRadius = '';
+      emailFooter.style.width = '';
+      emailFooter.style.maxWidth = '';
+      
+      const p = emailFooter.querySelector('p');
+      if (p) {
+        p.style.color = '#6b7280';
+        p.style.fontSize = 'inherit';
+      }
+    }
+  }
+
+  // Create dismissible message for small screens
+  function createSmallScreenMessage() {
+    if (messageElement) return;
+    
+    messageElement = document.createElement('div');
+    messageElement.style.cssText = `
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0, 0, 0, 0.9);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      z-index: 10000;
+      max-width: 90%;
+      font-family: sans-serif;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    `;
+    
+    messageElement.innerHTML = `
+      <h3 style="margin: 0 0 10px 0; font-size: 1.2rem;">🎨 Better on Desktop</h3>
+      <p style="margin: 0 0 15px 0; line-height: 1.4;">
+        The background drawings show best on fullscreen desktop.<br>
+        Visit on a larger screen for the full experience!
+      </p>
+      <button id="dismiss-message" style="
+        background: white;
+        color: black;
+        border: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 0.9rem;
+      ">Got it</button>
+    `;
+    
+    document.body.appendChild(messageElement);
+    
+    document.getElementById('dismiss-message').addEventListener('click', function() {
+      messageElement.remove();
+      messageElement = null;
+      messageDismissed = true;
+      console.log('📱 Message dismissed');
+    });
+    
+    console.log('📱 Small screen message shown');
+  }
+
+  // Simple function to load a new drawing
+  async function loadNewDrawing() {
+    console.log('🎨 Checking if should load drawing...');
+    
+    if (!isScreenLargeEnough()) {
+      console.log('📱 Screen too small for drawings');
+      if (!messageDismissed) {
+        createSmallScreenMessage();
+      }
+      return;
+    }
+    
+    console.log('🖥️ Screen large enough, loading drawing...');
+    
+    if (typeof supabase === 'undefined') {
+      console.log('⏳ Supabase not ready, retrying...');
+      setTimeout(loadNewDrawing, 200);
+      return;
+    }
+
+    try {
+      const client = supabase.createClient(
+        'https://gzdhidrwwwztbbyropqh.supabase.co',
+        'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd6ZGhpZHJ3d3d6dGJieXJvcHFoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTA3MjEyOTYsImV4cCI6MjA2NjI5NzI5Nn0.ZRX0_tXgqho-0i_mXZ2g44MD3r_ZuuZvdHIM9jJg-uI'
+      );
+
+      const { data: drawings, error } = await client
+        .from('drawings')
+        .select('image_url, name')
+        .eq('status', 'approved');
+        
+      if (error) throw error;
+      if (!drawings.length) return;
+
+      const { image_url, name } = drawings[Math.floor(Math.random() * drawings.length)];
+      console.log('🎯 Selected:', name);
+
+      if (backgroundElement) backgroundElement.remove();
+      if (creditElement) creditElement.remove();
+
+      backgroundElement = document.createElement('div');
+      backgroundElement.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100vw;
+        height: 100vh;
+        z-index: -999;
+        pointer-events: none;
+        overflow: hidden;
+      `;
+      
+      const img = new Image();
+      img.src = image_url;
+      img.style.cssText = 'width:100%;height:100%;object-fit:cover';
+      backgroundElement.appendChild(img);
+      document.body.insertBefore(backgroundElement, document.body.firstChild);
+
+      creditElement = document.createElement('div');
+      creditElement.style.cssText = `
+        position: fixed;
+        bottom: 10px;
+        left: 10px;
+        background: rgba(0,0,0,0.6);
+        color: white;
+        padding: 4px 8px;
+        border-radius: 4px;
+        pointer-events: none;
+        z-index: 1000;
+        font-size: 0.9rem;
+        font-family: sans-serif;
+      `;
+      creditElement.textContent = 'Art by: ' + name;
+      document.body.appendChild(creditElement);
+
+      console.log('✅ Drawing loaded successfully');
+
+    } catch (e) {
+      console.error('❌ Error loading drawing:', e);
+    }
+  }
+
+  function checkPage() {
+    if (location.href !== lastUrl) {
+      lastUrl = location.href;
+      console.log('🔄 URL changed to:', lastUrl);
+      
+      if (isHomePage()) {
+        console.log('🏠 On home - checking screen size and loading');
+        loadNewDrawing();
+      } else {
+        console.log('👋 Not on home - hiding background');
+        if (backgroundElement) backgroundElement.style.display = 'none';
+        if (creditElement) creditElement.style.display = 'none';
+        if (messageElement) messageElement.style.display = 'none';
+      }
+    }
+  }
+
+  function handleResize() {
+    if (!isHomePage()) return;
+    
+    adjustEmailFooterForMobile();
+    
+    if (isScreenLargeEnough()) {
+      console.log('🖥️ Screen is large enough for drawings');
+      
+      // Hide message if showing
+      if (messageElement) {
+        messageElement.style.display = 'none';
+      }
+      
+      // If we have background elements but they're hidden, show them
+      if (backgroundElement && creditElement) {
+        console.log('🔄 Showing existing background elements');
+        backgroundElement.style.display = 'block';
+        creditElement.style.display = 'block';
+      } else {
+        // No background elements exist, load a new drawing
+        console.log('🎨 No background exists - loading new drawing');
+        loadNewDrawing();
+      }
+    } else {
+      console.log('📱 Screen too small - hiding drawings');
+      // Screen became too small - hide drawing and show message
+      if (backgroundElement) backgroundElement.style.display = 'none';
+      if (creditElement) creditElement.style.display = 'none';
+      if (!messageDismissed) {
+        createSmallScreenMessage();
+      }
+    }
+  }
+
+  // Initialize
+  setTimeout(function() {
+    adjustEmailFooterForMobile();
+    loadNewDrawing();
+  }, 500);
+
+  setInterval(checkPage, 300);
+  window.addEventListener('resize', handleResize);
+
+})();
+</script>
+
+<!-- Email footer -->
+<div id="email-footer" style="
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  text-align: center;
+  padding: 1rem;
+  background: transparent;
+  z-index: 1000;
+">
+  <p style="
+    margin: 0;
+    font-family: inherit;
+    font-size: inherit;
+    color: #6b7280;
+  ">
+    ykabusalah@gmail.com
+  </p>
+</div>
+```
+
+## Features
+
+- ✅ Random background drawings on home page only
+- ✅ New drawing each time you visit home
+- ✅ Responsive design with screen size detection
+- ✅ Mobile-friendly message for small screens
+- ✅ Dynamic email positioning (center on desktop, left corner on mobile/half-view)
+- ✅ "Art by:" attribution for drawings
+- ✅ Secure RLS-based data access
+- ✅ Transparent navbar
+- ✅ Chat widget integration
+
+## Setup Instructions
+
+1. Copy Global settings to Super.so Global configuration
+2. Copy Home Page settings to Super.so Home page configuration
+3. Ensure Supabase RLS policies are set up correctly
+4. Test on different screen sizes
