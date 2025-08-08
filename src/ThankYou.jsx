@@ -25,8 +25,8 @@ export default function ThankYou() {
       event_label: 'thank_you_to_main_site'
     });
     
-    // Return to your main portfolio site
-    window.location.href = 'https://portfolio-drawing.super.site';
+    // Return to your main domain
+    window.location.href = 'https://ykabusalah.me';
   };
 
   return (
