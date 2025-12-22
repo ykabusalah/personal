@@ -26,6 +26,44 @@ const trackEvent = (eventName, parameters = {}) => {
   }
 };
 
+// Improved device detection function
+const detectDeviceType = () => {
+  const userAgent = navigator.userAgent || navigator.vendor || window.opera;
+  
+  // Check if it's definitely a desktop OS first (and not Android pretending)
+  const isDesktopOS = /Windows NT|Macintosh|Mac OS X|Linux x86_64|Linux i686|CrOS/i.test(userAgent) 
+                      && !/Android/i.test(userAgent);
+  
+  // Check for mobile phones specifically
+  const isMobilePhone = /Android.*Mobile|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+  
+  // iPad detection (iPadOS 13+ sends Mac user agent, so check for touch + Mac combo)
+  const isIPad = /iPad/i.test(userAgent) || 
+                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  
+  // Android tablets (Android without "Mobile" keyword)
+  const isAndroidTablet = /Android/i.test(userAgent) && !/Mobile/i.test(userAgent);
+  
+  // Final determination: it's mobile if it's a phone or tablet, but NOT a desktop OS
+  const isMobile = !isDesktopOS && (isMobilePhone || isIPad || isAndroidTablet);
+  
+  // Also catch iPads even though they pretend to be desktop
+  const isMobileOrTablet = isMobile || isIPad;
+  
+  console.log('🔍 Device Detection:', {
+    userAgent: userAgent.substring(0, 100) + '...',
+    platform: navigator.platform,
+    maxTouchPoints: navigator.maxTouchPoints,
+    isDesktopOS,
+    isMobilePhone,
+    isIPad,
+    isAndroidTablet,
+    finalResult: isMobileOrTablet ? 'MOBILE/TABLET' : 'DESKTOP'
+  });
+  
+  return isMobileOrTablet;
+};
+
 export default function App() {
 
   const [showExitPrompt, setShowExitPrompt] = useState(false);
@@ -81,7 +119,7 @@ export default function App() {
         event_label: 'drawing_canvas_loaded',
         screen_width: window.innerWidth,
         screen_height: window.innerHeight,
-        device_type: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop'
+        device_type: detectDeviceType() ? 'mobile' : 'desktop'
       });
       setSessionTracked(true);
     }
@@ -94,10 +132,8 @@ export default function App() {
     ctxRef.current = ctx;
 
     const checkScreenSize = () => {
-      const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-      const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini|Mobile|mobile|CriOS/i.test(userAgent);
-      const hasTouchScreen = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-      const isActualMobile = isMobileDevice && hasTouchScreen;
+      // Use the improved device detection
+      const isActualMobile = detectDeviceType();
       
       setIsMobile(isActualMobile);
 
@@ -579,7 +615,7 @@ export default function App() {
               </>
             ) : (
               <>
-                <h2 className="text-2xl font-bold mb-4">📏 Window Too Small</h2>
+                <h2 className="text-2xl font-bold mb-4">🔍 Window Too Small</h2>
                 <p className="text-lg mb-4">
                   Please make your browser window fullscreen or larger to draw properly.
                 </p>
