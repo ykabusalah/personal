@@ -30,30 +30,28 @@ const trackEvent = (eventName, parameters = {}) => {
 const detectDeviceType = () => {
   const userAgent = navigator.userAgent || navigator.vendor || window.opera;
   
-  // Check if it's definitely a desktop OS first (and not Android pretending)
   const isDesktopOS = /Windows NT|Macintosh|Mac OS X|Linux x86_64|Linux i686|CrOS/i.test(userAgent) 
                       && !/Android/i.test(userAgent);
   
-  // Check for mobile phones specifically
   const isMobilePhone = /Android.*Mobile|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
   
-  // iPad detection (iPadOS 13+ sends Mac user agent, so check for touch + Mac combo)
+  // iPad detection - improved to not flag Macs with trackpads
+  // Macs have fine pointers (mouse/trackpad), iPads have coarse pointers (touch)
   const isIPad = /iPad/i.test(userAgent) || 
-                 (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+               (navigator.platform === 'MacIntel' && 
+                navigator.maxTouchPoints > 1 && 
+                !window.matchMedia('(pointer: fine)').matches);
   
-  // Android tablets (Android without "Mobile" keyword)
   const isAndroidTablet = /Android/i.test(userAgent) && !/Mobile/i.test(userAgent);
   
-  // Final determination: it's mobile if it's a phone or tablet, but NOT a desktop OS
   const isMobile = !isDesktopOS && (isMobilePhone || isIPad || isAndroidTablet);
-  
-  // Also catch iPads even though they pretend to be desktop
   const isMobileOrTablet = isMobile || isIPad;
   
   console.log('🔍 Device Detection:', {
     userAgent: userAgent.substring(0, 100) + '...',
     platform: navigator.platform,
     maxTouchPoints: navigator.maxTouchPoints,
+    pointerFine: window.matchMedia('(pointer: fine)').matches,
     isDesktopOS,
     isMobilePhone,
     isIPad,
