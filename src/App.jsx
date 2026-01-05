@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import confetti from 'canvas-confetti';
 import {
@@ -35,8 +35,6 @@ const detectDeviceType = () => {
   
   const isMobilePhone = /Android.*Mobile|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
   
-  // iPad detection - improved to not flag Macs with trackpads
-  // Macs have fine pointers (mouse/trackpad), iPads have coarse pointers (touch)
   const isIPad = /iPad/i.test(userAgent) || 
                (navigator.platform === 'MacIntel' && 
                 navigator.maxTouchPoints > 1 && 
@@ -47,24 +45,117 @@ const detectDeviceType = () => {
   const isMobile = !isDesktopOS && (isMobilePhone || isIPad || isAndroidTablet);
   const isMobileOrTablet = isMobile || isIPad;
   
-  console.log('🔍 Device Detection:', {
-    userAgent: userAgent.substring(0, 100) + '...',
-    platform: navigator.platform,
-    maxTouchPoints: navigator.maxTouchPoints,
-    pointerFine: window.matchMedia('(pointer: fine)').matches,
-    isDesktopOS,
-    isMobilePhone,
-    isIPad,
-    isAndroidTablet,
-    finalResult: isMobileOrTablet ? 'MOBILE/TABLET' : 'DESKTOP'
-  });
-  
   return isMobileOrTablet;
 };
 
 export default function App() {
-
   const [showExitPrompt, setShowExitPrompt] = useState(false);
+  const canvasRef = useRef(null);
+  const ctxRef = useRef(null);
+  const [isDrawing, setIsDrawing] = useState(false);
+  const [tool, setTool] = useState('pencil');
+  const [brushSize, setBrushSize] = useState(1);
+  const [showModal, setShowModal] = useState(false);
+  const [name, setName] = useState('');
+  const [undoStack, setUndoStack] = useState([]);
+  const [redoStack, setRedoStack] = useState([]);
+  const [isFullscreen, setIsFullscreen] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
+  const [hasDrawingContent, setHasDrawingContent] = useState(false);
+  const [savedDrawingData, setSavedDrawingData] = useState(null);
+  const [showResizeMessage, setShowResizeMessage] = useState(false);
+  const [sessionTracked, setSessionTracked] = useState(false);
+
+  // Memoized handlers to avoid stale closures in keyboard shortcuts
+  const handleToolChange = useCallback((newTool) => {
+    trackEvent('tool_changed', {
+      event_category: 'drawing_interaction',
+      event_label: `tool_${newTool}`,
+      previous_tool: tool
+    });
+    setTool(newTool);
+  }, [tool]);
+
+  const handleBrushSizeChange = useCallback((newSize) => {
+    trackEvent('brush_size_changed', {
+      event_category: 'drawing_interaction',
+      event_label: `size_${newSize}`,
+      brush_size: newSize
+    });
+    setBrushSize(newSize);
+  }, []);
+
+  const handleUndo = useCallback(() => {
+    setUndoStack((prevUndo) => {
+      if (prevUndo.length === 0) return prevUndo;
+      
+      trackEvent('undo_used', {
+        event_category: 'drawing_interaction',
+        event_label: 'canvas_undo',
+        undo_stack_depth: prevUndo.length
+      });
+      
+      const canvas = canvasRef.current;
+      const ctx = ctxRef.current;
+      
+      const currentState = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      setRedoStack((prev) => [...prev, currentState]);
+      
+      const lastState = prevUndo[prevUndo.length - 1];
+      ctx.putImageData(lastState, 0, 0);
+      
+      return prevUndo.slice(0, -1);
+    });
+  }, []);
+
+  const handleRedo = useCallback(() => {
+    setRedoStack((prevRedo) => {
+      if (prevRedo.length === 0) return prevRedo;
+      
+      trackEvent('redo_used', {
+        event_category: 'drawing_interaction',
+        event_label: 'canvas_redo',
+        redo_stack_depth: prevRedo.length
+      });
+      
+      const canvas = canvasRef.current;
+      const ctx = ctxRef.current;
+      
+      const currentState = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      setUndoStack((prev) => [...prev, currentState]);
+      
+      const redoState = prevRedo[prevRedo.length - 1];
+      ctx.putImageData(redoState, 0, 0);
+      
+      return prevRedo.slice(0, -1);
+    });
+  }, []);
+
+  const clearCanvas = useCallback(() => {
+    trackEvent('canvas_cleared', {
+      event_category: 'drawing_interaction',
+      event_label: 'clear_all_drawing',
+      had_content: hasDrawingContent
+    });
+    
+    const canvas = canvasRef.current;
+    ctxRef.current.clearRect(0, 0, canvas.width, canvas.height);
+    setUndoStack([]);
+    setRedoStack([]);
+    setHasDrawingContent(false);
+    setSavedDrawingData(null);
+    setShowResizeMessage(false);
+  }, [hasDrawingContent]);
+
+  const handleSaveClick = useCallback(() => {
+    trackEvent('save_button_clicked', {
+      event_category: 'conversion',
+      event_label: 'save_drawing_attempt',
+      has_content: hasDrawingContent
+    });
+    setShowModal(true);
+  }, [hasDrawingContent]);
+
   const handleExitClick = () => {
     trackEvent('exit_button_click', {
       event_category: 'navigation',
@@ -89,28 +180,89 @@ export default function App() {
     setShowExitPrompt(false);
   };
 
-  const canvasRef = useRef(null);
-  const ctxRef = useRef(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [tool, setTool] = useState('pencil');
-  const [brushSize, setBrushSize] = useState(1);
-  const [showModal, setShowModal] = useState(false);
-  const [name, setName] = useState('');
-  const [undoStack, setUndoStack] = useState([]);
-  const [redoStack, setRedoStack] = useState([]);
-  const [isFullscreen, setIsFullscreen] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
-  
-  // New state for drawing preservation
-  const [hasDrawingContent, setHasDrawingContent] = useState(false);
-  const [savedDrawingData, setSavedDrawingData] = useState(null);
-  const [showResizeMessage, setShowResizeMessage] = useState(false);
-  
-  // Track unique session
-  const [sessionTracked, setSessionTracked] = useState(false);
-  
+  // Keyboard shortcuts
   useEffect(() => {
-    // Track drawing app visit on component mount
+    const handleKeyDown = (e) => {
+      // Don't trigger shortcuts when typing in input fields
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      
+      // Handle Escape for modals first
+      if (e.key === 'Escape') {
+        if (showModal) {
+          setShowModal(false);
+          return;
+        }
+        if (showExitPrompt) {
+          setShowExitPrompt(false);
+          return;
+        }
+      }
+      
+      // Don't trigger other shortcuts when modals are open
+      if (showModal || showExitPrompt) return;
+
+      const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
+      const modifier = isMac ? e.metaKey : e.ctrlKey;
+
+      switch (e.key.toLowerCase()) {
+        case 'p':
+          if (!modifier) {
+            e.preventDefault();
+            handleToolChange('pencil');
+          }
+          break;
+        case 'e':
+          if (!modifier) {
+            e.preventDefault();
+            handleToolChange('eraser');
+          }
+          break;
+        case 'z':
+          if (modifier && e.shiftKey) {
+            e.preventDefault();
+            handleRedo();
+          } else if (modifier) {
+            e.preventDefault();
+            handleUndo();
+          }
+          break;
+        case 'y':
+          if (modifier) {
+            e.preventDefault();
+            handleRedo();
+          }
+          break;
+        case '[':
+          e.preventDefault();
+          setBrushSize(prev => Math.max(1, prev - 1));
+          break;
+        case ']':
+          e.preventDefault();
+          setBrushSize(prev => Math.min(20, prev + 1));
+          break;
+        case 's':
+          if (modifier) {
+            e.preventDefault();
+            handleSaveClick();
+          }
+          break;
+        case 'delete':
+        case 'backspace':
+          if (!modifier && !e.shiftKey) {
+            e.preventDefault();
+            clearCanvas();
+          }
+          break;
+        default:
+          break;
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showModal, showExitPrompt, handleToolChange, handleUndo, handleRedo, handleSaveClick, clearCanvas]);
+
+  useEffect(() => {
     if (!sessionTracked) {
       trackEvent('drawing_app_visit', {
         event_category: 'engagement',
@@ -130,9 +282,7 @@ export default function App() {
     ctxRef.current = ctx;
 
     const checkScreenSize = () => {
-      // Use the improved device detection
       const isActualMobile = detectDeviceType();
-      
       setIsMobile(isActualMobile);
 
       if (isActualMobile) {
@@ -147,11 +297,9 @@ export default function App() {
       
       if (hasDrawingContent) {
         if (isFullscreen && !newIsFullscreen) {
-          console.log('💾 Saving drawing before resize');
           saveDrawingForResize();
           setShowResizeMessage(true);
         } else if (!isFullscreen && newIsFullscreen && savedDrawingData) {
-          console.log('🔄 Restoring drawing after resize');
           setTimeout(() => {
             restoreDrawingAfterResize();
             setShowResizeMessage(false);
@@ -237,8 +385,6 @@ export default function App() {
       setUndoStack(savedDrawingData.undoStack);
       setRedoStack(savedDrawingData.redoStack);
       setHasDrawingContent(true);
-      
-      console.log('✅ Drawing restored successfully');
     }
   };
 
@@ -249,80 +395,6 @@ export default function App() {
     setUndoStack((prev) => [...prev, snapshot]);
     setRedoStack([]);
     setHasDrawingContent(true);
-  };
-
-  const handleToolChange = (newTool) => {
-    trackEvent('tool_changed', {
-      event_category: 'drawing_interaction',
-      event_label: `tool_${newTool}`,
-      previous_tool: tool
-    });
-    setTool(newTool);
-  };
-
-  const handleBrushSizeChange = (newSize) => {
-    trackEvent('brush_size_changed', {
-      event_category: 'drawing_interaction',
-      event_label: `size_${newSize}`,
-      brush_size: newSize
-    });
-    setBrushSize(newSize);
-  };
-
-  const handleUndo = () => {
-    if (undoStack.length > 0) {
-      trackEvent('undo_used', {
-        event_category: 'drawing_interaction',
-        event_label: 'canvas_undo',
-        undo_stack_depth: undoStack.length
-      });
-      
-      const canvas = canvasRef.current;
-      const ctx = ctxRef.current;
-      
-      const currentState = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      setRedoStack((prev) => [...prev, currentState]);
-      
-      const lastState = undoStack[undoStack.length - 1];
-      ctx.putImageData(lastState, 0, 0);
-      setUndoStack((prev) => prev.slice(0, -1));
-    }
-  };
-
-  const handleRedo = () => {
-    if (redoStack.length > 0) {
-      trackEvent('redo_used', {
-        event_category: 'drawing_interaction',
-        event_label: 'canvas_redo',
-        redo_stack_depth: redoStack.length
-      });
-      
-      const canvas = canvasRef.current;
-      const ctx = ctxRef.current;
-      
-      const currentState = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      setUndoStack((prev) => [...prev, currentState]);
-      
-      const redoState = redoStack[redoStack.length - 1];
-      ctx.putImageData(redoState, 0, 0);
-      setRedoStack((prev) => prev.slice(0, -1));
-    }
-  };
-
-  const clearCanvas = () => {
-    trackEvent('canvas_cleared', {
-      event_category: 'drawing_interaction',
-      event_label: 'clear_all_drawing',
-      had_content: hasDrawingContent
-    });
-    
-    const canvas = canvasRef.current;
-    ctxRef.current.clearRect(0, 0, canvas.width, canvas.height);
-    setUndoStack([]);
-    setRedoStack([]);
-    setHasDrawingContent(false);
-    setSavedDrawingData(null);
-    setShowResizeMessage(false);
   };
 
   const handleDrawingStart = (e) => {
@@ -342,15 +414,6 @@ export default function App() {
     ctxRef.current.beginPath();
     ctxRef.current.moveTo(x, y);
     setIsDrawing(true);
-  };
-
-  const handleSaveClick = () => {
-    trackEvent('save_button_clicked', {
-      event_category: 'conversion',
-      event_label: 'save_drawing_attempt',
-      has_content: hasDrawingContent
-    });
-    setShowModal(true);
   };
 
   const handleSave = async () => {
@@ -441,7 +504,7 @@ export default function App() {
         <div className="flex flex-col items-center border border-black rounded overflow-hidden">
 
           {/* Brush Size with Triangle Wedge */}
-          <div className="w-16 h-20 flex justify-center items-center p-2 border-b border-black bg-white">
+          <div className="w-16 h-20 flex justify-center items-center p-2 border-b border-black bg-white" title="Brush Size ( [ / ] )">
             <div className="relative h-16 w-6 flex justify-center">
               <div 
                 className="absolute inset-0 pointer-events-none"
@@ -466,7 +529,7 @@ export default function App() {
           {/* Pencil */}
           <button
             className={`w-16 h-12 flex items-center justify-center border-b border-black ${tool === 'pencil' ? 'bg-black text-white' : ''}`}
-            title="Pencil"
+            title="Pencil (P)"
             onClick={() => handleToolChange('pencil')}
           >
             <Pencil className="w-5 h-5" />
@@ -475,7 +538,7 @@ export default function App() {
           {/* Eraser */}
           <button
             className={`w-16 h-12 flex items-center justify-center border-b border-black ${tool === 'eraser' ? 'bg-black text-white' : ''}`}
-            title="Eraser"
+            title="Eraser (E)"
             onClick={() => handleToolChange('eraser')}
           >
             <Eraser className="w-5 h-5" />
@@ -485,7 +548,7 @@ export default function App() {
           <button
             type="button"
             className="w-16 h-12 flex items-center justify-center border-b border-black bg-white text-black active:bg-black active:text-white transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Undo"
+            title="Undo (Ctrl+Z)"
             onClick={handleUndo}
             disabled={undoStack.length === 0}
           >
@@ -496,7 +559,7 @@ export default function App() {
           <button
             type="button"
             className="w-16 h-12 flex items-center justify-center border-b border-black bg-white text-black active:bg-black active:text-white transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Redo"
+            title="Redo (Ctrl+Shift+Z)"
             onClick={handleRedo}
             disabled={redoStack.length === 0}
           >
@@ -507,7 +570,7 @@ export default function App() {
           <button
             type="button"
             className="w-16 h-12 flex items-center justify-center border-b border-black bg-white text-black active:bg-black active:text-white transition-colors duration-150"
-            title="Clear"
+            title="Clear (Delete)"
             onClick={clearCanvas}
           >
             <Trash2 className="w-5 h-5" />
@@ -517,7 +580,7 @@ export default function App() {
           <button
             type="button"
             className="w-16 h-12 flex items-center justify-center border-b border-black bg-white text-black active:bg-black active:text-white transition-colors duration-150"
-            title="Save"
+            title="Save (Ctrl+S)"
             onClick={handleSaveClick}
           >
             <Save className="w-5 h-5" />
@@ -527,7 +590,7 @@ export default function App() {
           <button
             type="button"
             className="w-16 h-12 flex items-center justify-center bg-white text-black active:bg-black active:text-white transition-colors duration-150"
-            title="Exit"
+            title="Exit (Esc to cancel)"
             onClick={handleExitClick}
           >
             <X className="w-5 h-5" />
@@ -573,7 +636,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Resize message for drawings in progress */}
       {showResizeMessage && hasDrawingContent && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded shadow w-[90%] max-w-lg text-black text-center">
@@ -591,7 +653,6 @@ export default function App() {
         </div>
       )}
 
-      {/* Original size blocking messages */}
       {!isFullscreen && !showResizeMessage && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded shadow w-[90%] max-w-lg text-black text-center">
@@ -628,6 +689,6 @@ export default function App() {
           </div>
         </div>
       )}
-</div>
+    </div>
   );
 }
