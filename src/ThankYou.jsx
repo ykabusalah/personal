@@ -1,31 +1,12 @@
 import { useEffect } from 'react';
-
-// Google Analytics tracking function
-const trackEvent = (eventName, parameters = {}) => {
-  if (typeof gtag !== 'undefined') {
-    gtag('event', eventName, parameters);
-    console.log('📊 GA Event:', eventName, parameters);
-  } else {
-    console.log('📊 GA not loaded, would track:', eventName, parameters);
-  }
-};
+import { trackPageView } from './analytics';
 
 export default function ThankYou() {
   useEffect(() => {
-    // Track successful submission completion
-    trackEvent('thank_you_page_viewed', {
-      event_category: 'conversion',
-      event_label: 'drawing_submission_complete'
-    });
+    trackPageView('thank_you');
   }, []);
 
   const handleReturnHome = () => {
-    trackEvent('return_to_home_click', {
-      event_category: 'navigation',
-      event_label: 'thank_you_to_main_site'
-    });
-    
-    // Return to your main domain
     window.location.href = 'https://ykabusalah.me';
   };
 
