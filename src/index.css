@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 body {
-  @apply bg-green-300;
+  @apply bg-white;
 }
 
 /* Triangle brush size slider */
