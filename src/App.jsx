@@ -10,23 +10,26 @@ import {
   Save,
   X
 } from 'lucide-react';
+import {
+  trackPageView,
+  trackDrawingStart,
+  trackToolChange,
+  trackBrushSize,
+  trackUndo,
+  trackRedo,
+  trackClear,
+  trackSubmitStart,
+  trackSubmitSuccess,
+  trackSubmitError,
+  trackExit,
+  trackModalClose
+} from './analytics';
 
 const supabase = createClient(
   process.env.REACT_APP_SUPABASE_URL,
   process.env.REACT_APP_SUPABASE_ANON_KEY
 );
 
-// Google Analytics tracking function
-const trackEvent = (eventName, parameters = {}) => {
-  if (typeof gtag !== 'undefined') {
-    gtag('event', eventName, parameters);
-    console.log('📊 GA Event:', eventName, parameters);
-  } else {
-    console.log('📊 GA not loaded, would track:', eventName, parameters);
-  }
-};
-
-// Improved device detection function
 const detectDeviceType = () => {
   const userAgent = navigator.userAgent || navigator.vendor || window.opera;
   
@@ -66,22 +69,13 @@ export default function App() {
   const [showResizeMessage, setShowResizeMessage] = useState(false);
   const [sessionTracked, setSessionTracked] = useState(false);
 
-  // Memoized handlers to avoid stale closures in keyboard shortcuts
   const handleToolChange = useCallback((newTool) => {
-    trackEvent('tool_changed', {
-      event_category: 'drawing_interaction',
-      event_label: `tool_${newTool}`,
-      previous_tool: tool
-    });
+    trackToolChange(newTool, tool);
     setTool(newTool);
   }, [tool]);
 
   const handleBrushSizeChange = useCallback((newSize) => {
-    trackEvent('brush_size_changed', {
-      event_category: 'drawing_interaction',
-      event_label: `size_${newSize}`,
-      brush_size: newSize
-    });
+    trackBrushSize(newSize);
     setBrushSize(newSize);
   }, []);
 
@@ -89,11 +83,7 @@ export default function App() {
     setUndoStack((prevUndo) => {
       if (prevUndo.length === 0) return prevUndo;
       
-      trackEvent('undo_used', {
-        event_category: 'drawing_interaction',
-        event_label: 'canvas_undo',
-        undo_stack_depth: prevUndo.length
-      });
+      trackUndo();
       
       const canvas = canvasRef.current;
       const ctx = ctxRef.current;
@@ -112,11 +102,7 @@ export default function App() {
     setRedoStack((prevRedo) => {
       if (prevRedo.length === 0) return prevRedo;
       
-      trackEvent('redo_used', {
-        event_category: 'drawing_interaction',
-        event_label: 'canvas_redo',
-        redo_stack_depth: prevRedo.length
-      });
+      trackRedo();
       
       const canvas = canvasRef.current;
       const ctx = ctxRef.current;
@@ -132,11 +118,7 @@ export default function App() {
   }, []);
 
   const clearCanvas = useCallback(() => {
-    trackEvent('canvas_cleared', {
-      event_category: 'drawing_interaction',
-      event_label: 'clear_all_drawing',
-      had_content: hasDrawingContent
-    });
+    trackClear();
     
     const canvas = canvasRef.current;
     ctxRef.current.clearRect(0, 0, canvas.width, canvas.height);
@@ -145,50 +127,35 @@ export default function App() {
     setHasDrawingContent(false);
     setSavedDrawingData(null);
     setShowResizeMessage(false);
-  }, [hasDrawingContent]);
+  }, []);
 
   const handleSaveClick = useCallback(() => {
-    trackEvent('save_button_clicked', {
-      event_category: 'conversion',
-      event_label: 'save_drawing_attempt',
-      has_content: hasDrawingContent
-    });
+    trackSubmitStart();
     setShowModal(true);
-  }, [hasDrawingContent]);
+  }, []);
 
   const handleExitClick = () => {
-    trackEvent('exit_button_click', {
-      event_category: 'navigation',
-      event_label: 'drawing_app_exit_attempt'
-    });
     setShowExitPrompt(true);
   };
   
   const confirmExit = () => {
-    trackEvent('exit_confirmed', {
-      event_category: 'navigation',
-      event_label: 'drawing_app_exit_confirmed'
-    });
+    trackExit(true);
     window.location.href = "https://filmishmish.substack.com/";
   };
   
   const cancelExit = () => {
-    trackEvent('exit_cancelled', {
-      event_category: 'navigation', 
-      event_label: 'drawing_app_exit_cancelled'
-    });
+    trackExit(false);
     setShowExitPrompt(false);
   };
 
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e) => {
-      // Don't trigger shortcuts when typing in input fields
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       
-      // Handle Escape for modals first
       if (e.key === 'Escape') {
         if (showModal) {
+          trackModalClose();
           setShowModal(false);
           return;
         }
@@ -198,7 +165,6 @@ export default function App() {
         }
       }
       
-      // Don't trigger other shortcuts when modals are open
       if (showModal || showExitPrompt) return;
 
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -264,13 +230,7 @@ export default function App() {
 
   useEffect(() => {
     if (!sessionTracked) {
-      trackEvent('drawing_app_visit', {
-        event_category: 'engagement',
-        event_label: 'drawing_canvas_loaded',
-        screen_width: window.innerWidth,
-        screen_height: window.innerHeight,
-        device_type: detectDeviceType() ? 'mobile' : 'desktop'
-      });
+      trackPageView('draw');
       setSessionTracked(true);
     }
 
@@ -325,8 +285,11 @@ export default function App() {
         tempCanvas.height = tempImageData.height;
         tempCtx.putImageData(tempImageData, 0, 0);
         
-        ctxRef.current.drawImage(tempCanvas, 0, 0, tempCanvas.width, tempCanvas.height, 
-                                  0, 0, canvas.width, canvas.height);
+        ctxRef.current.drawImage(
+          tempCanvas, 
+          0, 0, tempCanvas.width, tempCanvas.height, 
+          0, 0, canvas.width, canvas.height
+        );
       }
       
       checkScreenSize();
@@ -380,7 +343,11 @@ export default function App() {
       tempCtx.putImageData(savedDrawingData.imageData, 0, 0);
       
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(tempCanvas, 0, 0, tempCanvas.width, tempCanvas.height, 0, 0, canvas.width, canvas.height);
+      ctx.drawImage(
+        tempCanvas, 
+        0, 0, tempCanvas.width, tempCanvas.height, 
+        0, 0, canvas.width, canvas.height
+      );
       
       setUndoStack(savedDrawingData.undoStack);
       setRedoStack(savedDrawingData.redoStack);
@@ -400,12 +367,7 @@ export default function App() {
   const handleDrawingStart = (e) => {
     if (!isFullscreen) return;
     
-    trackEvent('drawing_started', {
-      event_category: 'drawing_interaction',
-      event_label: `start_${tool}`,
-      tool: tool,
-      brush_size: brushSize
-    });
+    trackDrawingStart(tool, brushSize);
     
     saveState();
     const rect = canvasRef.current.getBoundingClientRect();
@@ -417,12 +379,6 @@ export default function App() {
   };
 
   const handleSave = async () => {
-    trackEvent('drawing_submission_started', {
-      event_category: 'conversion',
-      event_label: 'submission_process_start',
-      name_provided: name.length > 0
-    });
-    
     const canvas = canvasRef.current;
     canvas.toBlob(async (blob) => {
       const filename = `drawing-${Date.now()}.png`;
@@ -436,11 +392,7 @@ export default function App() {
         });
 
       if (error) {
-        trackEvent('drawing_submission_failed', {
-          event_category: 'conversion',
-          event_label: 'upload_error',
-          error_message: error.message.substring(0, 50)
-        });
+        trackSubmitError(error.message);
         alert('Upload error: ' + error.message);
         return;
       }
@@ -455,22 +407,12 @@ export default function App() {
         .insert([{ name, image_url: urlData.publicUrl, status: 'pending' }]);
 
       if (insertError) {
-        trackEvent('drawing_submission_failed', {
-          event_category: 'conversion',
-          event_label: 'database_error',
-          error_message: insertError.message.substring(0, 50)
-        });
+        trackSubmitError(insertError.message);
         alert("Error saving metadata to Supabase.");
         return;
       }
 
-      trackEvent('drawing_submission_success', {
-        event_category: 'conversion',
-        event_label: 'drawing_submitted_successfully',
-        name_length: name.length,
-        canvas_width: canvas.width,
-        canvas_height: canvas.height
-      });
+      trackSubmitSuccess(name.length > 0);
 
       clearCanvas();
       setShowModal(false);
@@ -503,7 +445,6 @@ export default function App() {
       <div className="fixed top-1/2 right-4 -translate-y-1/2 transform z-40">
         <div className="flex flex-col items-center border border-black rounded overflow-hidden">
 
-          {/* Brush Size with Triangle Wedge */}
           <div className="w-16 h-20 flex justify-center items-center p-2 border-b border-black bg-white" title="Brush Size ( [ / ] )">
             <div className="relative h-16 w-6 flex justify-center">
               <div 
@@ -526,7 +467,6 @@ export default function App() {
             </div>
           </div>
 
-          {/* Pencil */}
           <button
             className={`w-16 h-12 flex items-center justify-center border-b border-black ${tool === 'pencil' ? 'bg-black text-white' : ''}`}
             title="Pencil (P)"
@@ -535,7 +475,6 @@ export default function App() {
             <Pencil className="w-5 h-5" />
           </button>
 
-          {/* Eraser */}
           <button
             className={`w-16 h-12 flex items-center justify-center border-b border-black ${tool === 'eraser' ? 'bg-black text-white' : ''}`}
             title="Eraser (E)"
@@ -544,7 +483,6 @@ export default function App() {
             <Eraser className="w-5 h-5" />
           </button>
 
-          {/* Undo */}
           <button
             type="button"
             className="w-16 h-12 flex items-center justify-center border-b border-black bg-white text-black active:bg-black active:text-white transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -555,7 +493,6 @@ export default function App() {
             <Undo2 className="w-5 h-5" />
           </button>
 
-          {/* Redo */}
           <button
             type="button"
             className="w-16 h-12 flex items-center justify-center border-b border-black bg-white text-black active:bg-black active:text-white transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -566,7 +503,6 @@ export default function App() {
             <Redo2 className="w-5 h-5" />
           </button>
 
-          {/* Trash */}
           <button
             type="button"
             className="w-16 h-12 flex items-center justify-center border-b border-black bg-white text-black active:bg-black active:text-white transition-colors duration-150"
@@ -576,7 +512,6 @@ export default function App() {
             <Trash2 className="w-5 h-5" />
           </button>
 
-          {/* Save */}
           <button
             type="button"
             className="w-16 h-12 flex items-center justify-center border-b border-black bg-white text-black active:bg-black active:text-white transition-colors duration-150"
@@ -586,7 +521,6 @@ export default function App() {
             <Save className="w-5 h-5" />
           </button>
 
-          {/* Exit */}
           <button
             type="button"
             className="w-16 h-12 flex items-center justify-center bg-white text-black active:bg-black active:text-white transition-colors duration-150"
