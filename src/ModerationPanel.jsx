@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
-import { Check, X, RefreshCw, LogOut, Image, Clock, User, BarChart3 } from 'lucide-react';
+import { Check, X, RefreshCw, LogOut, Clock, User, BarChart3 } from 'lucide-react';
 
 const supabase = createClient(
   process.env.REACT_APP_SUPABASE_URL,
@@ -178,9 +178,11 @@ export default function ModerationPanel() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="flex items-center justify-center w-10 h-10 bg-slate-900 rounded-xl">
-                <Image className="w-5 h-5 text-white" />
-              </div>
+              <img 
+                src="/favicon.svg" 
+                alt="Logo" 
+                className="w-10 h-10 rounded-xl"
+              />
               <div>
                 <h1 className="text-xl font-bold text-slate-900">Moderation Panel</h1>
                 <p className="text-sm text-slate-500">{user.email}</p>
