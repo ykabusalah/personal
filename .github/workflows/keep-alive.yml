@@ -1,0 +1,22 @@
+name: Supabase Keep-Alive
+on:
+  schedule:
+    - cron: '0 12 */2 * *'
+  workflow_dispatch:
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query drawings table
+        run: |
+          RESPONSE=$(curl -s -w "\n%{http_code}" \
+            "https://gzdhidrwwwztbbyropqh.supabase.co/rest/v1/drawings?select=id&limit=1" \
+            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}")
+          echo "$RESPONSE"
+          CODE=$(echo "$RESPONSE" | tail -n1)
+          if [ "$CODE" != "200" ]; then
+            echo "Keep-alive failed with status $CODE"
+            exit 1
+          fi
+          echo "Keep-alive succeeded"
