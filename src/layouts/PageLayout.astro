@@ -1,0 +1,66 @@
+---
+import Base from './Base.astro';
+import VisitorDrawing from '../components/VisitorDrawing.astro';
+
+interface Props {
+  title: string;
+  description?: string;
+  /** Page name recorded in analytics page_view events. */
+  page: string;
+}
+
+const { title, description, page } = Astro.props;
+---
+
+<Base title={title} description={description}>
+  <div class="page">
+    <main class="content" data-track-page={page}>
+      <slot />
+    </main>
+    <aside class="art" aria-label="A drawing by a site visitor">
+      <VisitorDrawing />
+    </aside>
+  </div>
+</Base>
+
+<script>
+  import { trackPageView } from '../lib/analytics.js';
+
+  const page = document.querySelector('[data-track-page]')?.getAttribute('data-track-page');
+  if (page) trackPageView(page);
+</script>
+
+<style>
+  .page {
+    --header-space: 96px;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 56px;
+    max-width: 1320px;
+    margin: 0 auto;
+    padding: calc(var(--gutter) + var(--header-space)) var(--gutter) 72px;
+  }
+
+  .content {
+    min-width: 0;
+    max-width: 680px;
+  }
+
+  .art { --drawing-max-h: 50vh; }
+
+  /* Wide screens: the visitor drawing stays in view beside the content. */
+  @media (min-width: 1024px) {
+    .page {
+      grid-template-columns: minmax(0, 680px) minmax(0, 1fr);
+      column-gap: clamp(48px, 6vw, 96px);
+    }
+
+    .art {
+      position: sticky;
+      top: calc(var(--gutter) + var(--header-space));
+      align-self: start;
+      height: calc(100dvh - 2 * var(--gutter) - var(--header-space));
+      --drawing-max-h: calc(100dvh - 2 * var(--gutter) - var(--header-space) - 72px);
+    }
+  }
+</style>

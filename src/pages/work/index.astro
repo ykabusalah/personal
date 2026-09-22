@@ -1,0 +1,88 @@
+---
+import PageLayout from '../../layouts/PageLayout.astro';
+import { getWork, KIND_HEADING, KIND_ORDER } from '../../lib/work';
+
+const work = await getWork();
+const groups = KIND_ORDER.map((kind) => ({
+  kind,
+  entries: work.filter((entry) => entry.data.kind === kind),
+})).filter((group) => group.entries.length > 0);
+---
+
+<PageLayout title="Work | Yousef's Personal Website" page="work">
+  <h1 class="page-title">Work</h1>
+
+  {groups.map(({ kind, entries }) => (
+    <section class="group">
+      <h2 class="eyebrow">{KIND_HEADING[kind]}</h2>
+      <ul class="rows">
+        {entries.map((entry) => (
+          <li>
+            <a class:list={['row', kind]} href={`/work/${entry.id}`}>
+              <span class="title">{entry.data.title}</span>
+              <span class="summary">{entry.data.summary}</span>
+              {entry.data.draft && <span class="badge">Draft</span>}
+              {!entry.data.draft && entry.data.status === 'in-progress' && <span class="badge">In progress</span>}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  ))}
+</PageLayout>
+
+<style>
+  .group { margin-top: 40px; }
+
+  .rows {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'title badge'
+      'summary summary';
+    column-gap: 12px;
+    row-gap: 4px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--line);
+    text-decoration: none;
+  }
+
+  .title {
+    grid-area: title;
+    font-family: var(--font-display);
+    font-size: 28px;
+    line-height: 1.1;
+  }
+
+  .fellowship .title { font-style: italic; }
+
+  .row:hover .title {
+    text-decoration: underline;
+    text-decoration-thickness: 1px;
+    text-underline-offset: 4px;
+  }
+
+  .summary {
+    grid-area: summary;
+    font-size: 15px;
+    color: var(--muted);
+    max-width: 60ch;
+  }
+
+  .badge {
+    grid-area: badge;
+    align-self: center;
+    font-size: 12px;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: #f1efe9;
+    color: var(--muted);
+  }
+</style>

@@ -1,0 +1,150 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+import { getWork, KIND_LABEL } from '../lib/work';
+
+const selected = (await getWork()).filter((entry) => !entry.data.draft).slice(0, 3);
+
+const contacts = [
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/ykabusalah' },
+  { label: 'Resume', href: 'https://drive.google.com/file/d/1NR0OQ7JmCCDILqD_LLEoXZ_U8wOutDvT/view?usp=sharing' },
+  { label: 'Email', href: 'mailto:hello@ykabusalah.me' },
+  { label: 'GitHub', href: 'https://github.com/ykabusalah' },
+];
+
+const skills = [
+  {
+    group: 'Expertise',
+    items: ['Data Analysis & KPI Tracking', 'User Research', 'Product Vision & Strategy', 'Product Roadmapping', 'Stakeholder Management', 'Agile/Scrum', 'MVP Scoping'],
+  },
+  {
+    group: 'Software',
+    items: ['TypeScript', 'TailwindCSS', 'WebFlow', 'JavaScript', 'Notion', 'Photoshop', 'Confluence', 'Jira', 'Asana', 'Supabase', 'Stable Diffusion', 'Python 3', 'Vite', 'React 18', 'PostgreSQL (Neon)', 'Prisma ORM', 'Next.js', 'Replicate API', 'Claude API', 'FastAPI', 'Render', 'super.so'],
+  },
+  {
+    group: 'Languages',
+    items: ['English', 'Arabic', 'Spanish'],
+  },
+];
+---
+
+<PageLayout title="About | Yousef's Personal Website" page="about">
+  <h1 class="page-title">About Me</h1>
+
+  <ul class="chips contacts">
+    {contacts.map(({ label, href }) => (
+      <li><a class="chip" href={href} target={href.startsWith('http') ? '_blank' : undefined} rel="noopener">{label}</a></li>
+    ))}
+  </ul>
+
+  <div class="bio">
+    <p>
+      Hi! I'm Yousef. I'm a <strong>Product Manager at Bretton AI (formerly Greenlite, YC 2023)</strong>, where I own AI agent products used by enterprise banks for compliance investigations, from PRDs and staged rollouts to the evaluation frameworks that prove they work. Recent work includes a self-serve agent builder and an embedded investigation assistant that cut per-case research time from <strong>~20 minutes to near-instant</strong>.
+    </p>
+    <p>
+      As the longest-ever <a href="https://www.keegantravelingfellowship.org/yousef-abu-salah" target="_blank" rel="noopener">Michael B. Keegan Traveling Fellow</a>, where I served for over three years, I <strong>researched hope among displaced communities across 30+ countries</strong>, leading cross-functional initiatives with prominent nonprofits and international organizations such as the <strong>United Nations</strong>.
+    </p>
+    <p>
+      I hold a <strong>B.S. in Computer Science and Cognitive Science</strong> from <strong>Vanderbilt University</strong>, and I am always excited about the endless possibilities that technology has to improve the world and make it a more equitable place.
+    </p>
+  </div>
+
+  <section class="block">
+    <h2 class="section-title">Selected work</h2>
+    <ul class="cards">
+      {selected.map((entry) => (
+        <li>
+          <a class="card" href={`/work/${entry.id}`}>
+            <span class="eyebrow">{KIND_LABEL[entry.data.kind]}</span>
+            <span class="card-title">{entry.data.title}</span>
+            <span class="card-summary">{entry.data.summary}</span>
+          </a>
+        </li>
+      ))}
+    </ul>
+    <a class="more" href="/work">All work →</a>
+  </section>
+
+  <section class="block">
+    <h2 class="section-title">Skills</h2>
+    <div class="skills">
+      {skills.map(({ group, items }) => (
+        <div>
+          <h3 class="eyebrow">{group}</h3>
+          <ul class="chips">
+            {items.map((item) => <li><span class="chip">{item}</span></li>)}
+          </ul>
+        </div>
+      ))}
+    </div>
+  </section>
+</PageLayout>
+
+<style>
+  .contacts { margin-bottom: 32px; }
+
+  .bio p {
+    font-size: 17px;
+    line-height: 1.7;
+    margin: 0 0 18px;
+  }
+
+  .bio strong { font-weight: 600; }
+
+  .bio a {
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+  }
+
+  .block { margin-top: 56px; }
+
+  .cards {
+    list-style: none;
+    margin: 0 0 16px;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+    gap: 12px;
+  }
+
+  .card {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    text-decoration: none;
+    transition: border-color 0.15s ease;
+  }
+
+  .card:hover { border-color: var(--ink); }
+
+  .card .eyebrow { margin: 0; }
+
+  .card-title {
+    font-family: var(--font-display);
+    font-size: 24px;
+    line-height: 1.15;
+  }
+
+  .card-summary {
+    font-size: 13px;
+    color: var(--muted);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .more {
+    font-size: 15px;
+    text-underline-offset: 3px;
+  }
+
+  .skills {
+    display: grid;
+    gap: 24px;
+  }
+</style>

@@ -1,30 +1,20 @@
 ---
 import '../styles/global.css';
-import SeasonalLogo from '../components/SeasonalLogo.astro';
+import Head from '../components/Head.astro';
+import SiteHeader from '../components/SiteHeader.astro';
 
 interface Props {
   title?: string;
   description?: string;
 }
 
-const {
-  title = "Yousef's Personal Website",
-  description = "Yousef Abu-Salah. AI Product Manager building agent systems for enterprise compliance and telling stories that technology alone can't.",
-} = Astro.props;
+const { title = "Yousef's Personal Website", description } = Astro.props;
 ---
 
 <!doctype html>
 <html lang="en">
   <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <title>{title}</title>
-    <meta name="description" content={description} />
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="icon" href="/favicon-96x96.png" type="image/png" sizes="96x96" />
-    <link rel="shortcut icon" href="/favicon.ico" />
-    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
-    <link rel="manifest" href="/site.webmanifest" />
+    <Head title={title} description={description} />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -33,7 +23,7 @@ const {
     />
   </head>
   <body>
-    <SeasonalLogo />
+    <SiteHeader />
     <slot />
   </body>
 </html>

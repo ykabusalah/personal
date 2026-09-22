@@ -1,9 +1,6 @@
 ---
 import Base from '../layouts/Base.astro';
 import VisitorDrawing from '../components/VisitorDrawing.astro';
-
-// The drawing app still lives on its own subdomain until it's ported into this project.
-const DRAW_URL = 'https://draw.ykabusalah.me/info';
 ---
 
 <Base>
@@ -21,7 +18,7 @@ const DRAW_URL = 'https://draw.ykabusalah.me/info';
 
     <div class="actions">
       <p class="explain">The drawing here was made by a visitor. Yours could be next.</p>
-      <a class="cta" href={DRAW_URL}>
+      <a class="cta" href="/info">
         <svg class="pencil" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M12 20h9" />
           <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z" />
@@ -31,6 +28,16 @@ const DRAW_URL = 'https://draw.ykabusalah.me/info';
     </div>
   </main>
 </Base>
+
+<script>
+  import { trackPageView, trackDrawLinkClick } from '../lib/analytics.js';
+
+  // The stats funnel counts Home -> draw click -> Info, so every link to /info on Home counts as a draw click.
+  trackPageView('home');
+  document.querySelectorAll('a[href="/info"]').forEach((link) => {
+    link.addEventListener('click', () => trackDrawLinkClick());
+  });
+</script>
 
 <style>
   /* Phone: intro, then the drawing full width, then the invitation. */
@@ -110,9 +117,11 @@ const DRAW_URL = 'https://draw.ykabusalah.me/info';
 
     .actions { margin-top: 28px; }
 
+    /* Top padding keeps tall drawings clear of the nav links. */
     .art {
-      --drawing-max-h: calc(100dvh - 2 * var(--gutter) - 72px);
+      --drawing-max-h: calc(100dvh - 2 * var(--gutter) - 144px);
       align-self: stretch;
+      padding-top: 72px;
     }
   }
 
