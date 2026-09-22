@@ -1,0 +1,33 @@
+/* Paste this into Super.so → Site → Code → Custom CSS.
+   The :has() selector scopes these rules to the home page only,
+   where the drawing script injects a full-viewport <div> as the
+   first child of <body> with z-index: -999.
+
+   Approach: give each glyph a soft white halo via text-shadow
+   instead of a rectangular panel. Readable over any drawing;
+   the drawing stays fully visible. */
+
+body:has(> div[style*="z-index: -999"]) .super-content :is(
+  .notion-heading,
+  .notion-text,
+  .notion-semantic-string,
+  .notion-callout,
+  a
+) {
+  text-shadow:
+    0 0 6px rgba(255, 255, 255, 0.95),
+    0 0 14px rgba(255, 255, 255, 0.75),
+    0 0 24px rgba(255, 255, 255, 0.55);
+}
+
+body:has(> div[style*="z-index: -999"]) #email-footer {
+  background: transparent !important;
+  backdrop-filter: none !important;
+}
+body:has(> div[style*="z-index: -999"]) #email-footer p {
+  color: #37352f !important;
+  background: transparent !important;
+  text-shadow:
+    0 0 6px rgba(255, 255, 255, 0.95),
+    0 0 14px rgba(255, 255, 255, 0.75);
+}
