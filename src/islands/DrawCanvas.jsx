@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback } from 'react';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 import confetti from 'canvas-confetti';
 import {
   Pencil,
@@ -23,12 +23,8 @@ import {
   trackSubmitError,
   trackExit,
   trackModalClose
-} from './analytics';
+} from '../lib/analytics';
 
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_ANON_KEY
-);
 
 const detectDeviceType = () => {
   const userAgent = navigator.userAgent || navigator.vendor || window.opera;

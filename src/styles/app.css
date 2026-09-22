@@ -1,0 +1,59 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background: #fff;
+}
+
+/* Triangle brush size slider */
+.brush-slider-triangle {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 24px;
+  height: 64px;
+  background: transparent;
+  outline: none;
+  writing-mode: bt-lr;
+  -webkit-writing-mode: vertical-rl;
+  position: relative;
+  z-index: 10;
+}
+
+.brush-slider-triangle::-webkit-slider-track {
+  -webkit-appearance: none;
+  width: 64px;
+  height: 4px;
+  background: transparent;
+  border: none;
+}
+
+.brush-slider-triangle::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px;
+  height: 18px;
+  background: #000;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid white;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  position: relative;
+  z-index: 20;
+}
+
+.brush-slider-triangle::-moz-range-track {
+  width: 64px;
+  height: 4px;
+  background: transparent;
+  border: none;
+}
+
+.brush-slider-triangle::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  background: #000;
+  border-radius: 50%;
+  border: 2px solid white;
+  cursor: pointer;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}

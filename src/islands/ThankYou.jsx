@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { trackPageView } from './analytics';
+import { trackPageView } from '../lib/analytics';
 
 export default function ThankYou() {
   useEffect(() => {
@@ -7,7 +7,7 @@ export default function ThankYou() {
   }, []);
 
   const handleReturnHome = () => {
-    window.location.href = 'https://ykabusalah.me';
+    window.location.href = '/';
   };
 
   return (

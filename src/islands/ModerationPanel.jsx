@@ -1,15 +1,9 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { createClient } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabase';
 import { Check, X, RefreshCw, LogOut, Clock, User, BarChart3 } from 'lucide-react';
 
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_ANON_KEY
-);
 
 export default function ModerationPanel() {
-  const navigate = useNavigate();
   const [drawings, setDrawings] = useState([]);
   const [loading, setLoading] = useState(false);
   const [processingIds, setProcessingIds] = useState(new Set());
@@ -190,7 +184,7 @@ export default function ModerationPanel() {
             </div>
             <div className="flex items-center gap-3">
               <button
-                onClick={() => navigate('/stats')}
+                onClick={() => { window.location.href = '/stats'; }}
                 className="inline-flex items-center gap-2 px-4 py-2 bg-violet-100 text-violet-700 rounded-lg hover:bg-violet-200 transition"
               >
                 <BarChart3 className="w-4 h-4" />

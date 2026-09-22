@@ -1,0 +1,8 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+import ModerationPanel from '../islands/ModerationPanel.jsx';
+---
+
+<AppLayout title="Moderation" noindex>
+  <ModerationPanel client:only="react" />
+</AppLayout>

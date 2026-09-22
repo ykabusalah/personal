@@ -1,18 +1,12 @@
 import { useEffect, useState } from 'react';
-import { createClient } from '@supabase/supabase-js';
-import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { 
   ArrowLeft, Users, Image, MousePointer, TrendingUp, Clock, 
   RefreshCw, Undo2, Paintbrush, LogOut, Calendar, UserCheck, Home, ExternalLink
 } from 'lucide-react';
 
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_ANON_KEY
-);
 
 export default function Statistics() {
-  const navigate = useNavigate();
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState(7);
@@ -248,7 +242,7 @@ export default function Statistics() {
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
           <p className="text-gray-600 mb-6">Please sign in through the moderation panel.</p>
-          <button onClick={() => navigate('/moderate')} className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition">
+          <button onClick={() => { window.location.href = '/moderate'; }} className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition">
             Go to Login
           </button>
         </div>
@@ -280,7 +274,7 @@ export default function Statistics() {
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <button onClick={() => navigate('/moderate')} className="p-2 hover:bg-slate-100 rounded-lg transition">
+              <button onClick={() => { window.location.href = '/moderate'; }} className="p-2 hover:bg-slate-100 rounded-lg transition">
                 <ArrowLeft className="w-5 h-5" />
               </button>
               <div>

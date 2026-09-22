@@ -1,36 +1,22 @@
-import { createClient } from '@supabase/supabase-js';
+// Plain fetch instead of supabase-js so light pages (like Home) can track without loading the client library.
+const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_ANON_KEY
-);
+const makeId = (prefix) => `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
 
 const getSessionId = () => {
   let sessionId = sessionStorage.getItem('analytics_session');
   if (!sessionId) {
-    sessionId = `sess_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    sessionId = makeId('sess');
     sessionStorage.setItem('analytics_session', sessionId);
   }
   return sessionId;
 };
 
 const getVisitorId = () => {
-  // Check URL for visitor ID passed from home page
-  const urlParams = new URLSearchParams(window.location.search);
-  const urlVisitorId = urlParams.get('vid');
-  
-  if (urlVisitorId) {
-    localStorage.setItem('analytics_visitor', urlVisitorId);
-    // Clean up URL without refreshing
-    const url = new URL(window.location);
-    url.searchParams.delete('vid');
-    window.history.replaceState({}, '', url);
-    return urlVisitorId;
-  }
-  
   let visitorId = localStorage.getItem('analytics_visitor');
   if (!visitorId) {
-    visitorId = `visitor_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    visitorId = makeId('visitor');
     localStorage.setItem('analytics_visitor', visitorId);
   }
   return visitorId;
@@ -43,18 +29,33 @@ const getDeviceType = () => {
   return 'desktop';
 };
 
+// Local testing shouldn't pollute the production analytics table.
+const IS_LOCAL = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+
 export const track = async (eventName, eventData = {}) => {
+  if (IS_LOCAL) {
+    console.debug('[analytics:local]', eventName, eventData);
+    return;
+  }
   try {
-    await supabase.from('analytics').insert({
-      session_id: getSessionId(),
-      event_name: eventName,
-      event_data: {
-        ...eventData,
-        visitor_id: getVisitorId()
+    await fetch(`${SUPABASE_URL}/rest/v1/analytics`, {
+      method: 'POST',
+      // keepalive lets the event finish sending when the click navigates away.
+      keepalive: true,
+      headers: {
+        apikey: SUPABASE_KEY,
+        Authorization: `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/json',
+        Prefer: 'return=minimal',
       },
-      device_type: getDeviceType(),
-      screen_width: window.innerWidth,
-      screen_height: window.innerHeight
+      body: JSON.stringify({
+        session_id: getSessionId(),
+        event_name: eventName,
+        event_data: { ...eventData, visitor_id: getVisitorId() },
+        device_type: getDeviceType(),
+        screen_width: window.innerWidth,
+        screen_height: window.innerHeight,
+      }),
     });
   } catch (err) {
     console.error('Analytics error:', err);
@@ -62,6 +63,7 @@ export const track = async (eventName, eventData = {}) => {
 };
 
 export const trackPageView = (page) => track('page_view', { page, timestamp: Date.now() });
+export const trackDrawLinkClick = () => track('draw_link_click', { timestamp: Date.now() });
 export const trackDrawingStart = (tool, brushSize) => track('drawing_start', { tool, brush_size: brushSize });
 export const trackToolChange = (tool, previousTool) => track('tool_change', { tool, previous_tool: previousTool });
 export const trackBrushSize = (size) => track('brush_size_change', { size });

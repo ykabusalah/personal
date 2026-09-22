@@ -1,0 +1,8 @@
+---
+import AppLayout from '../layouts/AppLayout.astro';
+import Statistics from '../islands/Statistics.jsx';
+---
+
+<AppLayout title="Statistics" noindex>
+  <Statistics client:only="react" />
+</AppLayout>

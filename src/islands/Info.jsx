@@ -1,16 +1,10 @@
-import { useNavigate } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { trackPageView } from './analytics';
-import { createClient } from '@supabase/supabase-js';
+import { trackPageView } from '../lib/analytics';
+import { supabase } from '../lib/supabase';
 import { Pencil, Sparkles } from 'lucide-react';
 
-const supabase = createClient(
-  process.env.REACT_APP_SUPABASE_URL,
-  process.env.REACT_APP_SUPABASE_ANON_KEY
-);
 
 export default function Info() {
-  const navigate = useNavigate();
   const [featuredCount, setFeaturedCount] = useState(null);
 
   useEffect(() => {
@@ -27,7 +21,7 @@ export default function Info() {
   }, []);
 
   const handleDrawClick = () => {
-    navigate('/draw');
+    window.location.href = '/draw';
   };
 
   return (

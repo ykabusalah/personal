@@ -1,0 +1,21 @@
+---
+import '../styles/app.css';
+import Head from '../components/Head.astro';
+
+interface Props {
+  title: string;
+  noindex?: boolean;
+}
+
+const { title, noindex } = Astro.props;
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <Head title={title} noindex={noindex} />
+  </head>
+  <body>
+    <slot />
+  </body>
+</html>
