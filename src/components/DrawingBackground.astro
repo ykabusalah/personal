@@ -1,0 +1,79 @@
+<div class="drawing-bg" aria-hidden="true">
+  <img id="drawing-bg-img" alt="" />
+</div>
+
+<script>
+  const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL;
+  const SUPABASE_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  const HISTORY_KEY = 'recent_drawings';
+  const HISTORY_SIZE = 5;
+
+  type Drawing = { id: string; name: string | null; image_url: string };
+
+  function readHistory(): string[] {
+    try {
+      return JSON.parse(sessionStorage.getItem(HISTORY_KEY) || '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  function writeHistory(ids: string[]) {
+    try {
+      sessionStorage.setItem(HISTORY_KEY, JSON.stringify(ids));
+    } catch {}
+  }
+
+  async function showRandomDrawing() {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/drawings?select=id,name,image_url&status=eq.approved`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+    );
+    if (!res.ok) return;
+    const drawings: Drawing[] = await res.json();
+    if (!drawings.length) return;
+
+    // Skip the last few shown this session so refreshes feel fresh.
+    const recent = readHistory();
+    const fresh = drawings.filter((d) => !recent.includes(d.id));
+    const pool = fresh.length ? fresh : drawings;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    writeHistory([pick.id, ...recent].slice(0, Math.min(HISTORY_SIZE, drawings.length - 1)));
+
+    const img = document.getElementById('drawing-bg-img') as HTMLImageElement;
+    img.addEventListener('load', () => img.classList.add('is-loaded'), { once: true });
+    img.src = pick.image_url;
+
+    const credit = `Background by ${pick.name?.trim() || 'an anonymous visitor'}`;
+    document.querySelectorAll<HTMLElement>('[data-drawing-credit]').forEach((el) => {
+      el.textContent = credit;
+      el.hidden = false;
+    });
+  }
+
+  showRandomDrawing().catch(() => {});
+</script>
+
+<style>
+  .drawing-bg {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: var(--ground);
+  }
+
+  .drawing-bg img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+
+  .drawing-bg img.is-loaded { opacity: 1; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .drawing-bg img { transition: none; }
+  }
+</style>

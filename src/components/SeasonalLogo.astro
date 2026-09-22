@@ -1,0 +1,41 @@
+---
+// The date-to-icon schedule lives in the Super.so head script; until it's ported, base.png shows year-round.
+const src = '/icons/base.png';
+---
+
+<a href="/" class="seasonal-logo" aria-label="Home">
+  <img src={src} alt="" width="64" height="64" />
+</a>
+
+<style>
+  .seasonal-logo {
+    position: fixed;
+    top: calc(16px + env(safe-area-inset-top, 0px));
+    left: 16px;
+    z-index: 20;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: #fff;
+    border: 1px solid var(--line);
+    box-shadow: 0 4px 14px -8px rgba(0, 0, 0, 0.25);
+  }
+
+  /* The source PNG has wide margins around the face, so zoom into it. */
+  .seasonal-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scale(1.75) translateY(-1%);
+    transition: transform 0.2s ease;
+  }
+
+  .seasonal-logo:hover img {
+    transform: scale(1.85) translateY(-1%) rotate(-5deg);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .seasonal-logo img { transition: none; }
+  }
+</style>
