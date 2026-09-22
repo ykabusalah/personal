@@ -7,6 +7,11 @@
   --glass: rgba(255, 255, 255, 0.72);
   --font-display: 'Instrument Serif', Georgia, 'Times New Roman', serif;
   --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --gutter: 20px;
+}
+
+@media (min-width: 860px) {
+  :root { --gutter: 40px; }
 }
 
 *, *::before, *::after { box-sizing: border-box; }

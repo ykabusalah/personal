@@ -1,0 +1,182 @@
+<figure class="visitor-drawing">
+  <div class="frame" data-drawing-frame>
+    <img data-visitor-drawing alt="" />
+  </div>
+  <figcaption data-drawing-credit hidden></figcaption>
+</figure>
+
+<script>
+  const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL;
+  const SUPABASE_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  const HISTORY_KEY = 'recent_drawings';
+  const HISTORY_SIZE = 5;
+  const MAX_UPSCALE = 3;
+
+  type Drawing = { id: string; name: string | null; image_url: string };
+  type Prepared = { src: string; width: number; height: number };
+
+  function readHistory(): string[] {
+    try {
+      return JSON.parse(sessionStorage.getItem(HISTORY_KEY) || '[]');
+    } catch {
+      return [];
+    }
+  }
+
+  function writeHistory(ids: string[]) {
+    try {
+      sessionStorage.setItem(HISTORY_KEY, JSON.stringify(ids));
+    } catch {}
+  }
+
+  async function loadImage(url: string) {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.src = url;
+    await img.decode();
+    return img;
+  }
+
+  // Visitors often draw small in the middle of a big empty canvas; crop to the ink so the strokes fill the frame.
+  async function trimToInk(img: HTMLImageElement): Promise<Prepared | null> {
+    const { naturalWidth: w, naturalHeight: h } = img;
+    const source = document.createElement('canvas');
+    source.width = w;
+    source.height = h;
+    const ctx = source.getContext('2d', { willReadFrequently: true });
+    if (!ctx) return null;
+    ctx.drawImage(img, 0, 0);
+    const { data } = ctx.getImageData(0, 0, w, h);
+
+    let minX = w, minY = h, maxX = -1, maxY = -1;
+    for (let y = 0; y < h; y++) {
+      const row = y * w * 4;
+      for (let x = 0; x < w; x++) {
+        if (data[row + x * 4 + 3] > 16) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX < 0) return null;
+
+    const pad = Math.round(Math.max(maxX - minX, maxY - minY) * 0.06) + 8;
+    minX = Math.max(0, minX - pad);
+    minY = Math.max(0, minY - pad);
+    maxX = Math.min(w - 1, maxX + pad);
+    maxY = Math.min(h - 1, maxY + pad);
+    const cw = maxX - minX + 1;
+    const ch = maxY - minY + 1;
+
+    const out = document.createElement('canvas');
+    out.width = cw;
+    out.height = ch;
+    out.getContext('2d')?.drawImage(source, minX, minY, cw, ch, 0, 0, cw, ch);
+    const blob = await new Promise<Blob | null>((resolve) => out.toBlob(resolve, 'image/png'));
+    if (!blob) return null;
+    return { src: URL.createObjectURL(blob), width: cw, height: ch };
+  }
+
+  async function prepare(url: string): Promise<Prepared> {
+    const img = await loadImage(url);
+    try {
+      const trimmed = await trimToInk(img);
+      if (trimmed) return trimmed;
+    } catch {}
+    return { src: url, width: img.naturalWidth, height: img.naturalHeight };
+  }
+
+  async function showRandomDrawing() {
+    const res = await fetch(
+      `${SUPABASE_URL}/rest/v1/drawings?select=id,name,image_url&status=eq.approved`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+    );
+    if (!res.ok) return;
+    const drawings: Drawing[] = await res.json();
+    if (!drawings.length) return;
+
+    // Skip the last few shown this session so refreshes feel fresh.
+    const recent = readHistory();
+    const fresh = drawings.filter((d) => !recent.includes(d.id));
+    const pool = fresh.length ? fresh : drawings;
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    writeHistory([pick.id, ...recent].slice(0, Math.min(HISTORY_SIZE, drawings.length - 1)));
+
+    const artist = pick.name?.trim() || 'an anonymous visitor';
+    const drawing = await prepare(pick.image_url);
+
+    document.querySelectorAll<HTMLElement>('[data-drawing-frame]').forEach((frame) => {
+      frame.style.setProperty('--ratio', String(drawing.width / drawing.height));
+      frame.style.setProperty('--cap', `${drawing.width * MAX_UPSCALE}px`);
+      const img = frame.querySelector<HTMLImageElement>('[data-visitor-drawing]');
+      if (!img) return;
+      img.addEventListener('load', () => img.classList.add('is-loaded'), { once: true });
+      img.alt = `Drawing by ${artist}`;
+      img.src = drawing.src;
+    });
+
+    document.querySelectorAll<HTMLElement>('[data-drawing-credit]').forEach((el) => {
+      const by = document.createElement('strong');
+      by.textContent = `Drawn by ${artist}`;
+      const count = document.createElement('span');
+      count.textContent = `One of ${drawings.length} visitor drawings`;
+      el.replaceChildren(by, count);
+      el.hidden = false;
+    });
+  }
+
+  showRandomDrawing().catch(() => {});
+</script>
+
+<style>
+  .visitor-drawing {
+    margin: 0;
+    width: 100%;
+    height: 100%;
+    min-width: 0;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+
+  /* The frame takes the drawing's own proportions and grows as large as the space allows. */
+  .frame {
+    --ratio: 1.76;
+    width: min(100%, calc(var(--drawing-max-h, 60vh) * var(--ratio)), var(--cap, 100%));
+    aspect-ratio: var(--ratio);
+  }
+
+  .frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    opacity: 0;
+    transition: opacity 0.6s ease;
+  }
+
+  .frame img.is-loaded { opacity: 1; }
+
+  figcaption {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+  }
+
+  figcaption :global(strong) {
+    color: var(--ink);
+    font-weight: 500;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .frame img { transition: none; }
+  }
+</style>

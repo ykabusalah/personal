@@ -1,21 +1,26 @@
 ---
 import Base from '../layouts/Base.astro';
-import DrawingBackground from '../components/DrawingBackground.astro';
+import VisitorDrawing from '../components/VisitorDrawing.astro';
 
 // The drawing app still lives on its own subdomain until it's ported into this project.
 const DRAW_URL = 'https://draw.ykabusalah.me/info';
 ---
 
 <Base>
-  <DrawingBackground />
-
   <main class="home">
-    <section class="card">
+    <header class="intro">
       <h1>👨🏾‍💻 Hi! I'm Yousef.</h1>
       <p class="tagline">
         AI Product Manager building agent systems for enterprise compliance and <strong>telling stories that technology alone can't</strong>.
       </p>
-      <p class="explain">The drawing behind this was made by a visitor.</p>
+    </header>
+
+    <div class="art">
+      <VisitorDrawing />
+    </div>
+
+    <div class="actions">
+      <p class="explain">The drawing here was made by a visitor. Yours could be next.</p>
       <a class="cta" href={DRAW_URL}>
         <svg class="pencil" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M12 20h9" />
@@ -23,40 +28,32 @@ const DRAW_URL = 'https://draw.ykabusalah.me/info';
         </svg>
         Draw yours
       </a>
-    </section>
+    </div>
   </main>
-
-  <footer class="home-footer">
-    <span class="credit" data-drawing-credit hidden></span>
-  </footer>
 </Base>
 
 <style>
+  /* Phone: intro, then the drawing full width, then the invitation. */
   .home {
-    position: relative;
-    z-index: 1;
-    min-height: 100vh;
     min-height: 100dvh;
     display: grid;
-    place-items: center;
-    padding: 96px 16px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'intro'
+      'art'
+      'actions';
+    gap: 28px;
+    padding: calc(var(--gutter) + 84px) var(--gutter) 40px;
   }
 
-  .card {
-    width: min(100%, 560px);
-    padding: clamp(24px, 5vw, 44px);
-    background: var(--glass);
-    backdrop-filter: blur(14px) saturate(1.05);
-    -webkit-backdrop-filter: blur(14px) saturate(1.05);
-    border: 1px solid rgba(255, 255, 255, 0.8);
-    border-radius: 18px;
-    box-shadow: 0 18px 40px -24px rgba(0, 0, 0, 0.35);
-  }
+  .intro { grid-area: intro; }
+  .art { grid-area: art; --drawing-max-h: 55vh; }
+  .actions { grid-area: actions; }
 
   h1 {
     font-family: var(--font-display);
     font-weight: 400;
-    font-size: clamp(38px, 7vw, 56px);
+    font-size: clamp(38px, 5vw, 56px);
     line-height: 1.05;
     letter-spacing: -0.015em;
     margin: 0 0 16px;
@@ -64,9 +61,9 @@ const DRAW_URL = 'https://draw.ykabusalah.me/info';
   }
 
   .tagline {
-    font-size: clamp(16px, 2.2vw, 18px);
-    margin: 0 0 22px;
-    max-width: 44ch;
+    font-size: clamp(16px, 1.4vw, 18px);
+    margin: 0;
+    max-width: 40ch;
   }
 
   .tagline strong { font-weight: 600; }
@@ -96,22 +93,27 @@ const DRAW_URL = 'https://draw.ykabusalah.me/info';
   .pencil { transition: transform 0.2s ease; }
   .cta:hover .pencil { transform: rotate(-12deg); }
 
-  .home-footer {
-    position: fixed;
-    left: 16px;
-    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-    z-index: 1;
-  }
+  /* Wide screens: text column on the left, the drawing takes everything else. */
+  @media (min-width: 860px) {
+    .home {
+      grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
+      grid-template-rows: 1fr auto auto 1fr;
+      grid-template-areas:
+        '.       art'
+        'intro   art'
+        'actions art'
+        '.       art';
+      column-gap: clamp(32px, 5vw, 88px);
+      row-gap: 0;
+      padding: var(--gutter);
+    }
 
-  .credit {
-    display: inline-block;
-    font-size: 12px;
-    color: var(--muted);
-    padding: 6px 12px;
-    background: var(--glass);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
-    border-radius: 999px;
+    .actions { margin-top: 28px; }
+
+    .art {
+      --drawing-max-h: calc(100dvh - 2 * var(--gutter) - 72px);
+      align-self: stretch;
+    }
   }
 
   @media (prefers-reduced-motion: reduce) {
