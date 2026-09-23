@@ -69,12 +69,34 @@ const hasBody = Boolean(entry.body?.trim());
     text-underline-offset: 4px;
   }
 
+  /* The cover is a print taped into the sketchbook, like the tiles on the Art page. */
   .cover:not(:empty) {
-    border-radius: 8px;
-    overflow: hidden;
+    position: relative;
+    margin: 8px 0;
+    padding: 10px;
+    background: #fff;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 14px 30px -18px rgba(0, 0, 0, 0.35);
+    transform: rotate(-0.8deg);
   }
 
-  .cover :global(img) { width: 100%; height: auto; }
+  .cover:not(:empty)::before,
+  .cover:not(:empty)::after {
+    content: '';
+    position: absolute;
+    z-index: 1;
+    top: -2px;
+    width: 88px;
+    height: 24px;
+    background: color-mix(in srgb, var(--accent) 42%, transparent);
+    mix-blend-mode: multiply;
+    clip-path: polygon(0 12%, 5% 0, 50% 6%, 95% 0, 100% 14%, 97% 50%, 100% 88%, 94% 100%, 50% 94%, 6% 100%, 0 86%, 3% 50%);
+  }
+
+  .cover:not(:empty)::before { left: -26px; transform: rotate(-36deg); }
+  .cover:not(:empty)::after { right: -26px; transform: rotate(36deg); }
+
+  .cover :global(img),
+  .cover :global(.slot) { display: block; width: 100%; height: auto; }
 
   .body {
     position: relative;
