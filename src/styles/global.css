@@ -71,4 +71,13 @@ a { color: inherit; }
 }
 
 a.chip { transition: border-color 0.15s ease; }
-a.chip:hover { border-color: var(--ink); }
+a.chip:hover { border-color: var(--accent); }
+
+/* Marker swash in the accent color behind a title's lower half. */
+.mark {
+  background: linear-gradient(transparent 58%, var(--accent) 58%, var(--accent) 88%, transparent 88%);
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  padding: 0 0.1em;
+  margin: 0 -0.1em;
+}

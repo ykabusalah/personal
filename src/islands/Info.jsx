@@ -35,7 +35,7 @@ export default function Info() {
           <span>Interactive Experience</span>
         </div>
         
-        <h1 className="text-5xl font-bold mb-8 text-gray-900">
+        <h1 className="text-6xl font-normal leading-none mb-8 text-gray-900" style={{ fontFamily: 'var(--font-display)' }}>
           Hello and Welcome 👋🏽
         </h1>
         
@@ -56,7 +56,8 @@ export default function Info() {
         <div className="flex items-center gap-4">
           <button
             onClick={handleDrawClick}
-            className="group bg-gray-900 hover:bg-gray-800 text-white px-8 py-4 rounded-lg text-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-3"
+            className="group hover:opacity-90 px-8 py-4 rounded-lg text-lg font-medium transition-all duration-200 shadow-sm hover:shadow-md flex items-center gap-3"
+            style={{ background: 'var(--accent)', color: 'var(--on-accent)' }}
           >
             <Pencil className="w-5 h-5 transition-transform duration-200 group-hover:rotate-[-12deg]" />
             Let's Draw!

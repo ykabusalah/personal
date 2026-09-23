@@ -1,6 +1,9 @@
 ---
+import { Image } from 'astro:assets';
 import PageLayout from '../layouts/PageLayout.astro';
 import { getWork, KIND_LABEL } from '../lib/work';
+import portrait from '../assets/portrait/portrait.png';
+import patchMask from '../assets/portrait/patch-mask.png';
 
 const selected = (await getWork()).filter((entry) => !entry.data.draft).slice(0, 3);
 
@@ -28,7 +31,20 @@ const skills = [
 ---
 
 <PageLayout title="About | Yousef's Personal Website" page="about">
-  <h1 class="page-title">About Me</h1>
+  <figure class="portrait" style={`--patch-mask: url(${patchMask.src})`}>
+    <span class="patch" aria-hidden="true"></span>
+    <Image
+      src={portrait}
+      alt="Yousef in a bucket hat with a camera, on the trail at Volcán de Santa Ana"
+      widths={[480, 920]}
+      sizes="(min-width: 760px) 460px, 100vw"
+      format="webp"
+      quality={82}
+      loading="eager"
+    />
+  </figure>
+
+  <h1 class="page-title"><span class="mark">About Me</span></h1>
 
   <ul class="chips contacts">
     {contacts.map(({ label, href }) => (
@@ -80,6 +96,32 @@ const skills = [
 </PageLayout>
 
 <style>
+  .portrait {
+    position: relative;
+    width: min(100%, 460px);
+    margin: 0 0 -56px;
+  }
+
+  .portrait :global(img) {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  /* The splash of color: the portrait's silhouette, slightly out of register like a riso print. */
+  .patch {
+    position: absolute;
+    inset: 0;
+    background: var(--accent);
+    -webkit-mask: var(--patch-mask) center / 100% 100% no-repeat;
+    mask: var(--patch-mask) center / 100% 100% no-repeat;
+    transform: translate(3.5%, 3%);
+  }
+
+  /* The title sits over the faded bottom of the photo. */
+  .portrait + .page-title { position: relative; }
+
   .contacts { margin-bottom: 32px; }
 
   .bio p {

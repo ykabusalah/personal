@@ -25,7 +25,7 @@ const links = [
   <p class="eyebrow">
     {KIND_LABEL[data.kind]}{data.status === 'in-progress' && ' · In progress'}{data.draft && ' · Draft'}
   </p>
-  <h1 class:list={['page-title', { italic: data.kind === 'fellowship' }]}>{data.title}</h1>
+  <h1 class:list={['page-title', { italic: data.kind === 'fellowship' }]}><span class="mark">{data.title}</span></h1>
   <p class="summary">{data.summary}</p>
 
   {links.length > 0 && (
