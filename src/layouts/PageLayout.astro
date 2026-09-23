@@ -15,6 +15,15 @@ const { title, description, page } = Astro.props;
   <main class="page" data-track-page={page}>
     <slot />
   </main>
+  <footer class="page-footer">
+    <p class="human-made">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M12 20h9" />
+        <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z" />
+      </svg>
+      All art on this site is drawn by hand, by me or by visitors. No AI-generated art.
+    </p>
+  </footer>
 </Base>
 
 <script>
@@ -25,9 +34,29 @@ const { title, description, page } = Astro.props;
 </script>
 
 <style>
-  .page {
+  .page,
+  .page-footer {
     max-width: calc(680px + 2 * var(--gutter));
     margin: 0 auto;
-    padding: calc(var(--gutter) + 96px) var(--gutter) 72px;
+    padding: 0 var(--gutter);
   }
+
+  .page { padding-top: calc(var(--gutter) + 96px); }
+
+  .page-footer { padding-block: 72px 40px; }
+
+  .human-made {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+    padding-top: 18px;
+    border-top: 1px dashed var(--line);
+    font-family: var(--font-hand);
+    font-size: 22px;
+    line-height: 1.1;
+    color: var(--muted);
+  }
+
+  .human-made svg { flex: none; color: var(--accent); }
 </style>

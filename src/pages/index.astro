@@ -9,20 +9,26 @@ import VisitorDrawing from '../components/VisitorDrawing.astro';
       <VisitorDrawing />
     </div>
 
-    <section class="sticker" aria-labelledby="home-title">
+    <section class="sticker" id="home-sticker" aria-labelledby="home-title">
+      <button type="button" class="scoot" data-hide-sticker aria-controls="home-sticker">Sorry, I'm in the way</button>
       <h1 id="home-title">👨🏾‍💻 Hi! I'm Yousef.</h1>
       <p class="tagline">
         AI Product Manager building agent systems for enterprise compliance and <strong>telling stories that technology alone can't</strong>.
       </p>
-      <p class="explain">The drawing behind this was made by a visitor. Yours could be next.</p>
-      <a class="cta" href="/info">
-        <svg class="pencil" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-          <path d="M12 20h9" />
-          <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z" />
-        </svg>
-        Draw yours
-      </a>
+      <p class="explain">A visitor drew this by hand. All art on this site is human-made. Yours could be next.</p>
+      <div class="actions">
+        <a class="cta" href="/info">
+          <svg class="pencil" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4Z" />
+          </svg>
+          Draw yours
+        </a>
+        <a class="email" href="mailto:hello@ykabusalah.me">hello@ykabusalah.me</a>
+      </div>
     </section>
+
+    <button type="button" class="bring-back" data-show-sticker aria-controls="home-sticker" hidden>👋 Okay, bring me back</button>
   </main>
 </Base>
 
@@ -34,6 +40,21 @@ import VisitorDrawing from '../components/VisitorDrawing.astro';
   document.querySelectorAll('a[href="/info"]').forEach((link) => {
     link.addEventListener('click', () => trackDrawLinkClick());
   });
+
+  // Let visitors move the intro sticker aside to see the whole drawing, and bring it back.
+  const sticker = document.getElementById('home-sticker');
+  const hideButton = document.querySelector<HTMLButtonElement>('[data-hide-sticker]');
+  const showButton = document.querySelector<HTMLButtonElement>('[data-show-sticker]');
+  if (sticker && hideButton && showButton) {
+    const setAway = (away: boolean) => {
+      sticker.classList.toggle('is-away', away);
+      sticker.inert = away;
+      showButton.hidden = !away;
+      (away ? showButton : hideButton).focus();
+    };
+    hideButton.addEventListener('click', () => setAway(true));
+    showButton.addEventListener('click', () => setAway(false));
+  }
 </script>
 
 <style>
@@ -110,6 +131,23 @@ import VisitorDrawing from '../components/VisitorDrawing.astro';
   .pencil { transition: transform 0.2s ease; }
   .cta:hover .pencil { transform: rotate(-12deg); }
 
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 12px 18px;
+  }
+
+  .email {
+    color: inherit;
+    font-weight: 500;
+    text-decoration: underline;
+    text-decoration-thickness: 1.5px;
+    text-underline-offset: 4px;
+  }
+
+  .email:hover { text-decoration-thickness: 3px; }
+
   /* Wide screens: the drawing is the whole page; the sticker is tucked into the bottom-left corner. */
   @media (min-width: 860px) {
     .home {
@@ -131,10 +169,68 @@ import VisitorDrawing from '../components/VisitorDrawing.astro';
       width: min(460px, 40vw);
       padding: 30px 32px 32px;
       transform: rotate(-2.2deg);
+      transition: transform 0.5s cubic-bezier(0.5, 0, 0.75, 0), opacity 0.35s ease 0.1s;
+    }
+
+    /* Tipped off the bottom of the screen so the whole drawing shows. */
+    .sticker.is-away {
+      transform: translateY(125%) rotate(-14deg);
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    /* A small tag sticking out of the sticker's top edge. */
+    .scoot {
+      display: block;
+      position: absolute;
+      bottom: calc(100% - 4px);
+      right: 22px;
+      padding: 6px 12px 7px;
+      border: 0;
+      border-radius: 8px 8px 0 0;
+      background: var(--ink);
+      color: #fff;
+      font: 500 12px/1 var(--font-body);
+      cursor: pointer;
+      transform: rotate(1.5deg);
+      transform-origin: bottom center;
+      transition: transform 0.15s ease;
+    }
+
+    .scoot:hover { transform: rotate(-1.5deg) translateY(-2px); }
+
+    .bring-back:not([hidden]) {
+      display: block;
+      position: absolute;
+      left: var(--gutter);
+      bottom: var(--gutter);
+      z-index: 2;
+      padding: 10px 16px;
+      border: 0;
+      border-radius: 999px;
+      background: var(--accent);
+      color: var(--on-accent);
+      font: 500 14px/1 var(--font-body);
+      cursor: pointer;
+      transform: rotate(-2deg);
+      box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.45);
+      animation: pop-in 0.35s ease 0.25s both;
+    }
+
+    @keyframes pop-in {
+      from { opacity: 0; transform: rotate(-2deg) translateY(12px); }
+      to { opacity: 1; transform: rotate(-2deg) translateY(0); }
     }
   }
 
+  /* Phones: the sticker sits below the drawing, so there is nothing to move out of the way. */
+  @media (max-width: 859px) {
+    .scoot,
+    .bring-back { display: none; }
+  }
+
   @media (prefers-reduced-motion: reduce) {
-    .cta, .pencil { transition: none; }
+    .cta, .pencil, .sticker, .scoot { transition: none; }
+    .bring-back { animation: none; }
   }
 </style>
