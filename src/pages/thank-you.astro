@@ -1,8 +1,21 @@
 ---
 import AppLayout from '../layouts/AppLayout.astro';
+import Doodle from '../components/Doodle.astro';
 import ThankYou from '../islands/ThankYou.jsx';
 ---
 
 <AppLayout title="Thank you | Yousef's Personal Website" header>
   <ThankYou client:only="react" />
+  <div class="doodle-spot"><Doodle name="thank-you" note="a celebrating character" width={120} /></div>
 </AppLayout>
+
+<style>
+  .doodle-spot {
+    position: fixed;
+    left: 50%;
+    bottom: calc(var(--gutter) + 12px);
+    transform: translateX(-50%);
+    z-index: 5;
+    pointer-events: none;
+  }
+</style>

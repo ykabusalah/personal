@@ -1,8 +1,20 @@
 ---
 import AppLayout from '../layouts/AppLayout.astro';
+import Doodle from '../components/Doodle.astro';
 import Info from '../islands/Info.jsx';
 ---
 
 <AppLayout title="Draw something | Yousef's Personal Website" header>
   <Info client:only="react" />
+  <div class="doodle-spot"><Doodle name="draw-intro" note="a pencil character, or you mid-sketch" width={120} /></div>
 </AppLayout>
+
+<style>
+  .doodle-spot {
+    position: fixed;
+    right: calc(var(--gutter) + 12px);
+    bottom: calc(var(--gutter) + 12px);
+    z-index: 5;
+    pointer-events: none;
+  }
+</style>

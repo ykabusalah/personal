@@ -1,6 +1,7 @@
 ---
 import { render } from 'astro:content';
 import PageLayout from '../../layouts/PageLayout.astro';
+import Doodle from '../../components/Doodle.astro';
 import { getWork, KIND_LABEL, type WorkEntry } from '../../lib/work';
 
 export async function getStaticPaths() {
@@ -42,10 +43,15 @@ const links = [
     </ul>
   )}
 
+  <div class="hero-image"><Doodle kind="image" name={`work-${entry.id}`} note="a screenshot for projects, or a page from the book" width={680} /></div>
+
   {hasBody && (
-    <article class="prose">
-      <Content />
-    </article>
+    <>
+      <div class="divider"><Doodle name="divider" note="a hand-drawn squiggle line" width={220} aspect="6 / 1" /></div>
+      <article class="prose">
+        <Content />
+      </article>
+    </>
   )}
 </PageLayout>
 
@@ -76,6 +82,23 @@ const links = [
     background: #f7f6f2;
     border-color: transparent;
   }
+
+  .hero-image:not(:empty) {
+    margin-top: 32px;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .hero-image :global(img) { width: 100%; height: auto; }
+
+  .divider:not(:empty) {
+    display: flex;
+    justify-content: center;
+    margin-top: 40px;
+  }
+
+  /* With a drawn divider in place, the plain rule above the PRD steps aside. */
+  .divider:not(:empty) + .prose { border-top: 0; margin-top: 24px; }
 
   .prose {
     margin-top: 48px;

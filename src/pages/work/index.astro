@@ -1,5 +1,6 @@
 ---
 import PageLayout from '../../layouts/PageLayout.astro';
+import Doodle from '../../components/Doodle.astro';
 import { getWork, KIND_HEADING, KIND_ORDER } from '../../lib/work';
 
 const work = await getWork();
@@ -10,7 +11,10 @@ const groups = KIND_ORDER.map((kind) => ({
 ---
 
 <PageLayout title="Work | Yousef's Personal Website" page="work">
-  <h1 class="page-title"><span class="mark">Work</span></h1>
+  <div class="title-row">
+    <h1 class="page-title"><span class="mark">Work</span></h1>
+    <Doodle name="work-title" note="a stack of sketchbooks or a pencil" width={72} />
+  </div>
 
   {groups.map(({ kind, entries }) => (
     <section class="group">
@@ -19,19 +23,36 @@ const groups = KIND_ORDER.map((kind) => ({
         {entries.map((entry) => (
           <li>
             <a class:list={['row', kind]} href={`/work/${entry.id}`}>
-              <span class="title">{entry.data.title}</span>
-              <span class="summary">{entry.data.summary}</span>
-              {entry.data.draft && <span class="badge">Draft</span>}
-              {!entry.data.draft && entry.data.status === 'in-progress' && <span class="badge">In progress</span>}
+              <span class="thumb"><Doodle kind="image" name={`work-${entry.id}`} note="screenshot, or a page from the book" width={132} /></span>
+              <span class="text">
+                <span class="title-line">
+                  <span class="title">{entry.data.title}</span>
+                  {entry.data.draft && <span class="badge">Draft</span>}
+                  {!entry.data.draft && entry.data.status === 'in-progress' && <span class="badge">In progress</span>}
+                </span>
+                <span class="summary">{entry.data.summary}</span>
+              </span>
             </a>
           </li>
         ))}
       </ul>
     </section>
   ))}
+
+  <div class="end">
+    <Doodle name="work-end" note="a 'more soon' doodle" width={96} />
+  </div>
 </PageLayout>
 
 <style>
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .title-row .page-title { margin: 0; }
+
   .group { margin-top: 40px; }
 
   .rows {
@@ -42,20 +63,44 @@ const groups = KIND_ORDER.map((kind) => ({
   }
 
   .row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    grid-template-areas:
-      'title badge'
-      'summary summary';
-    column-gap: 12px;
-    row-gap: 4px;
+    display: flex;
+    align-items: flex-start;
     padding: 18px 0;
     border-bottom: 1px solid var(--line);
     text-decoration: none;
   }
 
+  /* Pieces with an image get a thumbnail column; pieces without one keep the full width. */
+  .thumb:not(:empty) {
+    flex: none;
+    width: 132px;
+    margin-right: 18px;
+    border-radius: 8px;
+    overflow: hidden;
+  }
+
+  .thumb :global(img) {
+    width: 100%;
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+  }
+
+  .text {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .title-line {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
   .title {
-    grid-area: title;
     font-family: var(--font-display);
     font-size: 28px;
     line-height: 1.1;
@@ -71,19 +116,28 @@ const groups = KIND_ORDER.map((kind) => ({
   }
 
   .summary {
-    grid-area: summary;
     font-size: 15px;
     color: var(--muted);
     max-width: 60ch;
   }
 
   .badge {
-    grid-area: badge;
-    align-self: center;
+    flex: none;
     font-size: 12px;
     padding: 3px 10px;
     border-radius: 999px;
     background: #f1efe9;
     color: var(--muted);
+  }
+
+  .end {
+    display: flex;
+    justify-content: center;
+    margin-top: 56px;
+  }
+
+  @media (max-width: 520px) {
+    .thumb:not(:empty) { width: 96px; margin-right: 14px; }
+    .title { font-size: 24px; }
   }
 </style>

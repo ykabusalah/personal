@@ -43,12 +43,29 @@
     } catch {}
   }
 
-  async function loadImage(src: string, crossOrigin = false) {
-    const img = new Image();
-    if (crossOrigin) img.crossOrigin = 'anonymous';
-    img.src = src;
-    await img.decode();
-    return img;
+  // onload rather than decode(): Safari can reject decode() for SVG images.
+  function loadImage(src: string, crossOrigin = false): Promise<HTMLImageElement> {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      if (crossOrigin) img.crossOrigin = 'anonymous';
+      img.onload = () => resolve(img);
+      img.onerror = () => reject(new Error(`Could not load ${src}`));
+      img.src = src;
+    });
+  }
+
+  // The drawing's box can briefly be 0x0 while the page is still laying out; wait for a real size.
+  function waitForSize(): Promise<void> {
+    if (stack.clientWidth > 0 && stack.clientHeight > 0) return Promise.resolve();
+    return new Promise((resolve) => {
+      const observer = new ResizeObserver(() => {
+        if (stack.clientWidth > 0 && stack.clientHeight > 0) {
+          observer.disconnect();
+          resolve();
+        }
+      });
+      observer.observe(stack);
+    });
   }
 
   // Fallback for drawings approved since the last build: crop the original PNG to its ink.
@@ -202,24 +219,36 @@
     writeHistory([pick.id, ...recent].slice(0, Math.min(HISTORY_SIZE, drawings.length - 1)));
 
     const vector = new Map<string, number>(manifest.drawings.map((d: { id: string; ratio: number }) => [d.id, d.ratio]));
-    const source: Source = vector.has(pick.id)
-      ? { image: await loadImage(`/drawings/${pick.id}.svg`), ratio: vector.get(pick.id)! }
-      : await trimmedPng(pick.image_url);
+    let source: Source | null = null;
+    if (vector.has(pick.id)) {
+      try {
+        source = { image: await loadImage(`/drawings/${pick.id}.svg`), ratio: vector.get(pick.id)! };
+      } catch {
+        source = null;
+      }
+    }
+    source ??= await trimmedPng(pick.image_url);
+    const image = source.image;
 
     const artist = pick.name?.trim() || 'an anonymous visitor';
     canvas.setAttribute('aria-label', `A drawing by ${artist}, a site visitor`);
     credit.querySelector('[data-drawing-artist]')!.textContent = `drawn by ${artist}`;
 
-    // Measuring right after setting the ratio forces layout, so the size is already correct.
     stack.style.setProperty('--ratio', String(source.ratio));
-    await drawIn(rasterize(source.image), !reduceMotion);
+    await waitForSize();
+    await drawIn(rasterize(image), !reduceMotion);
     credit.classList.add('is-shown');
 
+    // Redraw at the new resolution whenever the drawing's box changes size.
+    let size = `${stack.clientWidth}x${stack.clientHeight}`;
     let resizeTimer: number | undefined;
-    window.addEventListener('resize', () => {
+    new ResizeObserver(() => {
+      const next = `${stack.clientWidth}x${stack.clientHeight}`;
+      if (next === size || !stack.clientWidth || !stack.clientHeight) return;
+      size = next;
       window.clearTimeout(resizeTimer);
-      resizeTimer = window.setTimeout(() => drawIn(rasterize(source.image), false), 150);
-    });
+      resizeTimer = window.setTimeout(() => drawIn(rasterize(image), false), 150);
+    }).observe(stack);
   }
 
   show().catch(() => {});

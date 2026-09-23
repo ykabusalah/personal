@@ -4,6 +4,30 @@ import PageLayout from '../layouts/PageLayout.astro';
 import { getWork, KIND_LABEL } from '../lib/work';
 import portrait from '../assets/portrait/portrait.png';
 import patchMask from '../assets/portrait/patch-mask.png';
+import doodles from '../data/portrait-doodles.json';
+import Doodle from '../components/Doodle.astro';
+
+// Yousef's doodles from Portrait Studio: smooth each stroke and time its draw-on by its length.
+type Point = [number, number];
+const toPath = (pts: Point[]) => {
+  if (pts.length === 1) return `M${pts[0][0]} ${pts[0][1]}l0.01 0`;
+  let d = `M${pts[0][0]} ${pts[0][1]}`;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const [x, y] = pts[i], [nx, ny] = pts[i + 1];
+    d += `Q${x} ${y} ${((x + nx) / 2).toFixed(1)} ${((y + ny) / 2).toFixed(1)}`;
+  }
+  const [lx, ly] = pts[pts.length - 1];
+  return `${d}L${lx} ${ly}`;
+};
+const lengthOf = (pts: Point[]) =>
+  pts.slice(1).reduce((sum, [x, y], i) => sum + Math.hypot(x - pts[i][0], y - pts[i][1]), 0);
+let startAt = 0.4;
+const doodlePaths = (doodles.strokes as { ink: string; size: number; points: Point[] }[]).map((stroke) => {
+  const duration = Math.min(0.9, Math.max(0.2, lengthOf(stroke.points) / 700));
+  const path = { d: toPath(stroke.points), size: stroke.size, ink: stroke.ink, delay: startAt.toFixed(2), duration: duration.toFixed(2) };
+  startAt += duration * 0.85;
+  return path;
+});
 
 const selected = (await getWork()).filter((entry) => !entry.data.draft).slice(0, 3);
 
@@ -14,23 +38,10 @@ const contacts = [
   { label: 'GitHub', href: 'https://github.com/ykabusalah' },
 ];
 
-const skills = [
-  {
-    group: 'Expertise',
-    items: ['Data Analysis & KPI Tracking', 'User Research', 'Product Vision & Strategy', 'Product Roadmapping', 'Stakeholder Management', 'Agile/Scrum', 'MVP Scoping'],
-  },
-  {
-    group: 'Software',
-    items: ['TypeScript', 'TailwindCSS', 'WebFlow', 'JavaScript', 'Notion', 'Photoshop', 'Confluence', 'Jira', 'Asana', 'Supabase', 'Stable Diffusion', 'Python 3', 'Vite', 'React 18', 'PostgreSQL (Neon)', 'Prisma ORM', 'Next.js', 'Replicate API', 'Claude API', 'FastAPI', 'Render', 'super.so'],
-  },
-  {
-    group: 'Languages',
-    items: ['English', 'Arabic', 'Spanish'],
-  },
-];
 ---
 
 <PageLayout title="About | Yousef's Personal Website" page="about">
+  <header class="hero">
   <figure class="portrait" style={`--patch-mask: url(${patchMask.src})`}>
     <span class="patch" aria-hidden="true"></span>
     <Image
@@ -42,6 +53,17 @@ const skills = [
       quality={82}
       loading="eager"
     />
+    <svg class="doodles" viewBox={`0 0 ${doodles.width} ${doodles.height}`} aria-hidden="true">
+      {doodlePaths.map((p) => (
+        <path
+          d={p.d}
+          class={p.ink === 'accent' ? 'accent' : undefined}
+          stroke-width={p.size}
+          pathLength="1"
+          style={`--delay:${p.delay}s;--duration:${p.duration}s`}
+        />
+      ))}
+    </svg>
   </figure>
 
   <h1 class="page-title"><span class="mark">About Me</span></h1>
@@ -51,8 +73,12 @@ const skills = [
       <li><a class="chip" href={href} target={href.startsWith('http') ? '_blank' : undefined} rel="noopener">{label}</a></li>
     ))}
   </ul>
+  </header>
 
   <div class="bio">
+    <span class="margin-doodle" aria-hidden="true">
+      <Doodle name="about-fellowship" note="a globe, plane, or map pin for the 30+ countries" />
+    </span>
     <p>
       Hi! I'm Yousef. I'm a <strong>Product Manager at Bretton AI (formerly Greenlite, YC 2023)</strong>, where I own AI agent products used by enterprise banks for compliance investigations, from PRDs and staged rollouts to the evaluation frameworks that prove they work. Recent work includes a self-serve agent builder and an embedded investigation assistant that cut per-case research time from <strong>~20 minutes to near-instant</strong>.
     </p>
@@ -65,7 +91,10 @@ const skills = [
   </div>
 
   <section class="block">
-    <h2 class="section-title">Selected work</h2>
+    <div class="heading-row">
+      <h2 class="section-title">Selected work</h2>
+      <Doodle name="about-selected-work" note="a small arrow or pointing hand" width={64} />
+    </div>
     <ul class="cards">
       {selected.map((entry) => (
         <li>
@@ -80,26 +109,55 @@ const skills = [
     <a class="more" href="/work">All work →</a>
   </section>
 
-  <section class="block">
-    <h2 class="section-title">Skills</h2>
-    <div class="skills">
-      {skills.map(({ group, items }) => (
-        <div>
-          <h3 class="eyebrow">{group}</h3>
-          <ul class="chips">
-            {items.map((item) => <li><span class="chip">{item}</span></li>)}
-          </ul>
-        </div>
-      ))}
-    </div>
-  </section>
+  <div class="sign-off">
+    <Doodle name="about-sign-off" note="a sign-off, like you waving" width={96} />
+  </div>
 </PageLayout>
 
 <style>
+  /* Portrait, title, and contact links read as one centered block; the bio stays left-aligned for reading. */
+  .hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .hero .contacts { justify-content: center; }
+
   .portrait {
     position: relative;
     width: min(100%, 460px);
     margin: 0 0 -56px;
+  }
+
+  .bio { position: relative; }
+
+  /* A doodle in the right margin beside the bio on wide screens; inline above it on phones. */
+  .margin-doodle { display: block; margin-bottom: 16px; }
+
+  @media (min-width: 1100px) {
+    .margin-doodle {
+      position: absolute;
+      left: calc(100% + 40px);
+      top: 110px;
+      margin: 0;
+    }
+  }
+
+  .heading-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .heading-row .section-title { margin: 0; }
+
+  .sign-off {
+    display: flex;
+    justify-content: center;
+    margin-top: 64px;
   }
 
   .portrait :global(img) {
@@ -117,6 +175,37 @@ const skills = [
     -webkit-mask: var(--patch-mask) center / 100% 100% no-repeat;
     mask: var(--patch-mask) center / 100% 100% no-repeat;
     transform: translate(3.5%, 3%);
+  }
+
+  .doodles {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    pointer-events: none;
+  }
+
+  .doodles path {
+    fill: none;
+    stroke: var(--ink);
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    stroke-dasharray: 1 2;
+    animation: draw-on var(--duration) ease-out var(--delay) both;
+  }
+
+  .doodles path.accent { stroke: var(--accent); }
+
+  /* Hidden (and cap-free) until its turn, then the stroke draws itself along its own path. */
+  @keyframes draw-on {
+    0% { stroke-dashoffset: 1; opacity: 0; }
+    1% { opacity: 1; }
+    100% { stroke-dashoffset: 0; opacity: 1; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .doodles path { animation: none; stroke-dashoffset: 0; }
   }
 
   /* The title sits over the faded bottom of the photo. */

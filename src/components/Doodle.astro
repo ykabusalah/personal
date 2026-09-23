@@ -1,0 +1,67 @@
+---
+import type { ImageMetadata } from 'astro';
+
+interface Props {
+  /** File name (without extension) in src/assets/art/ that fills this spot. */
+  name: string;
+  /** What kind of drawing fits here; shown on the placeholder. */
+  note: string;
+  width?: number;
+  /** Use 'image' for photo or screenshot spots instead of small drawings. */
+  kind?: 'doodle' | 'image';
+  aspect?: string;
+}
+
+const { name, note, width = 88, kind = 'doodle', aspect = kind === 'image' ? '16 / 10' : '1' } = Astro.props;
+
+const files = import.meta.glob<{ default: ImageMetadata }>('../assets/art/*.{png,jpg,jpeg,svg,webp}', { eager: true });
+const match = Object.entries(files).find(([path]) => path.split('/').pop()!.replace(/\.\w+$/, '') === name)?.[1].default;
+
+// Empty spots only show while developing, so a placeholder can never ship to the live site.
+const showPlaceholder = !match && import.meta.env.DEV;
+---
+
+{match && <img class="doodle" src={match.src} style={`--w:${width}px`} alt="" aria-hidden="true" />}
+{showPlaceholder && (
+  <span class:list={['slot', kind]} style={`--w:${width}px;--aspect:${aspect}`} title={`${name}: ${note}`} aria-hidden="true">
+    <strong>{kind === 'image' ? 'image' : 'doodle'}</strong>
+    <span>{name}</span>
+    <em>{note}</em>
+  </span>
+)}
+
+<style>
+  .doodle {
+    display: block;
+    width: var(--w, auto);
+    height: auto;
+  }
+
+  .slot {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 2px;
+    width: var(--w);
+    max-width: 100%;
+    aspect-ratio: var(--aspect);
+    padding: 8px;
+    border: 1.5px dashed var(--accent);
+    border-radius: 10px;
+    background: color-mix(in srgb, var(--accent) 8%, transparent);
+    color: var(--muted);
+    font: 10px/1.25 var(--font-body);
+    text-align: center;
+    overflow: hidden;
+  }
+
+  .slot strong {
+    font-size: 9px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink);
+  }
+
+  .slot span { font-family: ui-monospace, Menlo, Consolas, monospace; }
+  .slot em { font-style: normal; }
+</style>
