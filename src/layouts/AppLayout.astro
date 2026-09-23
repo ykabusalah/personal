@@ -1,13 +1,17 @@
 ---
+import '../styles/tokens.css';
 import '../styles/app.css';
 import Head from '../components/Head.astro';
+import SiteHeader from '../components/SiteHeader.astro';
 
 interface Props {
   title: string;
   noindex?: boolean;
+  /** Show the site logo and nav. Off for full-screen tools like the canvas and admin pages. */
+  header?: boolean;
 }
 
-const { title, noindex } = Astro.props;
+const { title, noindex, header = false } = Astro.props;
 ---
 
 <!doctype html>
@@ -16,6 +20,7 @@ const { title, noindex } = Astro.props;
     <Head title={title} noindex={noindex} />
   </head>
   <body>
+    {header && <SiteHeader />}
     <slot />
   </body>
 </html>
