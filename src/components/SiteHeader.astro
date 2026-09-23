@@ -1,10 +1,14 @@
 ---
 import SeasonalLogo from './SeasonalLogo.astro';
+import { getSection, SECTIONS } from '../lib/work';
 
 const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
+// Art only appears once it has something published (drafts count while developing).
+const hasArt = (await getSection('art')).length > 0;
 const links = [
   { href: '/about', label: 'About' },
-  { href: '/work', label: 'Work' },
+  { href: SECTIONS.projects.path, label: SECTIONS.projects.label },
+  ...(hasArt ? [{ href: SECTIONS.art.path, label: SECTIONS.art.label }] : []),
   { href: '/info', label: 'Draw' },
 ];
 const isCurrent = (href: string) => path === href || path.startsWith(`${href}/`);

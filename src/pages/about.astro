@@ -1,7 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import PageLayout from '../layouts/PageLayout.astro';
-import { getWork, KIND_LABEL } from '../lib/work';
+import { getSection, getWork, hrefFor, KIND_LABEL, SECTIONS } from '../lib/work';
 import portrait from '../assets/portrait/portrait.png';
 import patchMask from '../assets/portrait/patch-mask.png';
 import doodles from '../data/portrait-doodles.json';
@@ -30,6 +30,7 @@ const doodlePaths = (doodles.strokes as { ink: string; size: number; points: Poi
 });
 
 const selected = (await getWork()).filter((entry) => !entry.data.draft).slice(0, 3);
+const hasArt = (await getSection('art')).length > 0;
 
 const contacts = [
   { label: 'LinkedIn', href: 'https://www.linkedin.com/in/ykabusalah' },
@@ -76,9 +77,8 @@ const contacts = [
   </header>
 
   <div class="bio">
-    <span class="margin-doodle" aria-hidden="true">
-      <Doodle name="about-fellowship" note="a globe, plane, or map pin for the 30+ countries" />
-    </span>
+    <Doodle side="right" top="120px" tilt={4} mobile="inline" name="about-fellowship" note="a globe, plane, or map pin for the 30+ countries" width={104} />
+    <Doodle side="left" top="20px" tilt={-4} name="about-work-life" note="a laptop or a tiny compliance robot" width={88} />
     <p>
       Hi! I'm Yousef. I'm a <strong>Product Manager at Bretton AI (formerly Greenlite, YC 2023)</strong>, where I own AI agent products used by enterprise banks for compliance investigations, from PRDs and staged rollouts to the evaluation frameworks that prove they work. Recent work includes a self-serve agent builder and an embedded investigation assistant that cut per-case research time from <strong>~20 minutes to near-instant</strong>.
     </p>
@@ -91,14 +91,12 @@ const contacts = [
   </div>
 
   <section class="block">
-    <div class="heading-row">
-      <h2 class="section-title">Selected work</h2>
-      <Doodle name="about-selected-work" note="a small arrow or pointing hand" width={64} />
-    </div>
+    <Doodle side="left" top="0px" tilt={-8} name="about-selected-work" note="a small arrow or pointing hand" width={80} />
+    <h2 class="section-title">Selected work</h2>
     <ul class="cards">
       {selected.map((entry) => (
         <li>
-          <a class="card" href={`/work/${entry.id}`}>
+          <a class="card" href={hrefFor(entry)}>
             <span class="eyebrow">{KIND_LABEL[entry.data.kind]}</span>
             <span class="card-title">{entry.data.title}</span>
             <span class="card-summary">{entry.data.summary}</span>
@@ -106,59 +104,24 @@ const contacts = [
         </li>
       ))}
     </ul>
-    <a class="more" href="/work">All work →</a>
+    <p class="more">
+      <a href={SECTIONS.projects.path}>All projects →</a>
+      {hasArt && <a href={SECTIONS.art.path}>All art →</a>}
+    </p>
+    <Doodle side="right" top="45%" tilt={6} mobile="inline" name="about-sign-off" note="a sign-off, like you waving" width={104} />
   </section>
-
-  <div class="sign-off">
-    <Doodle name="about-sign-off" note="a sign-off, like you waving" width={96} />
-  </div>
 </PageLayout>
 
 <style>
-  /* Portrait, title, and contact links read as one centered block; the bio stays left-aligned for reading. */
-  .hero {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-  }
-
-  .hero .contacts { justify-content: center; }
-
   .portrait {
     position: relative;
     width: min(100%, 460px);
     margin: 0 0 -56px;
   }
 
-  .bio { position: relative; }
-
-  /* A doodle in the right margin beside the bio on wide screens; inline above it on phones. */
-  .margin-doodle { display: block; margin-bottom: 16px; }
-
-  @media (min-width: 1100px) {
-    .margin-doodle {
-      position: absolute;
-      left: calc(100% + 40px);
-      top: 110px;
-      margin: 0;
-    }
-  }
-
-  .heading-row {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 16px;
-  }
-
-  .heading-row .section-title { margin: 0; }
-
-  .sign-off {
-    display: flex;
-    justify-content: center;
-    margin-top: 64px;
-  }
+  /* Side drawings anchor to the section they sit beside, starting below the portrait. */
+  .bio,
+  .block { position: relative; }
 
   .portrait :global(img) {
     position: relative;
@@ -270,12 +233,11 @@ const contacts = [
   }
 
   .more {
+    display: flex;
+    gap: 20px;
+    margin: 0;
     font-size: 15px;
-    text-underline-offset: 3px;
   }
 
-  .skills {
-    display: grid;
-    gap: 24px;
-  }
+  .more a { text-underline-offset: 3px; }
 </style>

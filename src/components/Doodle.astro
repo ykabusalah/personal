@@ -10,9 +10,27 @@ interface Props {
   /** Use 'image' for photo or screenshot spots instead of small drawings. */
   kind?: 'doodle' | 'image';
   aspect?: string;
+  /** Place the drawing in the empty white space beside the content column (wide screens only). */
+  side?: 'left' | 'right';
+  /** Offset from the top of the nearest positioned section, e.g. "40px" or "30%". */
+  top?: string;
+  /** Slight tilt in degrees, for a hand-placed feel. */
+  tilt?: number;
+  /** Phones have no side space: 'hide' drops a side drawing there, 'inline' shows it smaller between sections. */
+  mobile?: 'hide' | 'inline';
 }
 
-const { name, note, width = 88, kind = 'doodle', aspect = kind === 'image' ? '16 / 10' : '1' } = Astro.props;
+const {
+  name,
+  note,
+  width = 88,
+  kind = 'doodle',
+  aspect = kind === 'image' ? '16 / 10' : '1',
+  side,
+  top = '0px',
+  tilt = 0,
+  mobile = 'hide',
+} = Astro.props;
 
 const files = import.meta.glob<{ default: ImageMetadata }>('../assets/art/*.{png,jpg,jpeg,svg,webp}', { eager: true });
 const match = Object.entries(files).find(([path]) => path.split('/').pop()!.replace(/\.\w+$/, '') === name)?.[1].default;
@@ -21,16 +39,55 @@ const match = Object.entries(files).find(([path]) => path.split('/').pop()!.repl
 const showPlaceholder = !match && import.meta.env.DEV;
 ---
 
-{match && <img class="doodle" src={match.src} style={`--w:${width}px`} alt="" aria-hidden="true" />}
-{showPlaceholder && (
-  <span class:list={['slot', kind]} style={`--w:${width}px;--aspect:${aspect}`} title={`${name}: ${note}`} aria-hidden="true">
-    <strong>{kind === 'image' ? 'image' : 'doodle'}</strong>
-    <span>{name}</span>
-    <em>{note}</em>
+{(match || showPlaceholder) && (
+  <span class:list={['holder', side && `side ${side}`, side && mobile === 'inline' && 'inline']} style={`--top:${top};--tilt:${tilt}deg`}>
+    {match && <img class="doodle" src={match.src} style={`--w:${width}px`} alt="" aria-hidden="true" />}
+    {showPlaceholder && (
+      <span class:list={['slot', kind]} style={`--w:${width}px;--aspect:${aspect}`} title={`${name}: ${note}`} aria-hidden="true">
+        <strong>{kind === 'image' ? 'image' : 'doodle'}</strong>
+        <span>{name}</span>
+        <em>{note}</em>
+      </span>
+    )}
   </span>
 )}
 
 <style>
+  .holder { display: contents; }
+
+  /* Side doodles sit in the white space beside the column and only appear when there is room for them. */
+  .side {
+    display: none;
+    position: absolute;
+    top: var(--top);
+    transform: rotate(var(--tilt));
+    pointer-events: none;
+  }
+
+  .side.left { right: calc(100% + clamp(32px, 6vw, 96px)); }
+  .side.right { left: calc(100% + clamp(32px, 6vw, 96px)); }
+
+  @media (min-width: 1100px) {
+    .side { display: block; }
+  }
+
+  /* Narrow screens: chosen side drawings drop into the flow, smaller, still hugging their side. */
+  @media (max-width: 1099px) {
+    .side.inline {
+      display: flex;
+      position: static;
+      justify-content: flex-start;
+      margin: 4px 0 16px;
+      transform: rotate(var(--tilt)) scale(0.8);
+      transform-origin: left center;
+    }
+
+    .side.inline.right {
+      justify-content: flex-end;
+      transform-origin: right center;
+    }
+  }
+
   .doodle {
     display: block;
     width: var(--w, auto);
