@@ -46,11 +46,19 @@ import VisitorDrawing from '../components/VisitorDrawing.astro';
   const hideButton = document.querySelector<HTMLButtonElement>('[data-hide-sticker]');
   const showButton = document.querySelector<HTMLButtonElement>('[data-show-sticker]');
   if (sticker && hideButton && showButton) {
+    // The animations are only decoration: a timer hides the sticker outright, and it comes back in
+    // place right away, so both still work when the browser skips or pauses animations.
+    let goneTimer: number | undefined;
     const setAway = (away: boolean) => {
+      clearTimeout(goneTimer);
+      sticker.classList.remove('is-gone', 'is-back');
       sticker.classList.toggle('is-away', away);
+      if (away) goneTimer = window.setTimeout(() => sticker.classList.add('is-gone'), 550);
+      else sticker.classList.add('is-back');
       sticker.inert = away;
       showButton.hidden = !away;
-      (away ? showButton : hideButton).focus();
+      // Without preventScroll the browser scrolls the page to the button and shifts the drawing.
+      (away ? showButton : hideButton).focus({ preventScroll: true });
     };
     hideButton.addEventListener('click', () => setAway(true));
     showButton.addEventListener('click', () => setAway(false));
@@ -179,6 +187,19 @@ import VisitorDrawing from '../components/VisitorDrawing.astro';
       pointer-events: none;
     }
 
+    .sticker.is-gone { visibility: hidden; }
+
+    /* Coming back: jump into place, then bounce up from below (movement only). */
+    .sticker.is-back {
+      transition: none;
+      animation: sticker-back 0.4s cubic-bezier(0.2, 0.8, 0.3, 1.25);
+    }
+
+    @keyframes sticker-back {
+      from { transform: translateY(48px) rotate(-6deg); }
+      to { transform: rotate(-2.2deg); }
+    }
+
     /* A small tag sticking out of the sticker's top edge. */
     .scoot {
       display: block;
@@ -194,10 +215,12 @@ import VisitorDrawing from '../components/VisitorDrawing.astro';
       cursor: pointer;
       transform: rotate(1.5deg);
       transform-origin: bottom center;
-      transition: transform 0.15s ease;
     }
 
-    .scoot:hover { transform: rotate(-1.5deg) translateY(-2px); }
+    .scoot:hover {
+      text-decoration: underline;
+      text-underline-offset: 3px;
+    }
 
     .bring-back:not([hidden]) {
       display: block;
@@ -214,12 +237,13 @@ import VisitorDrawing from '../components/VisitorDrawing.astro';
       cursor: pointer;
       transform: rotate(-2deg);
       box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.45);
-      animation: pop-in 0.35s ease 0.25s both;
+      animation: pop-in 0.3s ease-out;
     }
 
+    /* Movement only, so the button is visible even if the animation never plays. */
     @keyframes pop-in {
-      from { opacity: 0; transform: rotate(-2deg) translateY(12px); }
-      to { opacity: 1; transform: rotate(-2deg) translateY(0); }
+      from { transform: rotate(-2deg) translateY(16px); }
+      to { transform: rotate(-2deg) translateY(0); }
     }
   }
 
@@ -230,7 +254,7 @@ import VisitorDrawing from '../components/VisitorDrawing.astro';
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .cta, .pencil, .sticker, .scoot { transition: none; }
-    .bring-back { animation: none; }
+    .cta, .pencil, .sticker { transition: none; }
+    .bring-back, .sticker.is-back { animation: none; }
   }
 </style>
