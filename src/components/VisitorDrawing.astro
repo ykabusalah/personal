@@ -211,6 +211,10 @@
     ]);
     if (!drawings.length) return;
 
+    // Keep any drawing count on the page in step with the live list, since the built number goes stale.
+    document.querySelectorAll<HTMLElement>('[data-drawing-count]').forEach((el) => (el.textContent = String(drawings.length)));
+    document.querySelectorAll<HTMLElement>('[data-drawing-count-clause]').forEach((el) => (el.hidden = false));
+
     // Skip the last few shown this session so refreshes feel fresh.
     const recent = readHistory();
     const fresh = drawings.filter((d) => !recent.includes(d.id));

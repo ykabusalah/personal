@@ -1,6 +1,9 @@
 ---
 import Base from '../layouts/Base.astro';
 import VisitorDrawing from '../components/VisitorDrawing.astro';
+import { getApprovedCount } from '../lib/drawings-build.js';
+
+const drawingCount = await getApprovedCount();
 ---
 
 <Base>
@@ -13,9 +16,9 @@ import VisitorDrawing from '../components/VisitorDrawing.astro';
       <button type="button" class="scoot" data-hide-sticker aria-controls="home-sticker">Sorry, I'm in the way</button>
       <h1 id="home-title">👨🏾‍💻 Hi! I'm Yousef.</h1>
       <p class="tagline">
-        AI Product Manager building agent systems for enterprise compliance and <strong>telling stories that technology alone can't</strong>.
+        AI Product Manager passionate about bringing the beauty of art into technology to <strong>tell unique stories and build experiences that can change the world</strong>.
       </p>
-      <p class="explain">A visitor drew this by hand. All art on this site is human-made. Yours could be next.</p>
+      <p class="explain">A visitor drew this background by hand<span data-drawing-count-clause hidden={drawingCount === 0}>, one of <span data-drawing-count>{drawingCount}</span> drawings so far</span>. Everything you see here is human-made. Yours could be next.</p>
       <div class="actions">
         <a class="cta" href="/info">
           <svg class="pencil" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

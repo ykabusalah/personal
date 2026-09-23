@@ -66,6 +66,14 @@ async function trace(url) {
   return { svg, ratio: cw / ch };
 }
 
+let approvedCount;
+
+/** How many drawings are approved, for the count on Home. The page updates it live after loading. */
+export function getApprovedCount() {
+  approvedCount ??= fetchApproved().then((drawings) => drawings.length);
+  return approvedCount;
+}
+
 let traced;
 
 /** Every approved drawing that has ink, traced once per build (and once per dev-server run). */
