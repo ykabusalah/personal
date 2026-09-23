@@ -5,19 +5,16 @@ import VisitorDrawing from '../components/VisitorDrawing.astro';
 
 <Base>
   <main class="home">
-    <header class="intro">
-      <h1>👨🏾‍💻 Hi! I'm Yousef.</h1>
-      <p class="tagline">
-        AI Product Manager building agent systems for enterprise compliance and <strong>telling stories that technology alone can't</strong>.
-      </p>
-    </header>
-
     <div class="art">
       <VisitorDrawing />
     </div>
 
-    <div class="actions">
-      <p class="explain">The drawing here was made by a visitor. Yours could be next.</p>
+    <section class="sticker" aria-labelledby="home-title">
+      <h1 id="home-title">👨🏾‍💻 Hi! I'm Yousef.</h1>
+      <p class="tagline">
+        AI Product Manager building agent systems for enterprise compliance and <strong>telling stories that technology alone can't</strong>.
+      </p>
+      <p class="explain">The drawing behind this was made by a visitor. Yours could be next.</p>
       <a class="cta" href="/info">
         <svg class="pencil" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
           <path d="M12 20h9" />
@@ -25,7 +22,7 @@ import VisitorDrawing from '../components/VisitorDrawing.astro';
         </svg>
         Draw yours
       </a>
-    </div>
+    </section>
   </main>
 </Base>
 
@@ -40,45 +37,58 @@ import VisitorDrawing from '../components/VisitorDrawing.astro';
 </script>
 
 <style>
-  /* Phone: intro, then the drawing full width, then the invitation. */
+  /* Phone: the drawing fills the space under the header; the intro sits below it on a color sticker. */
   .home {
     min-height: 100dvh;
     display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      'intro'
-      'art'
-      'actions';
+    grid-template-rows: minmax(36vh, 1fr) auto;
     gap: 28px;
-    padding: calc(var(--gutter) + 84px) var(--gutter) 40px;
+    padding: calc(var(--gutter) + 104px) var(--gutter) var(--gutter);
+    overflow: hidden;
   }
 
-  .intro { grid-area: intro; }
-  .art { grid-area: art; --drawing-max-h: 55vh; }
-  .actions { grid-area: actions; }
+  .art {
+    position: relative;
+    min-height: 0;
+    container-type: size;
+  }
+
+  .art :global(.visitor-drawing) { position: absolute; inset: 0; }
+  .art :global(.stack) { width: min(100cqw, calc(100cqh * var(--ratio))); }
+  .art :global(.credit) { right: 0; bottom: -6px; }
+
+  .sticker {
+    position: relative;
+    z-index: 2;
+    padding: 24px 22px 26px;
+    background: var(--accent);
+    color: var(--on-accent);
+    border-radius: 22px 12px 26px 14px / 14px 24px 12px 22px;
+    transform: rotate(-1.2deg);
+  }
 
   h1 {
     font-family: var(--font-display);
     font-weight: 400;
-    font-size: clamp(38px, 5vw, 56px);
+    font-size: clamp(36px, 4vw, 52px);
     line-height: 1.05;
     letter-spacing: -0.015em;
-    margin: 0 0 16px;
+    margin: 0 0 12px;
     text-wrap: balance;
   }
 
   .tagline {
-    font-size: clamp(16px, 1.4vw, 18px);
-    margin: 0;
-    max-width: 40ch;
+    font-size: clamp(15px, 1.25vw, 17px);
+    margin: 0 0 18px;
+    max-width: 42ch;
   }
 
   .tagline strong { font-weight: 600; }
 
   .explain {
-    font-size: 14px;
+    font-size: 13px;
     font-style: italic;
-    color: var(--muted);
+    opacity: 0.8;
     margin: 0 0 12px;
   }
 
@@ -87,41 +97,40 @@ import VisitorDrawing from '../components/VisitorDrawing.astro';
     align-items: center;
     gap: 10px;
     padding: 12px 20px;
-    background: var(--ink);
-    color: #fff;
     border-radius: 8px;
+    background: var(--on-accent);
+    color: var(--accent);
     font-weight: 500;
     text-decoration: none;
-    transition: background 0.15s ease;
+    transition: opacity 0.15s ease;
   }
 
-  .cta:hover { background: #333; }
+  .cta:hover { opacity: 0.88; }
 
   .pencil { transition: transform 0.2s ease; }
   .cta:hover .pencil { transform: rotate(-12deg); }
 
-  /* Wide screens: text column on the left, the drawing takes everything else. */
+  /* Wide screens: the drawing is the whole page; the sticker is tucked into the bottom-left corner. */
   @media (min-width: 860px) {
     .home {
-      grid-template-columns: minmax(280px, 360px) minmax(0, 1fr);
-      grid-template-rows: 1fr auto auto 1fr;
-      grid-template-areas:
-        '.       art'
-        'intro   art'
-        'actions art'
-        '.       art';
-      column-gap: clamp(32px, 5vw, 88px);
-      row-gap: 0;
-      padding: var(--gutter);
+      display: block;
+      position: relative;
+      height: 100dvh;
+      min-height: 560px;
+      padding: 0;
     }
 
-    .actions { margin-top: 28px; }
+    .art { position: absolute; inset: 0; }
+    .art :global(.stack) { width: min(104cqw, calc(104cqh * var(--ratio))); }
+    .art :global(.credit) { right: calc(var(--gutter) + 8px); bottom: calc(var(--gutter) + 8px); }
 
-    /* Top padding keeps tall drawings clear of the nav links. */
-    .art {
-      --drawing-max-h: calc(100dvh - 2 * var(--gutter) - 144px);
-      align-self: stretch;
-      padding-top: 72px;
+    .sticker {
+      position: absolute;
+      left: var(--gutter);
+      bottom: var(--gutter);
+      width: min(460px, 40vw);
+      padding: 30px 32px 32px;
+      transform: rotate(-2.2deg);
     }
   }
 

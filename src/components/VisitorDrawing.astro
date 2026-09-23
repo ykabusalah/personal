@@ -1,19 +1,33 @@
-<figure class="visitor-drawing">
-  <div class="frame" data-drawing-frame>
-    <img data-visitor-drawing alt="" />
+<div class="visitor-drawing">
+  <div class="stack" data-drawing-stack>
+    <canvas data-drawing-canvas role="img" aria-label="A drawing by a site visitor"></canvas>
   </div>
-  <figcaption data-drawing-credit hidden></figcaption>
-</figure>
+  <p class="credit" data-drawing-credit>
+    <svg viewBox="0 0 40 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M38 18 C28 22, 16 16, 4 5" />
+      <path d="M4 5 L12 6 M4 5 L6 13" />
+    </svg>
+    <span data-drawing-artist></span>
+  </p>
+</div>
 
 <script>
   const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL;
   const SUPABASE_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
   const HISTORY_KEY = 'recent_drawings';
   const HISTORY_SIZE = 5;
-  const MAX_UPSCALE = 3;
+  const DRAW_IN_MS = 1800;
+  // Final render resolution cap, and a lighter one for the animation frames so the draw-in stays smooth.
+  const MAX_PIXELS = 8_000_000;
+  const ANIM_PIXELS = 2_000_000;
 
   type Drawing = { id: string; name: string | null; image_url: string };
-  type Prepared = { src: string; width: number; height: number };
+  type Source = { image: CanvasImageSource; ratio: number };
+
+  const stack = document.querySelector<HTMLElement>('[data-drawing-stack]')!;
+  const canvas = document.querySelector<HTMLCanvasElement>('[data-drawing-canvas]')!;
+  const credit = document.querySelector<HTMLElement>('[data-drawing-credit]')!;
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   function readHistory(): string[] {
     try {
@@ -29,72 +43,155 @@
     } catch {}
   }
 
-  async function loadImage(url: string) {
+  async function loadImage(src: string, crossOrigin = false) {
     const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.src = url;
+    if (crossOrigin) img.crossOrigin = 'anonymous';
+    img.src = src;
     await img.decode();
     return img;
   }
 
-  // Visitors often draw small in the middle of a big empty canvas; crop to the ink so the strokes fill the frame.
-  async function trimToInk(img: HTMLImageElement): Promise<Prepared | null> {
+  // Fallback for drawings approved since the last build: crop the original PNG to its ink.
+  async function trimmedPng(url: string): Promise<Source> {
+    const img = await loadImage(url, true);
     const { naturalWidth: w, naturalHeight: h } = img;
-    const source = document.createElement('canvas');
-    source.width = w;
-    source.height = h;
-    const ctx = source.getContext('2d', { willReadFrequently: true });
-    if (!ctx) return null;
+    const full = document.createElement('canvas');
+    full.width = w;
+    full.height = h;
+    const ctx = full.getContext('2d', { willReadFrequently: true })!;
     ctx.drawImage(img, 0, 0);
     const { data } = ctx.getImageData(0, 0, w, h);
-
-    let minX = w, minY = h, maxX = -1, maxY = -1;
+    let x0 = w, y0 = h, x1 = -1, y1 = -1;
     for (let y = 0; y < h; y++) {
-      const row = y * w * 4;
       for (let x = 0; x < w; x++) {
-        if (data[row + x * 4 + 3] > 16) {
-          if (x < minX) minX = x;
-          if (x > maxX) maxX = x;
-          if (y < minY) minY = y;
-          if (y > maxY) maxY = y;
+        if (data[(y * w + x) * 4 + 3] > 16) {
+          if (x < x0) x0 = x;
+          if (x > x1) x1 = x;
+          if (y < y0) y0 = y;
+          if (y > y1) y1 = y;
         }
       }
     }
-    if (maxX < 0) return null;
-
-    const pad = Math.round(Math.max(maxX - minX, maxY - minY) * 0.06) + 8;
-    minX = Math.max(0, minX - pad);
-    minY = Math.max(0, minY - pad);
-    maxX = Math.min(w - 1, maxX + pad);
-    maxY = Math.min(h - 1, maxY + pad);
-    const cw = maxX - minX + 1;
-    const ch = maxY - minY + 1;
-
+    if (x1 < 0) return { image: full, ratio: w / h };
+    const pad = 8;
+    x0 = Math.max(0, x0 - pad); y0 = Math.max(0, y0 - pad);
+    x1 = Math.min(w - 1, x1 + pad); y1 = Math.min(h - 1, y1 + pad);
     const out = document.createElement('canvas');
-    out.width = cw;
-    out.height = ch;
-    out.getContext('2d')?.drawImage(source, minX, minY, cw, ch, 0, 0, cw, ch);
-    const blob = await new Promise<Blob | null>((resolve) => out.toBlob(resolve, 'image/png'));
-    if (!blob) return null;
-    return { src: URL.createObjectURL(blob), width: cw, height: ch };
+    out.width = x1 - x0 + 1;
+    out.height = y1 - y0 + 1;
+    out.getContext('2d')!.drawImage(full, x0, y0, out.width, out.height, 0, 0, out.width, out.height);
+    return { image: out, ratio: out.width / out.height };
   }
 
-  async function prepare(url: string): Promise<Prepared> {
-    const img = await loadImage(url);
-    try {
-      const trimmed = await trimToInk(img);
-      if (trimmed) return trimmed;
-    } catch {}
-    return { src: url, width: img.naturalWidth, height: img.naturalHeight };
+  // Draw the source at the drawing's on-screen size times the device pixel ratio, so it's never upscaled.
+  function rasterize(image: CanvasImageSource) {
+    const rect = stack.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    let w = Math.max(1, Math.round(rect.width * dpr));
+    let h = Math.max(1, Math.round(rect.height * dpr));
+    if (w * h > MAX_PIXELS) {
+      const s = Math.sqrt(MAX_PIXELS / (w * h));
+      w = Math.round(w * s);
+      h = Math.round(h * s);
+    }
+    const off = document.createElement('canvas');
+    off.width = w;
+    off.height = h;
+    off.getContext('2d')!.drawImage(image, 0, 0, w, h);
+    return off;
   }
 
-  async function showRandomDrawing() {
-    const res = await fetch(
-      `${SUPABASE_URL}/rest/v1/drawings?select=id,name,image_url&status=eq.approved`,
-      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
-    );
-    if (!res.ok) return;
-    const drawings: Drawing[] = await res.json();
+  function showFinal(off: HTMLCanvasElement) {
+    canvas.width = off.width;
+    canvas.height = off.height;
+    canvas.getContext('2d')!.drawImage(off, 0, 0);
+  }
+
+  function downscale(src: HTMLCanvasElement, maxPixels: number) {
+    if (src.width * src.height <= maxPixels) return src;
+    const s = Math.sqrt(maxPixels / (src.width * src.height));
+    const out = document.createElement('canvas');
+    out.width = Math.round(src.width * s);
+    out.height = Math.round(src.height * s);
+    out.getContext('2d')!.drawImage(src, 0, 0, out.width, out.height);
+    return out;
+  }
+
+  // Reveal the ink along each connected stroke, outward from where it starts, one shape after another.
+  function drawIn(off: HTMLCanvasElement, animate: boolean): Promise<void> {
+    if (!animate) {
+      showFinal(off);
+      return Promise.resolve();
+    }
+    const anim = downscale(off, ANIM_PIXELS);
+    const { width: w, height: h } = anim;
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d')!;
+    const src = anim.getContext('2d', { willReadFrequently: true })!.getImageData(0, 0, w, h).data;
+    const seen = new Uint8Array(w * h);
+    let inkCount = 0;
+    for (let i = 0; i < w * h; i++) if (src[i * 4 + 3] > 24) inkCount++;
+    const order = new Int32Array(inkCount);
+    let n = 0;
+    for (let x = 0; x < w; x++) {
+      for (let y = 0; y < h; y++) {
+        const s = y * w + x;
+        if (seen[s] || src[s * 4 + 3] <= 24) continue;
+        seen[s] = 1;
+        let head = n;
+        order[n++] = s;
+        while (head < n) {
+          const i = order[head++];
+          const ix = i % w, iy = (i - ix) / w;
+          for (let dy = -1; dy <= 1; dy++) {
+            for (let dx = -1; dx <= 1; dx++) {
+              const nx = ix + dx, ny = iy + dy;
+              if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
+              const j = ny * w + nx;
+              if (!seen[j] && src[j * 4 + 3] > 24) {
+                seen[j] = 1;
+                order[n++] = j;
+              }
+            }
+          }
+        }
+      }
+    }
+    const frame = ctx.createImageData(w, h);
+    const px = frame.data;
+    let shown = 0;
+    const start = performance.now();
+    const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
+    return new Promise((resolve) => {
+      const step = (now: number) => {
+        const t = Math.min(1, (now - start) / DRAW_IN_MS);
+        const target = Math.floor(n * ease(t));
+        for (let k = shown; k < target; k++) {
+          const p = order[k] * 4;
+          px[p] = src[p]; px[p + 1] = src[p + 1]; px[p + 2] = src[p + 2]; px[p + 3] = src[p + 3];
+        }
+        shown = target;
+        ctx.putImageData(frame, 0, 0);
+        if (t < 1) requestAnimationFrame(step);
+        else {
+          showFinal(off);
+          resolve();
+        }
+      };
+      requestAnimationFrame(step);
+    });
+  }
+
+  async function show() {
+    const [drawings, manifest] = await Promise.all([
+      fetch(`${SUPABASE_URL}/rest/v1/drawings?select=id,name,image_url&status=eq.approved`, {
+        headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` },
+      }).then((r) => (r.ok ? (r.json() as Promise<Drawing[]>) : [])),
+      fetch('/drawings/manifest.json')
+        .then((r) => (r.ok ? r.json() : { drawings: [] }))
+        .catch(() => ({ drawings: [] })),
+    ]);
     if (!drawings.length) return;
 
     // Skip the last few shown this session so refreshes feel fresh.
@@ -104,79 +201,76 @@
     const pick = pool[Math.floor(Math.random() * pool.length)];
     writeHistory([pick.id, ...recent].slice(0, Math.min(HISTORY_SIZE, drawings.length - 1)));
 
+    const vector = new Map<string, number>(manifest.drawings.map((d: { id: string; ratio: number }) => [d.id, d.ratio]));
+    const source: Source = vector.has(pick.id)
+      ? { image: await loadImage(`/drawings/${pick.id}.svg`), ratio: vector.get(pick.id)! }
+      : await trimmedPng(pick.image_url);
+
     const artist = pick.name?.trim() || 'an anonymous visitor';
-    const drawing = await prepare(pick.image_url);
+    canvas.setAttribute('aria-label', `A drawing by ${artist}, a site visitor`);
+    credit.querySelector('[data-drawing-artist]')!.textContent = `drawn by ${artist}`;
 
-    document.querySelectorAll<HTMLElement>('[data-drawing-frame]').forEach((frame) => {
-      frame.style.setProperty('--ratio', String(drawing.width / drawing.height));
-      frame.style.setProperty('--cap', `${drawing.width * MAX_UPSCALE}px`);
-      const img = frame.querySelector<HTMLImageElement>('[data-visitor-drawing]');
-      if (!img) return;
-      img.addEventListener('load', () => img.classList.add('is-loaded'), { once: true });
-      img.alt = `Drawing by ${artist}`;
-      img.src = drawing.src;
-    });
+    // Measuring right after setting the ratio forces layout, so the size is already correct.
+    stack.style.setProperty('--ratio', String(source.ratio));
+    await drawIn(rasterize(source.image), !reduceMotion);
+    credit.classList.add('is-shown');
 
-    document.querySelectorAll<HTMLElement>('[data-drawing-credit]').forEach((el) => {
-      const by = document.createElement('strong');
-      by.textContent = `Drawn by ${artist}`;
-      const count = document.createElement('span');
-      count.textContent = `One of ${drawings.length} visitor drawings`;
-      el.replaceChildren(by, count);
-      el.hidden = false;
+    let resizeTimer: number | undefined;
+    window.addEventListener('resize', () => {
+      window.clearTimeout(resizeTimer);
+      resizeTimer = window.setTimeout(() => drawIn(rasterize(source.image), false), 150);
     });
   }
 
-  showRandomDrawing().catch(() => {});
+  show().catch(() => {});
 </script>
 
 <style>
   .visitor-drawing {
-    margin: 0;
+    position: relative;
     width: 100%;
     height: 100%;
-    min-width: 0;
-    min-height: 0;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 16px;
+    display: grid;
+    place-items: center;
   }
 
-  /* The frame takes the drawing's own proportions and grows as large as the space allows. */
-  .frame {
-    --ratio: 1.76;
-    width: min(100%, calc(var(--drawing-max-h, 60vh) * var(--ratio)), var(--cap, 100%));
+  .stack {
+    --ratio: 1.7;
     aspect-ratio: var(--ratio);
+    max-width: 100%;
   }
 
-  .frame img {
+  .stack canvas {
+    display: block;
     width: 100%;
     height: 100%;
-    object-fit: contain;
-    opacity: 0;
-    transition: opacity 0.6s ease;
   }
 
-  .frame img.is-loaded { opacity: 1; }
-
-  figcaption {
+  .credit {
+    position: absolute;
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 2px;
-    font-size: 13px;
-    color: var(--muted);
-    text-align: center;
+    gap: 6px;
+    margin: 0;
+    font-family: var(--font-hand);
+    font-size: clamp(22px, 2.2vw, 30px);
+    line-height: 1;
+    color: var(--ink);
+    white-space: nowrap;
+    transform: rotate(-4deg);
+    opacity: 0;
+    transition: opacity 0.5s ease;
   }
 
-  figcaption :global(strong) {
-    color: var(--ink);
-    font-weight: 500;
+  .credit svg {
+    width: 34px;
+    height: 20px;
+    flex: none;
   }
+
+  .credit.is-shown { opacity: 1; }
 
   @media (prefers-reduced-motion: reduce) {
-    .frame img { transition: none; }
+    .credit { transition: none; }
   }
 </style>

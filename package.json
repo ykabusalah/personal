@@ -24,6 +24,8 @@
     "esbuild": true
   },
   "devDependencies": {
+    "potrace": "^2.1.8",
+    "sharp": "^0.35.4",
     "tailwindcss": "^3.4.19"
   }
 }
