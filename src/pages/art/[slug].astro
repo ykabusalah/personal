@@ -22,6 +22,11 @@ const hasBody = Boolean(entry.body?.trim());
   <p class="eyebrow">{KIND_LABEL[data.kind]}{data.draft && ' · Draft'}</p>
   <h1 class="page-title"><span class="mark">{data.title}</span></h1>
   <p class="summary">{data.summary}</p>
+  {data.live && (
+    <a class="read-more" href={data.live} target={data.live.startsWith('http') ? '_blank' : undefined} rel="noopener">
+      Read it on {data.live.includes('substack.com') ? 'Substack' : 'the web'} →
+    </a>
+  )}
 
   <div class="cover"><Doodle kind="image" name={`art-${entry.id}`} note="a page or spread from the book" width={680} aspect="4 / 3" /></div>
 
@@ -53,6 +58,15 @@ const hasBody = Boolean(entry.body?.trim());
     font-size: 24px;
     line-height: 1.35;
     margin: 0 0 28px;
+  }
+
+  .read-more {
+    display: inline-block;
+    margin: -12px 0 28px;
+    font-weight: 500;
+    text-decoration-color: var(--accent);
+    text-decoration-thickness: 2px;
+    text-underline-offset: 4px;
   }
 
   .cover:not(:empty) {
