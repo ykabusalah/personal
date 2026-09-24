@@ -9,6 +9,10 @@ const work = defineCollection({
     kind: z.enum(['fellowship', 'project', 'writing']),
     summary: z.string(),
     status: z.enum(['done', 'in-progress']).default('done'),
+    // "At a glance" on project pages: what I did, when, and what came of it.
+    role: z.string().optional(),
+    timeline: z.string().optional(),
+    outcome: z.string().optional(),
     stack: z.array(z.string()).default([]),
     github: z.url().optional(),
     // Full URL, or a path on this site like /info.

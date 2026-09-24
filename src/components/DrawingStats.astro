@@ -1,0 +1,151 @@
+---
+// Live totals for the drawing site, shown on its project page.
+// Numbers come from the drawing_stats database function (supabase/drawing-stats.sql), which returns counts only.
+const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL;
+const SUPABASE_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
+
+type Stats = { visitors: number | null; submitted: number; approved: number; rejected: number };
+
+async function count(filter: string) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/drawings?select=id${filter}`, {
+    method: 'HEAD',
+    headers: { ...headers, Prefer: 'count=exact' },
+  });
+  return Number(res.headers.get('content-range')?.split('/')[1] ?? 0);
+}
+
+async function load(): Promise<Stats | null> {
+  try {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/drawing_stats`, {
+      method: 'POST',
+      headers: { ...headers, 'Content-Type': 'application/json' },
+      body: '{}',
+    });
+    if (res.ok) return await res.json();
+    // Until the function is added, count the drawings directly. Visitors need the function.
+    if (res.status === 404) {
+      const [submitted, approved, rejected] = await Promise.all([count(''), count('&status=eq.approved'), count('&status=eq.rejected')]);
+      return { visitors: null, submitted, approved, rejected };
+    }
+  } catch {}
+  return null;
+}
+
+const stats = await load();
+const rate = (s: Stats) => (s.approved + s.rejected ? Math.round((s.approved / (s.approved + s.rejected)) * 100) : 0);
+---
+
+{stats && (
+  <section class="numbers" aria-labelledby="numbers-title" data-drawing-stats>
+    <h2 id="numbers-title" class="section-title"><span class="live" aria-hidden="true"></span>By the numbers</h2>
+    <dl class="tiles">
+      <div class="tile" data-stat-tile="visitors" hidden={stats.visitors == null}>
+        <dt>Visitors</dt>
+        <dd data-stat="visitors">{stats.visitors?.toLocaleString('en-US')}</dd>
+      </div>
+      <div class="tile">
+        <dt>Drawings submitted</dt>
+        <dd data-stat="submitted">{stats.submitted.toLocaleString('en-US')}</dd>
+      </div>
+      <div class="tile">
+        <dt>Made the cut</dt>
+        <dd data-stat="approved">{stats.approved.toLocaleString('en-US')}</dd>
+      </div>
+      <div class="tile">
+        <dt>Approval rate</dt>
+        <dd data-stat="rate">{rate(stats)}%</dd>
+      </div>
+    </dl>
+    <p class="note">Live from the site's database. I review every single drawing by hand, so if you're wondering about that approval rate, yes, blame me.</p>
+  </section>
+)}
+
+<script>
+  const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL;
+  const SUPABASE_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  const box = document.querySelector('[data-drawing-stats]');
+
+  // The numbers above are from the last build; swap in today's.
+  if (box) {
+    fetch(`${SUPABASE_URL}/rest/v1/rpc/drawing_stats`, {
+      method: 'POST',
+      headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, 'Content-Type': 'application/json' },
+      body: '{}',
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((s) => {
+        if (!s) return;
+        const set = (key: string, value: string) => {
+          const el = box.querySelector(`[data-stat="${key}"]`);
+          if (el) el.textContent = value;
+        };
+        const reviewed = s.approved + s.rejected;
+        set('visitors', s.visitors.toLocaleString('en-US'));
+        set('submitted', s.submitted.toLocaleString('en-US'));
+        set('approved', s.approved.toLocaleString('en-US'));
+        set('rate', `${reviewed ? Math.round((s.approved / reviewed) * 100) : 0}%`);
+        box.querySelector<HTMLElement>('[data-stat-tile="visitors"]')!.hidden = false;
+      })
+      .catch(() => {});
+  }
+</script>
+
+<style>
+  .numbers { margin: 44px 0 8px; }
+
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .live {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    50% { opacity: 0.35; }
+  }
+
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    margin: 0;
+  }
+
+  .tile {
+    padding: 16px 18px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+  }
+
+  .tile[hidden] { display: none; }
+
+  dt {
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  dd {
+    margin: 6px 0 0;
+    font-family: var(--font-display);
+    font-size: 40px;
+    line-height: 1;
+  }
+
+  .note {
+    margin: 14px 0 0;
+    font-size: 14px;
+    color: var(--muted);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .live { animation: none; }
+  }
+</style>

@@ -4,6 +4,9 @@ kind: project
 summary: Interactive fiction platform with personality-driven storytelling. Readers discover their archetype through a quiz, then experience branching narratives with AI-generated choices tailored to their personality.
 stack: [Next.js, React, TypeScript, TailwindCSS, PostgreSQL (Neon), Prisma ORM, Claude API]
 github: https://github.com/ykabusalah/echoes
+role: "Solo: product, design, and code"
+timeline: Dec 2025 to Jan 2026
+outcome: Shipped to production with 8 stories, AI-personalized choices for every archetype, and a custom analytics dashboard for authors.
 order: 2
 cover: ./echoes/stitched_light_left_dark_right.png
 coverAlt: "Side-by-side comparison of light and dark mode on the homepage"

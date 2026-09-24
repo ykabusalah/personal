@@ -4,6 +4,7 @@ import { render } from 'astro:content';
 import '../../styles/prose.css';
 import PageLayout from '../../layouts/PageLayout.astro';
 import Doodle from '../../components/Doodle.astro';
+import DrawingStats from '../../components/DrawingStats.astro';
 import { getSection, KIND_LABEL, type WorkEntry } from '../../lib/work';
 
 export async function getStaticPaths() {
@@ -20,6 +21,13 @@ const links = [
   data.live && { label: data.live.startsWith('/') ? 'Try it' : 'Live site', href: data.live },
   data.github && { label: 'GitHub', href: data.github },
 ].filter(Boolean) as { label: string; href: string }[];
+
+const glance = [
+  ['Role', data.role],
+  ['Timeline', data.timeline],
+  ['Outcome', data.outcome],
+  ['Built with', data.stack.join(', ')],
+].filter(([, value]) => value) as [string, string][];
 ---
 
 <PageLayout title={`${data.title} | Yousef's Personal Website`} description={data.summary} page={`projects/${entry.id}`}>
@@ -39,10 +47,15 @@ const links = [
     </ul>
   )}
 
-  {data.stack.length > 0 && (
-    <ul class="chips stack" aria-label="Built with">
-      {data.stack.map((item) => <li><span class="chip">{item}</span></li>)}
-    </ul>
+  {glance.length > 0 && (
+    <dl class="glance" aria-label="At a glance">
+      {glance.map(([label, value]) => (
+        <div class="row">
+          <dt>{label}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
   )}
 
   <div class="hero-image">
@@ -50,6 +63,8 @@ const links = [
       ? <Image src={data.cover} alt={data.coverAlt} widths={[680, 1360]} sizes="(min-width: 720px) 680px, 100vw" loading="eager" />
       : <Doodle kind="image" name={`project-${entry.id}`} note="a screenshot of it" width={680} />}
   </div>
+
+  {entry.id === 'drawing-canvas' && <DrawingStats />}
 
   {hasBody && (
     <div class="body">
@@ -78,22 +93,49 @@ const links = [
     margin: 0 0 24px;
   }
 
-  .links { margin-bottom: 12px; }
+  .links { margin-bottom: 28px; }
 
-  .stack .chip {
+  /* At a glance: label on the left, detail on the right, stacked on phones. */
+  .glance {
+    margin: 0;
+    border-top: 1px solid var(--line);
+    font-size: 15px;
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 110px 1fr;
+    gap: 16px;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .row dt {
     font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: var(--muted);
-    background: #f7f6f2;
-    border-color: transparent;
+    padding-top: 3px;
+  }
+
+  .row dd { margin: 0; }
+
+  @media (max-width: 520px) {
+    .row {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 2px;
+    }
   }
 
   .hero-image:not(:empty) {
     margin-top: 32px;
+    border: 1px solid var(--line);
     border-radius: 12px;
     overflow: hidden;
   }
 
-  .hero-image :global(img) { width: 100%; height: auto; }
+  .hero-image :global(img) { display: block; width: 100%; height: auto; }
 
   .body {
     position: relative;

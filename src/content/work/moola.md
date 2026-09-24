@@ -5,6 +5,9 @@ status: in-progress
 summary: A private, minimalist spending tracker for iOS and Android. Built with React Native + Expo with all data stored locally on-device.
 stack: [React Native, Expo, TailwindCSS]
 github: https://github.com/ykabusalah/moola
+role: "Solo: product, design, and code"
+timeline: Jan 2026 to now
+outcome: Built and ready for App Store submission. Fully offline, no accounts, 24 currencies.
 order: 4
 cover: ./moola/moola_png.png
 coverAlt: "Side-by-side light and dark mode comparison"
