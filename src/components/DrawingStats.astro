@@ -5,16 +5,9 @@ const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
 const headers = { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` };
 
-type Stats = { visitors: number | null; submitted: number; approved: number; rejected: number };
+type Stats = { visitors: number; submitted: number; approved: number; rejected: number };
 
-async function count(filter: string) {
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/drawings?select=id${filter}`, {
-    method: 'HEAD',
-    headers: { ...headers, Prefer: 'count=exact' },
-  });
-  return Number(res.headers.get('content-range')?.split('/')[1] ?? 0);
-}
-
+// No function yet (or no connection) means no box, rather than numbers that could be wrong.
 async function load(): Promise<Stats | null> {
   try {
     const res = await fetch(`${SUPABASE_URL}/rest/v1/rpc/drawing_stats`, {
@@ -23,11 +16,6 @@ async function load(): Promise<Stats | null> {
       body: '{}',
     });
     if (res.ok) return await res.json();
-    // Until the function is added, count the drawings directly. Visitors need the function.
-    if (res.status === 404) {
-      const [submitted, approved, rejected] = await Promise.all([count(''), count('&status=eq.approved'), count('&status=eq.rejected')]);
-      return { visitors: null, submitted, approved, rejected };
-    }
   } catch {}
   return null;
 }
@@ -40,9 +28,9 @@ const rate = (s: Stats) => (s.approved + s.rejected ? Math.round((s.approved / (
   <section class="numbers" aria-labelledby="numbers-title" data-drawing-stats>
     <h2 id="numbers-title" class="section-title"><span class="live" aria-hidden="true"></span>By the numbers</h2>
     <dl class="tiles">
-      <div class="tile" data-stat-tile="visitors" hidden={stats.visitors == null}>
+      <div class="tile">
         <dt>Visitors</dt>
-        <dd data-stat="visitors">{stats.visitors?.toLocaleString('en-US')}</dd>
+        <dd data-stat="visitors">{stats.visitors.toLocaleString('en-US')}</dd>
       </div>
       <div class="tile">
         <dt>Drawings submitted</dt>
@@ -85,7 +73,6 @@ const rate = (s: Stats) => (s.approved + s.rejected ? Math.round((s.approved / (
         set('submitted', s.submitted.toLocaleString('en-US'));
         set('approved', s.approved.toLocaleString('en-US'));
         set('rate', `${reviewed ? Math.round((s.approved / reviewed) * 100) : 0}%`);
-        box.querySelector<HTMLElement>('[data-stat-tile="visitors"]')!.hidden = false;
       })
       .catch(() => {});
   }
@@ -124,8 +111,6 @@ const rate = (s: Stats) => (s.approved + s.rejected ? Math.round((s.approved / (
     border: 1px solid var(--line);
     border-radius: 12px;
   }
-
-  .tile[hidden] { display: none; }
 
   dt {
     font-size: 13px;
