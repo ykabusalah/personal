@@ -73,6 +73,30 @@ a { color: inherit; }
 a.chip { transition: border-color 0.15s ease; }
 a.chip:hover { border-color: var(--accent); }
 
+/* The main call to action on a page, in the accent color. An icon inside tilts on hover. */
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 22px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--on-accent);
+  font-size: 16px;
+  font-weight: 500;
+  text-decoration: none;
+  transition: opacity 0.15s ease;
+}
+
+.button:hover { opacity: 0.88; }
+.button svg { flex: none; transition: transform 0.2s ease; }
+.button:hover svg { transform: rotate(-12deg); }
+
+@media (prefers-reduced-motion: reduce) {
+  .button,
+  .button svg { transition: none; }
+}
+
 /* Marker swash in the accent color behind a title's lower half. */
 .mark {
   background: linear-gradient(transparent 58%, var(--accent) 58%, var(--accent) 88%, transparent 88%);

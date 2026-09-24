@@ -1,21 +1,28 @@
 ---
-import AppLayout from '../layouts/AppLayout.astro';
+import PageLayout from '../layouts/PageLayout.astro';
 import Doodle from '../components/Doodle.astro';
-import ThankYou from '../islands/ThankYou.jsx';
 ---
 
-<AppLayout title="Thank you | Yousef's Personal Website" header>
-  <ThankYou client:only="react" />
-  <div class="doodle-spot"><Doodle name="thank-you" note="a celebrating character" width={120} /></div>
-</AppLayout>
+<PageLayout title="Thank you | Yousef's Personal Website" page="thank_you">
+  <section class="thanks">
+    <Doodle side="right" top="20px" tilt={-5} mobile="inline" name="thank-you" note="a celebrating character" width={120} />
+    <h1 class="page-title">🎉 <span class="mark">Thank You!</span></h1>
+    <p class="lede">
+      Your drawing was submitted successfully. If it's selected, it will appear on the main site with your name at the bottom right. Thanks for contributing!
+    </p>
+    <a class="button" href="/">Return to Home</a>
+  </section>
+</PageLayout>
 
 <style>
-  .doodle-spot {
-    position: fixed;
-    left: 50%;
-    bottom: calc(var(--gutter) + 12px);
-    transform: translateX(-50%);
-    z-index: 5;
-    pointer-events: none;
+  .thanks { position: relative; }
+
+  .page-title { margin-bottom: 24px; }
+
+  .lede {
+    max-width: 52ch;
+    margin: 0 0 28px;
+    font-size: 19px;
+    line-height: 1.55;
   }
 </style>
