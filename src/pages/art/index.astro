@@ -1,6 +1,7 @@
 ---
 import PageLayout from '../../layouts/PageLayout.astro';
 import Doodle from '../../components/Doodle.astro';
+import KeeganNote from '../../components/KeeganNote.astro';
 import { getSection, KIND_HEADING, KIND_ORDER } from '../../lib/work';
 
 // Creative work, laid out like prints taped into a sketchbook.
@@ -22,7 +23,7 @@ const TAPE_TILTS = [4, -3, 2, -5, 3, -2];
     <section class="group">
       {i === 0 && <Doodle side="left" top="10px" tilt={-7} name="art-side-1" note="a paintbrush, sketchbook, or ink pot" width={104} />}
       {i === 0 && <Doodle side="right" top="50%" tilt={6} mobile="inline" name="art-side-2" note="a character from one of the books" width={104} />}
-      <h2 class="group-title">{KIND_HEADING[kind]}</h2>
+      <h2 class="group-title">{kind === 'fellowship' ? <KeeganNote label={KIND_HEADING[kind]} /> : KIND_HEADING[kind]}</h2>
       <ul class="board">
         {entries.map((entry, j) => (
           <li>
@@ -61,6 +62,11 @@ const TAPE_TILTS = [4, -3, 2, -5, 3, -2];
     font-size: 34px;
     font-weight: 400;
     line-height: 1;
+  }
+
+  /* The Keegan title is a button, which doesn't inherit the underline, so it gets its own. */
+  .group-title,
+  .group-title :global(.keegan-trigger) {
     text-decoration: underline wavy var(--accent);
     text-decoration-thickness: 2px;
     text-underline-offset: 8px;

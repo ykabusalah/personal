@@ -3,6 +3,7 @@ import { render } from 'astro:content';
 import '../../styles/prose.css';
 import PageLayout from '../../layouts/PageLayout.astro';
 import Doodle from '../../components/Doodle.astro';
+import KeeganNote from '../../components/KeeganNote.astro';
 import { getSection, KIND_LABEL, type WorkEntry } from '../../lib/work';
 
 export async function getStaticPaths() {
@@ -19,7 +20,7 @@ const hasBody = Boolean(entry.body?.trim());
 <PageLayout title={`${data.title} | Yousef's Personal Website`} description={data.summary} page={`art/${entry.id}`}>
   <a class="back" href="/art">← All art</a>
 
-  <p class="eyebrow">{KIND_LABEL[data.kind]}{data.draft && ' · Draft'}</p>
+  <p class="eyebrow">{data.kind === 'fellowship' ? <KeeganNote label={KIND_LABEL[data.kind]} /> : KIND_LABEL[data.kind]}{data.draft && ' · Draft'}</p>
   <h1 class="page-title"><span class="mark">{data.title}</span></h1>
   <p class="summary">{data.summary}</p>
   {data.live && (

@@ -1,0 +1,148 @@
+---
+// "Keegan Fellowship" with a note card that pops up on hover, or on tap and keyboard press.
+interface Props {
+  label?: string;
+}
+
+const { label = 'Keegan Fellowship' } = Astro.props;
+const id = `keegan-note-${Math.random().toString(36).slice(2, 8)}`;
+---
+
+<span class="keegan" data-keegan-note>
+  <button type="button" class="keegan-trigger" aria-expanded="false" aria-controls={id}>
+    {label}<svg class="hint" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="9.5" /><path d="M12 11v5.5M12 7.5v.01" /></svg>
+  </button>
+  <span class="card" id={id} role="note">
+    <span class="card-title">Michael B. Keegan Traveling Fellowship</span>
+    <span class="fact"><span class="big">4+ yrs</span><span>The longest-serving fellow in the program's history</span></span>
+    <span class="fact"><span class="big">32+</span><span>Countries traveled</span></span>
+    <span class="fact wide">Explored the stories of refugees while working with organizations like the UN and Save the Children</span>
+    <a class="more" href="https://www.keegantravelingfellowship.org/yousef-abu-salah" target="_blank" rel="noopener">My fellow profile →</a>
+  </span>
+</span>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-keegan-note]').forEach((note) => {
+    const button = note.querySelector('button')!;
+    const setOpen = (open: boolean) => {
+      note.toggleAttribute('data-open', open);
+      button.setAttribute('aria-expanded', String(open));
+    };
+    button.addEventListener('click', () => setOpen(!note.hasAttribute('data-open')));
+    note.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') setOpen(false);
+    });
+    document.addEventListener('click', (event) => {
+      if (!note.contains(event.target as Node)) setOpen(false);
+    });
+  });
+</script>
+
+<style>
+  .keegan {
+    position: relative;
+    display: inline-block;
+  }
+
+  .keegan-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3em;
+    padding: 0;
+    border: 0;
+    background: none;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    color: inherit;
+    cursor: help;
+  }
+
+  .hint {
+    flex: none;
+    color: var(--accent);
+  }
+
+  /* A sticky note in the accent color. It shows instantly and only the movement is animated,
+     so it still appears when the browser skips animations. */
+  .card {
+    visibility: hidden;
+    position: absolute;
+    z-index: 20;
+    top: calc(100% + 12px);
+    left: -6px;
+    width: min(330px, calc(100vw - 2 * var(--gutter)));
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 18px 20px 16px;
+    background: var(--accent);
+    color: var(--on-accent);
+    border-radius: 18px 10px 20px 12px / 12px 20px 10px 18px;
+    box-shadow: 0 16px 32px -18px rgba(0, 0, 0, 0.45);
+    font: 400 14px/1.4 var(--font-body);
+    letter-spacing: normal;
+    text-transform: none;
+    text-align: left;
+    transform: rotate(-1.5deg);
+  }
+
+  /* Bridges the gap so the note stays open while the pointer moves onto it. */
+  .card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    height: 14px;
+  }
+
+  .keegan[data-open] .card {
+    visibility: visible;
+    animation: note-in 0.2s ease-out;
+  }
+
+  @media (hover: hover) {
+    .keegan:hover .card {
+      visibility: visible;
+      animation: note-in 0.2s ease-out;
+    }
+  }
+
+  @keyframes note-in {
+    from { transform: rotate(-4deg) translateY(-6px); }
+    to { transform: rotate(-1.5deg); }
+  }
+
+  .card-title {
+    font-family: var(--font-hand);
+    font-size: 26px;
+    line-height: 1;
+  }
+
+  .fact {
+    display: grid;
+    grid-template-columns: 76px 1fr;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .fact.wide { display: block; }
+
+  .big {
+    font-family: var(--font-display);
+    font-size: 28px;
+    line-height: 1;
+  }
+
+  .more {
+    align-self: flex-start;
+    color: inherit;
+    font-weight: 500;
+    text-underline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .keegan .card { animation: none !important; }
+  }
+</style>
