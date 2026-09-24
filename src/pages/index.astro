@@ -71,6 +71,7 @@ const drawingCount = await getApprovedCount();
 <style>
   /* Phone: the drawing fills the space under the header; the intro sits below it on a color sticker. */
   .home {
+    position: relative;
     min-height: 100dvh;
     display: grid;
     grid-template-rows: minmax(36vh, 1fr) auto;
@@ -90,13 +91,80 @@ const drawingCount = await getApprovedCount();
   .art :global(.credit) { right: 0; bottom: -6px; }
 
   .sticker {
+    --tilt: -1.2deg;
     position: relative;
     z-index: 2;
     padding: 24px 22px 26px;
     background: var(--accent);
     color: var(--on-accent);
     border-radius: 22px 12px 26px 14px / 14px 24px 12px 22px;
-    transform: rotate(-1.2deg);
+    transform: rotate(var(--tilt));
+    transition: transform 0.5s cubic-bezier(0.5, 0, 0.75, 0), opacity 0.35s ease 0.1s;
+  }
+
+  /* Tipped off the bottom of the screen so the whole drawing shows. */
+  .sticker.is-away {
+    transform: translateY(125%) rotate(-14deg);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  /* Then dropped from the layout, so on narrow screens the drawing grows into its space. */
+  .sticker.is-gone { display: none; }
+
+  /* Coming back: jump into place, then bounce up from below (movement only). */
+  .sticker.is-back {
+    transition: none;
+    animation: sticker-back 0.4s cubic-bezier(0.2, 0.8, 0.3, 1.25);
+  }
+
+  @keyframes sticker-back {
+    from { transform: translateY(48px) rotate(-6deg); }
+    to { transform: rotate(var(--tilt)); }
+  }
+
+  /* A small tag sticking out of the sticker's top edge, on the left here since the drawing credit is on the right. */
+  .scoot {
+    position: absolute;
+    bottom: calc(100% - 4px);
+    left: 22px;
+    padding: 6px 12px 7px;
+    border: 0;
+    border-radius: 8px 8px 0 0;
+    background: var(--ink);
+    color: #fff;
+    font: 500 12px/1 var(--font-body);
+    cursor: pointer;
+    transform: rotate(1.5deg);
+    transform-origin: bottom center;
+  }
+
+  .scoot:hover {
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  .bring-back:not([hidden]) {
+    position: absolute;
+    left: var(--gutter);
+    bottom: var(--gutter);
+    z-index: 2;
+    padding: 10px 16px;
+    border: 0;
+    border-radius: 999px;
+    background: var(--accent);
+    color: var(--on-accent);
+    font: 500 14px/1 var(--font-body);
+    cursor: pointer;
+    transform: rotate(-2deg);
+    box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.45);
+    animation: pop-in 0.3s ease-out;
+  }
+
+  /* Movement only, so the button is visible even if the animation never plays. */
+  @keyframes pop-in {
+    from { transform: rotate(-2deg) translateY(16px); }
+    to { transform: rotate(-2deg) translateY(0); }
   }
 
   h1 {
@@ -174,86 +242,18 @@ const drawingCount = await getApprovedCount();
     .art :global(.credit) { right: calc(var(--gutter) + 8px); bottom: calc(var(--gutter) + 8px); }
 
     .sticker {
+      --tilt: -2.2deg;
       position: absolute;
       left: var(--gutter);
       bottom: var(--gutter);
       width: min(460px, 40vw);
       padding: 30px 32px 32px;
-      transform: rotate(-2.2deg);
-      transition: transform 0.5s cubic-bezier(0.5, 0, 0.75, 0), opacity 0.35s ease 0.1s;
     }
 
-    /* Tipped off the bottom of the screen so the whole drawing shows. */
-    .sticker.is-away {
-      transform: translateY(125%) rotate(-14deg);
-      opacity: 0;
-      pointer-events: none;
-    }
-
-    .sticker.is-gone { visibility: hidden; }
-
-    /* Coming back: jump into place, then bounce up from below (movement only). */
-    .sticker.is-back {
-      transition: none;
-      animation: sticker-back 0.4s cubic-bezier(0.2, 0.8, 0.3, 1.25);
-    }
-
-    @keyframes sticker-back {
-      from { transform: translateY(48px) rotate(-6deg); }
-      to { transform: rotate(-2.2deg); }
-    }
-
-    /* A small tag sticking out of the sticker's top edge. */
     .scoot {
-      display: block;
-      position: absolute;
-      bottom: calc(100% - 4px);
+      left: auto;
       right: 22px;
-      padding: 6px 12px 7px;
-      border: 0;
-      border-radius: 8px 8px 0 0;
-      background: var(--ink);
-      color: #fff;
-      font: 500 12px/1 var(--font-body);
-      cursor: pointer;
-      transform: rotate(1.5deg);
-      transform-origin: bottom center;
     }
-
-    .scoot:hover {
-      text-decoration: underline;
-      text-underline-offset: 3px;
-    }
-
-    .bring-back:not([hidden]) {
-      display: block;
-      position: absolute;
-      left: var(--gutter);
-      bottom: var(--gutter);
-      z-index: 2;
-      padding: 10px 16px;
-      border: 0;
-      border-radius: 999px;
-      background: var(--accent);
-      color: var(--on-accent);
-      font: 500 14px/1 var(--font-body);
-      cursor: pointer;
-      transform: rotate(-2deg);
-      box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.45);
-      animation: pop-in 0.3s ease-out;
-    }
-
-    /* Movement only, so the button is visible even if the animation never plays. */
-    @keyframes pop-in {
-      from { transform: rotate(-2deg) translateY(16px); }
-      to { transform: rotate(-2deg) translateY(0); }
-    }
-  }
-
-  /* Phones: the sticker sits below the drawing, so there is nothing to move out of the way. */
-  @media (max-width: 859px) {
-    .scoot,
-    .bring-back { display: none; }
   }
 
   @media (prefers-reduced-motion: reduce) {
