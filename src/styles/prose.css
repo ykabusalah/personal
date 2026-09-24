@@ -52,3 +52,36 @@
 }
 
 .prose th { font-weight: 600; }
+
+/* Code blocks scroll sideways instead of widening the page. Astro adds its own colors inline. */
+.prose pre {
+  overflow-x: auto;
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.prose pre code {
+  padding: 0;
+  background: none;
+}
+
+/* Screenshots, with the italic line under each one styled as a caption. */
+.prose img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 24px 0 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.prose p:has(> img:only-child) { margin-bottom: 8px; }
+
+.prose p:has(> img:only-child) + p:has(> em:only-child) {
+  margin-bottom: 28px;
+  font-size: 13px;
+  color: var(--muted);
+}

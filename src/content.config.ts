@@ -4,7 +4,7 @@ import { z } from 'astro/zod';
 
 const work = defineCollection({
   loader: glob({ pattern: '**/*.md', base: './src/content/work' }),
-  schema: z.object({
+  schema: ({ image }) => z.object({
     title: z.string(),
     kind: z.enum(['fellowship', 'project', 'writing']),
     summary: z.string(),
@@ -13,6 +13,9 @@ const work = defineCollection({
     github: z.url().optional(),
     // Full URL, or a path on this site like /info.
     live: z.string().optional(),
+    // Screenshot or artwork next to the entry file, shown in lists and at the top of its page.
+    cover: image().optional(),
+    coverAlt: z.string().default(''),
     order: z.number().default(100),
     // Drafts show up in `npm run dev` only, never in the built site.
     draft: z.boolean().default(false),

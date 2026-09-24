@@ -1,4 +1,5 @@
 ---
+import { Image } from 'astro:assets';
 import PageLayout from '../../layouts/PageLayout.astro';
 import Doodle from '../../components/Doodle.astro';
 import { getSection } from '../../lib/work';
@@ -17,7 +18,11 @@ const projects = await getSection('projects');
       {projects.map((entry) => (
         <li>
           <a class="row" href={`/projects/${entry.id}`}>
-            <span class="thumb"><Doodle kind="image" name={`project-${entry.id}`} note="a screenshot of it" width={132} /></span>
+            <span class="thumb">
+              {entry.data.cover
+                ? <Image src={entry.data.cover} alt="" widths={[132, 264]} sizes="132px" />
+                : <Doodle kind="image" name={`project-${entry.id}`} note="a screenshot of it" width={132} />}
+            </span>
             <span class="text">
               <span class="title-line">
                 <span class="title">{entry.data.title}</span>
@@ -62,7 +67,9 @@ const projects = await getSection('projects');
   }
 
   .thumb :global(img) {
+    display: block;
     width: 100%;
+    height: auto;
     aspect-ratio: 16 / 10;
     object-fit: cover;
   }

@@ -6,6 +6,8 @@ stack: [React, Supabase, TailwindCSS]
 github: https://github.com/ykabusalah/personal
 live: /info
 order: 1
+cover: ./drawing-canvas/mod_panel.jpg
+coverAlt: "Admin interface for reviewing and managing submitted artwork"
 ---
 
 ## Problem Statement
@@ -35,9 +37,21 @@ This project adds an interactive drawing canvas to a personal portfolio where vi
 
 A clean, minimalist introduction explaining the concept. Shows a live counter of approved drawings ("X drawings featured so far") with a pulsing indicator. Background gradient blurs add visual depth without competing for attention. The call-to-action button has a pencil icon that rotates on hover.
 
+![Info page with live counter and call-to-action](./drawing-canvas/draw_info_sc.jpg)
+
+*Info page with live counter and call-to-action*
+
 ### 2. Full-Viewport Drawing Canvas
 
 A React component rendering a full-viewport canvas element that spans edge-to-edge with no overflow under the toolbar. Dynamic resizing logic preserves existing strokes when the window resizes. Minimum window size enforced at 800x600px with a user-friendly message. Mobile visitors get a prompt to switch to desktop.
+
+![Responsive, edge-to-edge drawing canvas](./drawing-canvas/drawing_screen.jpg)
+
+*Responsive, edge-to-edge drawing canvas*
+
+![Automatic detection of smaller canvases (half-screen on desktop specifically)](./drawing-canvas/drawing_alert.jpg)
+
+*Automatic detection of smaller canvases (half-screen on desktop specifically)*
 
 ### 3. Vertical Toolbar
 
@@ -48,6 +62,11 @@ Tool details:
 - **Brush:** Adjustable size from 1 to 20px.
 - **Eraser:** True eraser using canvas `globalCompositeOperation: 'destination-out'`, not a white brush workaround. This was a deliberate UX improvement since the white-brush approach breaks on non-white backgrounds.
 - **Undo/Redo:** Each stroke (pointer down to pointer up) is captured as an independent state snapshot. Separate stacks for undo and redo allow full history navigation.
+    
+    ![Sleek vertical toolbar with tool icons in drawing canvas](./drawing-canvas/toolbar.jpg)
+    
+    *Sleek vertical toolbar with tool icons in drawing canvas*
+    
 
 ### 4. Keyboard Shortcuts
 
@@ -65,6 +84,10 @@ Tool details:
 ### 5. Submission Flow
 
 On save, the canvas is captured as a PNG and a modal opens for name entry and terms agreement. The image uploads to a Supabase storage bucket with RLS-protected insert policy. Metadata (name, image URL, status=pending) is inserted into the drawings table. A confirmation screen with confetti celebrates successful submission. All submission events are tracked for analytics.
+
+![User-facing modal for name entry and terms agreement before upload](./drawing-canvas/thankyou.jpg)
+
+*User-facing modal for name entry and terms agreement before upload*
 
 ### 6. Admin Moderation Panel
 
@@ -85,6 +108,10 @@ Built from scratch to replace Google Analytics with metrics that are actually re
 
 Time range filtering supports last 7 days, 30 days, 90 days, or all-time views.
 
+![Statistics page including full funnel visualization from home page to submission](./drawing-canvas/statistics.jpg)
+
+*Statistics page including full funnel visualization from home page to submission*
+
 ### 8. Cross-Domain Tracking
 
 The portfolio home page (hosted on super.so) and the drawing app (hosted on a subdomain) are connected via a lightweight tracking snippet. Visitor IDs persist across domains, enabling accurate funnel tracking from portfolio visit all the way through drawing submission.
@@ -98,7 +125,7 @@ The portfolio home page (hosted on super.so) and the drawing app (hosted on a su
 | Analytics | Custom-built tracking system |
 | Hosting | Subdomain (draw.ykabusalah.me) connected to main portfolio |
 
-## Results and Learnings
+## Results and Lessons
 
 Shipped a fully responsive drawing canvas with end-to-end submission flow, Supabase-powered storage and moderation, and a custom analytics system that provides deeper behavioral insight than Google Analytics could for this use case.
 
@@ -115,5 +142,5 @@ Key takeaways:
 - Color picker for multi-color drawings
 - Additional brush types (spray, calligraphy)
 - Public gallery of approved drawings
-- Geolocation tracking to see which cities submissions come from
+- Geo-location tracking to see which cities submissions come from
 - Social sharing for submitted artwork
