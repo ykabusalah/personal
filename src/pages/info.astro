@@ -2,9 +2,12 @@
 import PageLayout from '../layouts/PageLayout.astro';
 import Doodle from '../components/Doodle.astro';
 import { getApprovedCount } from '../lib/drawings-build.js';
+import { approvalRate, fetchDrawingTotals, formatCount } from '../lib/drawing-totals';
 
 // Plain HTML like the other pages, so it shows right away instead of waiting on React.
-const count = await getApprovedCount();
+// The full tally needs the drawing_stats function; without it, fall back to just the featured count.
+const totals = await fetchDrawingTotals();
+const count = totals ? totals.approved : await getApprovedCount();
 
 // Doodles scattered through the white space on both sides, to give the page some life before people draw.
 // lane: 0 hugs the screen edge, 1 sits just outside the text. top is from the top of the intro.
@@ -36,10 +39,27 @@ const SPOTS = [
     <p class="lede">
       The basic idea is that your drawing can become part of my website's design. Approved drawings are displayed at random whenever anyone visits the site. However, if your drawing is ugly, it ain't getting chosen. Good luck :)
     </p>
-    <p class="count" data-count-line hidden={!count}>
-      <span class="dot" aria-hidden="true"></span>
-      <span><span data-drawing-count>{count}</span> drawings featured so far</span>
-    </p>
+    {totals ? (
+      <div class="tally" data-tally>
+        <dl class="numbers">
+          <div><dt>drawings submitted</dt><dd data-stat="submitted">{formatCount(totals.submitted)}</dd></div>
+          <div><dt>made the cut</dt><dd data-stat="approved">{formatCount(totals.approved)}</dd></div>
+          <div><dt>approval rate</dt><dd data-stat="rate">{approvalRate(totals)}%</dd></div>
+        </dl>
+        <p class="picky">
+          <svg viewBox="0 0 40 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M38 18 C28 22, 16 16, 4 5" />
+            <path d="M4 5 L12 6 M4 5 L6 13" />
+          </svg>
+          yes, I'm picky
+        </p>
+      </div>
+    ) : (
+      <p class="count" hidden={!count}>
+        <span class="dot" aria-hidden="true"></span>
+        <span>{count} drawings featured so far</span>
+      </p>
+    )}
     <a class="button" href="/draw">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <path d="M12 20h9" />
@@ -51,21 +71,22 @@ const SPOTS = [
 </PageLayout>
 
 <script>
-  const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL;
-  const SUPABASE_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  import { approvalRate, fetchDrawingTotals, formatCount } from '../lib/drawing-totals';
 
-  // The count above is from the last build; swap in the live number.
-  fetch(`${SUPABASE_URL}/rest/v1/drawings?select=id&status=eq.approved`, {
-    method: 'HEAD',
-    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: 'count=exact' },
-  })
-    .then((res) => {
-      const total = Number(res.headers.get('content-range')?.split('/')[1]);
-      if (!total) return;
-      document.querySelector('[data-drawing-count]')!.textContent = String(total);
-      document.querySelector<HTMLElement>('[data-count-line]')!.hidden = false;
-    })
-    .catch(() => {});
+  // The numbers above are from the last build; swap in today's.
+  const tally = document.querySelector('[data-tally]');
+  if (tally) {
+    fetchDrawingTotals().then((t) => {
+      if (!t) return;
+      const set = (key: string, value: string) => {
+        const el = tally.querySelector(`[data-stat="${key}"]`);
+        if (el) el.textContent = value;
+      };
+      set('submitted', formatCount(t.submitted));
+      set('approved', formatCount(t.approved));
+      set('rate', `${approvalRate(t)}%`);
+    });
+  }
 
   // Start loading the canvas in the background so it opens quickly after "Let's Draw!".
   const warmCanvas = () => import('../islands/DrawCanvas.jsx').catch(() => {});
@@ -125,6 +146,53 @@ const SPOTS = [
     margin: 0 0 24px;
     font-size: 19px;
     line-height: 1.55;
+  }
+
+  /* The tally: three big numbers, with a handwritten aside pointing back at the approval rate. */
+  .tally {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 6px 14px;
+    margin: 0 0 28px;
+  }
+
+  .numbers {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 36px;
+    margin: 0;
+  }
+
+  .numbers dt {
+    margin-bottom: 4px;
+    font-size: 13px;
+    color: var(--muted);
+  }
+
+  .numbers dd {
+    margin: 0;
+    font-family: var(--font-display);
+    font-size: 40px;
+    line-height: 1;
+  }
+
+  .picky {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0 0 4px;
+    font-family: var(--font-hand);
+    font-size: 24px;
+    line-height: 1;
+    color: var(--accent);
+    transform: rotate(-3deg);
+  }
+
+  .picky svg {
+    width: 30px;
+    height: 18px;
+    flex: none;
   }
 
   .count {
