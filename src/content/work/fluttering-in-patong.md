@@ -35,6 +35,6 @@ My time in Thailand was a lesson in realism. Despite my pleas to help her, wheth
 
 So many events had to line up for me to meet Amy that day. My conversation with Amy changed the course of my project completely; a project centered solely on refugees became one fixated on displacement.
 
-In our conversation, Amy constantly spoke of her love of butterflies. From the way they flew so freely to the beautiful colors they had, it was one of the few times that she shed a genuine smile. Her favorite were the TODO: butterfly species native to Thailand. So, I decided to represent her through those butterflies. I am unsure if I will ever see her again, but that conversation lives with me every day.
+In our conversation, Amy constantly spoke of her love of butterflies. From the way they flew so freely to the beautiful colors they had, it was one of the few times that she shed a genuine smile. Her favorite was the Intermediate Maplet, a species native to Thailand. So, I decided to represent her through those butterflies. I am unsure if I will ever see her again, but that conversation lives with me every day.
 
 > “I’ve loved butterflies my whole life. I’ve loved them ever since I was a child.”
