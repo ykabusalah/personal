@@ -20,7 +20,7 @@ do $$
 begin
   update auth.users
      set raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb) || '{"moderator": true}'
-   where email = 'YOUR_MODERATOR_EMAIL';
+   where lower(email) = lower(trim('YOUR_MODERATOR_EMAIL'));
   if not found then
     raise exception 'No account has that email. Put your moderator login email in step 1 and run it again.';
   end if;
