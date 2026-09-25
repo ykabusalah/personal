@@ -1,4 +1,23 @@
 ---
+import { contrast, inkFor } from '../lib/color';
+import { FALLBACK_ACCENT, SEASONAL_SCHEDULE, seasonalAccent } from '../lib/seasonal';
+
+// Each season's accent, plus its darker shade for text on white. The script below picks one by the
+// visitor's own date before the page draws, so the color always matches the head in the corner.
+const themes = SEASONAL_SCHEDULE.map(({ from, to, icon, accent }) => ({
+  from: from[0] * 100 + from[1],
+  to: to[0] * 100 + to[1],
+  season: icon.replace('.png', ''),
+  accent,
+  ink: inkFor(accent),
+}));
+// While developing, ?season=halloween (or any head's name) previews that season.
+const preview = import.meta.env.DEV;
+const fallback = { accent: FALLBACK_ACCENT, ink: inkFor(FALLBACK_ACCENT) };
+for (const { accent } of themes) {
+  if (contrast(accent, '#111111') < 4.5) console.warn(`[seasonal] ${accent} is too dark for the dark text that sits on it. Pick a brighter color.`);
+}
+
 interface Props {
   title: string;
   description?: string;
@@ -14,6 +33,17 @@ const {
 
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content={seasonalAccent()} />
+<script is:inline define:vars={{ themes, fallback, preview }}>
+  // Match the site's accent color to today's head drawing (see src/lib/seasonal.ts).
+  const now = new Date();
+  const key = (now.getMonth() + 1) * 100 + now.getDate();
+  const forced = preview && new URLSearchParams(location.search).get('season');
+  const theme = themes.find((t) => (forced ? t.season === forced : key >= t.from && key <= t.to)) || fallback;
+  document.documentElement.style.setProperty('--accent', theme.accent);
+  document.documentElement.style.setProperty('--accent-ink', theme.ink);
+  document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme.accent);
+</script>
 <title>{title}</title>
 <meta name="description" content={description} />
 <!-- noai and noimageai ask AI scrapers not to train on anything here. -->

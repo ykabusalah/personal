@@ -4,9 +4,12 @@
   --ink: #1a1a1a;
   --muted: #5f5b54;
   --line: #e6e2d8;
-  /* The site's one splash of color. Placeholder until the final pick; --on-accent is the readable text color on it. */
+  /* The site's one splash of color. It changes with the seasonal head (src/lib/seasonal.ts), set from
+     Head.astro; these are the fallbacks. --on-accent is the text color on it, and --accent-ink is the
+     accent darkened enough to read as text or icons on white. */
   --accent: #ff5533;
   --on-accent: #111111;
+  --accent-ink: #d1462a;
   --font-display: 'Instrument Serif', Georgia, 'Times New Roman', serif;
   --font-body: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   /* Stand-in until Yousef's own handwriting replaces it. */
