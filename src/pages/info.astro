@@ -5,6 +5,19 @@ import { getApprovedCount } from '../lib/drawings-build.js';
 
 // Plain HTML like the other pages, so it shows right away instead of waiting on React.
 const count = await getApprovedCount();
+
+// Doodles scattered through the white space on both sides, to give the page some life before people draw.
+// lane: 0 hugs the screen edge, 1 sits just outside the text. top is from the top of the intro.
+const SPOTS = [
+  { name: 'draw-1', note: 'a pencil with a face', side: 'l', lane: 0.15, top: 40, tilt: -8, phone: true },
+  { name: 'draw-2', note: 'a paint splatter or scribble', side: 'l', lane: 0.8, top: 190, tilt: 6 },
+  { name: 'draw-3', note: 'an arrow pointing at Let\'s Draw!', side: 'l', lane: 0.9, top: 350, tilt: -3, phone: true },
+  { name: 'draw-4', note: 'a crayon or marker', side: 'l', lane: 0.2, top: 520, tilt: 9 },
+  { name: 'draw-5', note: 'stars or sparkles', side: 'r', lane: 0.3, top: -10, tilt: 7 },
+  { name: 'draw-6', note: 'you, mid-sketch', side: 'r', lane: 0.85, top: 170, tilt: -6, phone: true },
+  { name: 'draw-7', note: 'a little creature peeking in', side: 'r', lane: 0.15, top: 360, tilt: 4 },
+  { name: 'draw-8', note: 'an eraser and some smudges', side: 'r', lane: 0.7, top: 530, tilt: -7 },
+];
 ---
 
 <PageLayout
@@ -13,7 +26,11 @@ const count = await getApprovedCount();
   page="info"
 >
   <section class="intro">
-    <Doodle side="right" top="20px" tilt={6} mobile="inline" name="draw-intro" note="a pencil character, or you mid-sketch" width={120} />
+    <div class="spots" aria-hidden="true">
+      {SPOTS.map((s) => (
+        <span class:list={['spot', s.side, s.phone && 'phone']} style={`--lane:${s.lane};--top:${s.top}px;--tilt:${s.tilt}deg`}><Doodle name={s.name} note={s.note} width={96} /></span>
+      ))}
+    </div>
     <p class="eyebrow">Interactive experience</p>
     <h1 class="page-title"><span class="mark">Hello and Welcome</span> 👋🏽</h1>
     <p class="lede">
@@ -57,7 +74,49 @@ const count = await getApprovedCount();
 </script>
 
 <style>
-  .intro { position: relative; }
+  .intro {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .intro > :not(.spots) { max-width: 100%; }
+
+  /* Phones and narrow windows: three doodles in a row under the button. */
+  .spots {
+    order: 10;
+    display: flex;
+    gap: 20px;
+  }
+
+  .spot { display: none; transform: rotate(var(--tilt)); }
+  .spot.phone { display: block; transform: rotate(var(--tilt)) scale(0.8); }
+
+  /* Spots with no drawing yet are empty, so they take no room. */
+  .spot.phone:not(:empty) { margin-top: 32px; }
+
+  /* Wide screens: spread through the white space beside the text.
+     50% - 50vw is the screen edge; --room is the white space on each side, less a doodle and a gap. */
+  @media (min-width: 1100px) {
+    .spots {
+      --room: calc((100vw - 680px) / 2 - 164px);
+      display: contents;
+    }
+
+    .spot,
+    .spot.phone,
+    .spot.phone:not(:empty) {
+      display: block;
+      position: absolute;
+      top: var(--top);
+      margin: 0;
+      transform: rotate(var(--tilt));
+    }
+
+    .spot.l { left: calc(50% - 50vw + 24px + var(--room) * var(--lane)); }
+    .spot.r { right: calc(50% - 50vw + 24px + var(--room) * var(--lane)); }
+  }
 
   .page-title { margin-bottom: 24px; }
 
