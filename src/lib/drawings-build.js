@@ -1,4 +1,7 @@
 // Build-time only: turns approved visitor drawings into vector SVGs so they stay sharp at full-screen size.
+import { createHash } from 'node:crypto';
+import fs from 'node:fs/promises';
+import path from 'node:path';
 import sharp from 'sharp';
 import potrace from 'potrace';
 
@@ -10,6 +13,27 @@ const SUPERSAMPLE = 3;
 const PAD = 4;
 const INK_THRESHOLD = 110;
 const TRACE_OPTIONS = { threshold: 128, turdSize: 20, optTolerance: 0.4, alphaMax: 1, color: '#111' };
+
+// Tracing all drawings takes several seconds, and a submitted drawing never changes, so each trace is
+// saved and reused. Changing any tracing setting above changes the key, which retraces everything.
+const CACHE_DIR = path.resolve('node_modules/.cache/drawings');
+const SETTINGS_KEY = createHash('sha1')
+  .update(JSON.stringify({ SUPERSAMPLE, PAD, INK_THRESHOLD, TRACE_OPTIONS }))
+  .digest('hex')
+  .slice(0, 8);
+
+async function traceCached(drawing) {
+  const file = path.join(CACHE_DIR, `${drawing.id}-${SETTINGS_KEY}.json`);
+  try {
+    return JSON.parse(await fs.readFile(file, 'utf8'));
+  } catch {}
+  const result = await trace(drawing.image_url);
+  if (result) {
+    await fs.mkdir(CACHE_DIR, { recursive: true });
+    await fs.writeFile(file, JSON.stringify(result)).catch(() => {});
+  }
+  return result;
+}
 
 async function fetchApproved() {
   try {
@@ -76,14 +100,14 @@ export function getApprovedCount() {
 
 let traced;
 
-/** Every approved drawing that has ink, traced once per build (and once per dev-server run). */
+/** Every approved drawing that has ink, traced once and then read from the cache. */
 export function getTracedDrawings() {
   traced ??= (async () => {
     const drawings = await fetchApproved();
     const results = [];
     for (let i = 0; i < drawings.length; i += 4) {
       const batch = drawings.slice(i, i + 4);
-      const out = await Promise.all(batch.map((d) => trace(d.image_url).catch(() => null)));
+      const out = await Promise.all(batch.map((d) => traceCached(d).catch(() => null)));
       out.forEach((t, j) => t && results.push({ id: batch[j].id, ...t }));
     }
     return results;
