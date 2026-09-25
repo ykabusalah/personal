@@ -173,7 +173,7 @@ export default function ModerationPanel() {
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <img 
-                src="/favicon.svg" 
+                src="/favicon-96x96.png"
                 alt="Logo" 
                 className="w-10 h-10 rounded-xl"
               />

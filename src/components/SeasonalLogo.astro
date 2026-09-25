@@ -3,8 +3,8 @@ import { getImage } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
 import { seasonalIcon } from '../lib/seasonal';
 
-// The source drawings are 2000px; ship small webp copies instead.
-const sources = import.meta.glob<{ default: ImageMetadata }>('../assets/seasonal/*.png', { eager: true });
+// My head drawings live in src/art/seasonal (kept out of git). The sources are 2000px; ship small webp copies instead.
+const sources = import.meta.glob<{ default: ImageMetadata }>('../art/seasonal/*.png', { eager: true });
 const urls: Record<string, string> = {};
 for (const [path, mod] of Object.entries(sources)) {
   const optimized = await getImage({ src: mod.default, width: 480, format: 'webp' });
@@ -16,7 +16,7 @@ const initial = urls[seasonalIcon()];
 ---
 
 <a href="/" class="seasonal-logo" aria-label="Home" data-seasonal-urls={JSON.stringify(urls)}>
-  <img src={initial} alt="" width="480" height="504" />
+  {initial && <img class="art-image" src={initial} alt="" width="480" height="504" draggable="false" />}
 </a>
 
 <script>
