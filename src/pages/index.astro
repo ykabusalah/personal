@@ -36,13 +36,8 @@ const drawingCount = await getApprovedCount();
 </Base>
 
 <script>
-  import { trackPageView, trackDrawLinkClick } from '../lib/analytics.js';
-
-  // The stats funnel counts Home -> draw click -> Info, so every link to /info on Home counts as a draw click.
-  trackPageView('home');
-  document.querySelectorAll('a[href="/info"]').forEach((link) => {
-    link.addEventListener('click', () => trackDrawLinkClick());
-  });
+  // Visit tracking lives in its own script below. Ad blockers often block tracking code, and when
+  // they do, the whole script it's in stops, so nothing the page needs can share a script with it.
 
   // Let visitors move the intro sticker aside to see the whole drawing, and bring it back.
   const sticker = document.getElementById('home-sticker');
@@ -66,6 +61,16 @@ const drawingCount = await getApprovedCount();
     hideButton.addEventListener('click', () => setAway(true));
     showButton.addEventListener('click', () => setAway(false));
   }
+</script>
+
+<script>
+  import { trackPageView, trackDrawLinkClick } from '../lib/events.js';
+
+  // The stats funnel counts Home -> draw click -> Info, so every link to /info on Home counts as a draw click.
+  trackPageView('home');
+  document.querySelectorAll('a[href="/info"]').forEach((link) => {
+    link.addEventListener('click', () => trackDrawLinkClick());
+  });
 </script>
 
 <style>

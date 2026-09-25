@@ -23,7 +23,7 @@ import {
   trackSubmitError,
   trackExit,
   trackModalClose
-} from '../lib/analytics';
+} from '../lib/events';
 
 
 const detectDeviceType = () => {

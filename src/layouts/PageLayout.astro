@@ -27,7 +27,7 @@ const { title, description, page } = Astro.props;
 </Base>
 
 <script>
-  import { trackPageView } from '../lib/analytics.js';
+  import { trackPageView } from '../lib/events.js';
 
   const page = document.querySelector('[data-track-page]')?.getAttribute('data-track-page');
   if (page) trackPageView(page);
