@@ -23,6 +23,7 @@ const { title, description, page } = Astro.props;
       </svg>
       Every drawing on this site is made by hand, by me or by visitors. No AI-generated art.
     </p>
+    <p class="copyright">© {new Date().getFullYear()} Yousef Abu-Salah. My art is mine, so please ask before using it anywhere.</p>
   </footer>
 </Base>
 
@@ -59,4 +60,10 @@ const { title, description, page } = Astro.props;
   }
 
   .human-made svg { flex: none; color: var(--accent); }
+
+  .copyright {
+    margin: 10px 0 0;
+    font-size: 13px;
+    color: var(--muted);
+  }
 </style>

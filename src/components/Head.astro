@@ -16,7 +16,8 @@ const {
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>{title}</title>
 <meta name="description" content={description} />
-{noindex && <meta name="robots" content="noindex" />}
+<!-- noai and noimageai ask AI scrapers not to train on anything here. -->
+<meta name="robots" content={noindex ? 'noindex, noai, noimageai' : 'noai, noimageai'} />
 <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
 <link rel="icon" href="/favicon-96x96.png" type="image/png" sizes="96x96" />
 <link rel="shortcut icon" href="/favicon.ico" />

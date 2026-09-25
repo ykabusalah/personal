@@ -19,5 +19,13 @@ const { title = "Yousef's Personal Website", description } = Astro.props;
   <body>
     <SiteHeader />
     <slot />
+    <script is:inline>
+      // Make my art harder to save: no right-click menu or dragging on artwork.
+      for (const type of ['contextmenu', 'dragstart']) {
+        document.addEventListener(type, (event) => {
+          if (event.target instanceof Element && event.target.closest('.art-image')) event.preventDefault();
+        });
+      }
+    </script>
   </body>
 </html>
