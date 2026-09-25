@@ -9,7 +9,9 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
-    "astro": "astro"
+    "astro": "astro",
+    "check-dist": "node scripts/check-dist.mjs",
+    "deploy": "astro build && node scripts/check-dist.mjs && npx --yes netlify-cli deploy --prod --dir=dist"
   },
   "dependencies": {
     "@astrojs/react": "^6.0.6",

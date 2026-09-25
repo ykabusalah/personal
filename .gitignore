@@ -25,3 +25,6 @@ pnpm-debug.log*
 
 # My art stays on my computer only: never in git, never on GitHub.
 src/art/
+
+# Netlify's link to my site, made by `netlify link` on this computer.
+.netlify/
