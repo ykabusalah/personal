@@ -17,9 +17,11 @@ const work = defineCollection({
     github: z.url().optional(),
     // Full URL, or a path on this site like /info.
     live: z.string().optional(),
-    // Screenshot or artwork next to the entry file, shown in lists and at the top of its page.
+    // Project screenshot next to the entry file, shown in lists and at the top of its page.
+    // Art covers and comic pages live in src/art instead (see src/lib/art.ts); only their alt text is here.
     cover: image().optional(),
     coverAlt: z.string().default(''),
+    pageAlts: z.array(z.string()).default([]),
     order: z.number().default(100),
     // Drafts show up in `npm run dev` only, never in the built site.
     draft: z.boolean().default(false),

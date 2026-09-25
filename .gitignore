@@ -22,3 +22,6 @@ pnpm-debug.log*
 
 # jetbrains setting folder
 .idea/
+
+# My art stays on my computer only: never in git, never on GitHub.
+src/art/

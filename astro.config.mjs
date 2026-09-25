@@ -1,9 +1,40 @@
 // @ts-check
+import { createHash } from 'node:crypto';
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'astro/config';
 
 import react from '@astrojs/react';
 
+const hashOf = (file) => createHash('sha1').update(fs.readFileSync(file)).digest('hex');
+
+/**
+ * The site should only ever serve resized copies of my art (src/art), never the original files.
+ * Astro copies an original into the build whenever it gets loaded, even for hidden drafts, so after
+ * every build this deletes any file that is byte-for-byte one of my originals.
+ */
+const keepArtOriginalsOut = {
+  name: 'keep-art-originals-out',
+  hooks: {
+    'astro:build:done': ({ dir, logger }) => {
+      const artDir = path.resolve('src/art');
+      if (!fs.existsSync(artDir)) return;
+      const originals = new Set(
+        fs.readdirSync(artDir, { recursive: true, withFileTypes: true })
+          .filter((entry) => entry.isFile())
+          .map((entry) => hashOf(path.join(entry.parentPath, entry.name))),
+      );
+      const assets = path.join(fileURLToPath(dir), '_astro');
+      if (!fs.existsSync(assets)) return;
+      const removed = fs.readdirSync(assets).filter((file) => originals.has(hashOf(path.join(assets, file))));
+      for (const file of removed) fs.rmSync(path.join(assets, file));
+      logger.info(`Removed ${removed.length} original art file${removed.length === 1 ? '' : 's'} from the build.`);
+    },
+  },
+};
+
 // https://astro.build/config
 export default defineConfig({
-  integrations: [react()]
+  integrations: [react(), keepArtOriginalsOut],
 });

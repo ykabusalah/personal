@@ -1,8 +1,9 @@
 ---
-import type { ImageMetadata } from 'astro';
+import { Image } from 'astro:assets';
+import { doodle } from '../lib/art';
 
 interface Props {
-  /** File name (without extension) in src/assets/art/ that fills this spot. */
+  /** File name (without extension) in src/art/doodles/ that fills this spot. */
   name: string;
   /** What kind of drawing fits here; shown on the placeholder. */
   note: string;
@@ -32,8 +33,7 @@ const {
   mobile = 'hide',
 } = Astro.props;
 
-const files = import.meta.glob<{ default: ImageMetadata }>('../assets/art/*.{png,jpg,jpeg,svg,webp}', { eager: true });
-const match = Object.entries(files).find(([path]) => path.split('/').pop()!.replace(/\.\w+$/, '') === name)?.[1].default;
+const match = await doodle(name);
 
 // Empty spots only show while developing, so a placeholder can never ship to the live site.
 const showPlaceholder = !match && import.meta.env.DEV;
@@ -41,7 +41,7 @@ const showPlaceholder = !match && import.meta.env.DEV;
 
 {(match || showPlaceholder) && (
   <span class:list={['holder', side && `side ${side}`, side && mobile === 'inline' && 'inline']} style={`--top:${top};--tilt:${tilt}deg`}>
-    {match && <img class="doodle" src={match.src} style={`--w:${width}px`} alt="" aria-hidden="true" />}
+    {match && <Image class="doodle art-image" src={match} width={Math.min(width * 2, match.width)} widths={[width, width * 2]} sizes={`${width}px`} style={`--w:${width}px`} alt="" aria-hidden="true" draggable="false" />}
     {showPlaceholder && (
       <span class:list={['slot', kind]} style={`--w:${width}px;--aspect:${aspect}`} title={`${name}: ${note}`} aria-hidden="true">
         <strong>{kind === 'image' ? 'image' : 'doodle'}</strong>
@@ -88,7 +88,7 @@ const showPlaceholder = !match && import.meta.env.DEV;
     }
   }
 
-  .doodle {
+  .holder :global(.doodle) {
     display: block;
     width: var(--w, auto);
     height: auto;

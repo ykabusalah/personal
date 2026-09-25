@@ -1,7 +1,9 @@
 ---
+import { Image } from 'astro:assets';
 import PageLayout from '../../layouts/PageLayout.astro';
 import Doodle from '../../components/Doodle.astro';
 import KeeganNote from '../../components/KeeganNote.astro';
+import { ART_MAX_WIDTH, ART_WIDTHS, bookCover, coverFor } from '../../lib/art';
 import { getSection, KIND_HEADING, KIND_ORDER } from '../../lib/work';
 
 // Creative work, laid out like prints taped into a sketchbook.
@@ -14,10 +16,33 @@ const groups = KIND_ORDER.map((kind) => ({
 // Fixed per position so the layout looks hand-placed but never shifts between visits.
 const TILTS = [-2.5, 2, -1.5, 2.8, -2, 1.4];
 const TAPE_TILTS = [4, -3, 2, -5, 3, -2];
+
+const book = await bookCover();
+const covers = new Map(await Promise.all(pieces.map(async (entry) => [entry.id, await coverFor(entry.id)] as const)));
 ---
 
 <PageLayout title="Art | Yousef's Personal Website" page="art">
   <h1 class="page-title"><span class="mark">Art</span></h1>
+
+  {book && (
+    <figure class="feature corners" style="--tilt:-1.5deg">
+      <span class="print has-cover">
+        <span class="tape one" aria-hidden="true"></span>
+        <span class="tape two" aria-hidden="true"></span>
+        <Image
+          class="art-image"
+          src={book}
+          alt="A backpack holding a teddy bear, a family photo, and a Quran sits on a chair among bombed-out buildings"
+          width={Math.min(ART_MAX_WIDTH, book.width)}
+          widths={ART_WIDTHS}
+          sizes="(min-width: 720px) 440px, 100vw"
+          loading="eager"
+          draggable="false"
+        />
+      </span>
+      <figcaption class="caption">Cover art for <em>Tomorrow, when the apricots bloom</em></figcaption>
+    </figure>
+  )}
 
   {groups.map(({ kind, entries }, i) => (
     <section class="group">
@@ -33,10 +58,12 @@ const TAPE_TILTS = [4, -3, 2, -5, 3, -2];
               href={`/art/${entry.id}`}
               style={`--tilt:${TILTS[j % TILTS.length]}deg;--tape-tilt:${TAPE_TILTS[j % TAPE_TILTS.length]}deg`}
             >
-              <span class="print">
+              <span class:list={['print', covers.get(entry.id) && 'has-cover']}>
                 <span class="tape one" aria-hidden="true"></span>
                 <span class="tape two" aria-hidden="true"></span>
-                <Doodle kind="image" name={`art-${entry.id}`} note="a page or panel from the comic" width={320} aspect="4 / 5" />
+                {covers.get(entry.id)
+                  ? <Image class="art-image" src={covers.get(entry.id)!} alt="" width={Math.min(ART_MAX_WIDTH, covers.get(entry.id)!.width)} widths={ART_WIDTHS} sizes="(min-width: 720px) 320px, 100vw" draggable="false" />
+                  : <Doodle kind="image" name={`art-${entry.id}`} note={`${entry.id}/cover.jpg in src/art`} width={320} aspect="4 / 5" />}
               </span>
               <span class="caption">
                 {entry.data.title}
@@ -52,6 +79,20 @@ const TAPE_TILTS = [4, -3, 2, -5, 3, -2];
 </PageLayout>
 
 <style>
+  /* The book cover: one bigger print taped in above everything else. */
+  .feature {
+    width: min(100%, 440px);
+    margin: 20px 0 16px 8px;
+  }
+
+  .feature .caption {
+    display: block;
+    margin-top: 4px;
+    font-size: 26px;
+  }
+
+  .feature .caption em { font-style: normal; }
+
   .group {
     position: relative;
     margin-top: 40px;
@@ -119,6 +160,15 @@ const TAPE_TILTS = [4, -3, 2, -5, 3, -2];
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+
+  /* Real artwork keeps its own shape, like a print of any size taped in. */
+  .print.has-cover { aspect-ratio: auto; }
+  .print.has-cover::before { content: none; }
+
+  .print.has-cover :global(img) {
+    display: block;
+    height: auto;
   }
 
   .piece:hover .print {

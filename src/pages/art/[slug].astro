@@ -1,9 +1,11 @@
 ---
+import { Image } from 'astro:assets';
 import { render } from 'astro:content';
 import '../../styles/prose.css';
 import PageLayout from '../../layouts/PageLayout.astro';
 import Doodle from '../../components/Doodle.astro';
 import KeeganNote from '../../components/KeeganNote.astro';
+import { ART_MAX_WIDTH, ART_WIDTHS, coverFor, pagesFor } from '../../lib/art';
 import { getSection, KIND_LABEL, type WorkEntry } from '../../lib/work';
 
 export async function getStaticPaths() {
@@ -15,6 +17,10 @@ const { entry } = Astro.props as { entry: WorkEntry };
 const { data } = entry;
 const { Content } = await render(entry);
 const hasBody = Boolean(entry.body?.trim());
+
+// A comic shows its pages in order, so it skips the separate cover (usually one of those pages).
+const pages = await pagesFor(entry.id);
+const cover = pages.length ? undefined : await coverFor(entry.id);
 ---
 
 <PageLayout title={`${data.title} | Yousef's Personal Website`} description={data.summary} page={`art/${entry.id}`}>
@@ -29,7 +35,11 @@ const hasBody = Boolean(entry.body?.trim());
     </a>
   )}
 
-  <div class="cover"><Doodle kind="image" name={`art-${entry.id}`} note="a page or panel from the comic" width={680} aspect="4 / 3" /></div>
+  {!pages.length && (
+    <div class="cover">{cover
+      ? <Image class="art-image" src={cover} alt={data.coverAlt} width={Math.min(ART_MAX_WIDTH, cover.width)} widths={ART_WIDTHS} sizes="(min-width: 720px) 680px, 100vw" loading="eager" draggable="false" />
+      : <Doodle kind="image" name={`art-${entry.id}`} note={`${entry.id}/cover.jpg in src/art`} width={680} aspect="4 / 3" />}</div>
+  )}
 
   {hasBody && (
     <div class="body">
@@ -38,6 +48,24 @@ const hasBody = Boolean(entry.body?.trim());
         <Content />
       </article>
     </div>
+  )}
+
+  {pages.length > 0 && (
+    <section class="pages" aria-labelledby="read-it">
+      <h2 id="read-it" class="section-title">Read it</h2>
+      {pages.map((page, i) => (
+        <Image
+          class="art-image page"
+          src={page}
+          alt={data.pageAlts[i] ?? `Page ${i + 1}`}
+          width={Math.min(ART_MAX_WIDTH, page.width)}
+          widths={ART_WIDTHS}
+          sizes="(min-width: 720px) 680px, 100vw"
+          loading={i < 2 ? 'eager' : 'lazy'}
+          draggable="false"
+        />
+      ))}
+    </section>
   )}
 </PageLayout>
 
@@ -102,5 +130,15 @@ const hasBody = Boolean(entry.body?.trim());
   .body {
     position: relative;
     margin-top: 44px;
+  }
+
+  .pages { margin-top: 44px; }
+
+  .pages :global(.page) {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0 0 28px;
+    border: 1px solid var(--line);
   }
 </style>
