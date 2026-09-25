@@ -5,6 +5,21 @@ summary: The story of Warda, an Iraqi refugee in Nashville, and a woman who forg
 live: https://filmishmish.substack.com/p/full-bloom-in-nashville
 order: 2
 draft: true
+coverAlt: "Title page: Warda, Part I. A mother and her two children stand before a giant rose above a city skyline"
+pageAlts:
+  - "Title page: Warda, Part I. A mother and her two children stand before a giant rose above a city skyline"
+  - "Home was so beautiful back in the day: busy streets, a crowded cafe, and family gathered around a table"
+  - "Warda growing up: happy days, playing ball, and her best friend Layla, who she did everything with"
+  - "The cracks grow larger as the city changes around them, but Warda and Layla never leave each other's side"
+  - "The two friends dream about their future, until a sniper's scope finds them on a walk to the store"
+  - "Gunfire breaks out, and Layla is shot shielding Warda"
+  - "Layla's last words: Become a mother in my place. Layla died that day. Nothing was ever the same"
+  - "Years pass at Layla's grave, until Warda notices a man laughing in front of another grave"
+  - "Warda asks the man why he is laughing, and they begin meeting for coffee near her destroyed home"
+  - "They marry, have two children, and for a time, things are good"
+  - "Violence spreads through the country, and men break into their home"
+  - "Her husband is taken and never seen again. Warda wanted to scream. She wanted to give up"
+  - "No time to mourn: Warda and her children set their sights on America. Part I: completed"
 ---
 
 After enduring a brutal Algorithms test in the fall of my junior year, I found solace in a place that had become my refuge: a local refugee organization in Nashville, TN. Little did I know that on that day, I would meet Warda, an Iraqi refugee who had recently arrived in this foreign land, clutching onto fragments of a life left behind.
