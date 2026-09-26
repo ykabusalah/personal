@@ -3,7 +3,7 @@ title: The Stars
 kind: fellowship
 summary: A short manga about a close friend, a Syrian refugee, and the night he fell in love with the stars atop the Qalamoun Mountains.
 order: 3
-draft: true
+draft: false
 coverAlt: "At the top of the mountain, a boy in a cloak spreads his arms under the Milky Way: I have always loved the stars"
 pageAlts:
   - "Page 1: a starry night over the city, a cat yawning, and a family winding down for the night"

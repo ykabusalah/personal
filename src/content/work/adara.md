@@ -3,7 +3,7 @@ title: "Adara: The Fractured Jewel of Heraklion"
 kind: fellowship
 summary: On a late bus in Heraklion, an old Syrian woman let a stranger cry on her shoulder, and reminded me what home feels like.
 order: 6
-draft: true
+draft: false
 coverAlt: "On a bus at night, an old woman in a headscarf comforts a young man crying on her shoulder"
 ---
 

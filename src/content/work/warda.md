@@ -4,7 +4,7 @@ kind: fellowship
 summary: The story of Warda, an Iraqi refugee in Nashville, and a woman who forged a path for her children through the unyielding power of a mother’s will.
 live: https://filmishmish.substack.com/p/full-bloom-in-nashville
 order: 2
-draft: true
+draft: false
 coverAlt: "Title page: Warda, Part I. A mother and her two children stand before a giant rose above a city skyline"
 pageAlts:
   - "Title page: Warda, Part I. A mother and her two children stand before a giant rose above a city skyline"

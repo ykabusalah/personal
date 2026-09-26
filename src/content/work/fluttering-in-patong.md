@@ -3,7 +3,7 @@ title: Fluttering in Patong
 kind: fellowship
 summary: A night in Patong, Phuket, and a conversation with Amy, a girl who loved butterflies. It changed my project from one about refugees to one about displacement.
 order: 4
-draft: true
+draft: false
 coverAlt: "A night café in Patong under string lights, where a figure made of orange butterflies sits across the table from a man in a blue hoodie"
 ---
 

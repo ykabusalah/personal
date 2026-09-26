@@ -4,7 +4,7 @@ kind: fellowship
 summary: A proof-of-concept comic about a Syrian family's journey to Chicago by way of Greece, and the love of reading that carried them through it.
 live: https://filmishmish.substack.com/p/migrants-a-refugee-story
 order: 1
-draft: true
+draft: false
 coverAlt: "Title page: Migrants. A family of four walks away from a ruined city"
 pageAlts:
   - "Title page: Migrants. A family of four walks away from a ruined city"

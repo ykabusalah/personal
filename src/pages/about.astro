@@ -1,7 +1,7 @@
 ---
 import { Image } from 'astro:assets';
 import PageLayout from '../layouts/PageLayout.astro';
-import { getSection, getWork, hrefFor, KIND_LABEL, SECTIONS } from '../lib/work';
+import { getSection, hrefFor, KIND_LABEL, SECTIONS } from '../lib/work';
 import portrait from '../assets/portrait/portrait.png';
 import patchMask from '../assets/portrait/patch-mask.png';
 import doodles from '../data/portrait-doodles.json';
@@ -29,7 +29,8 @@ const doodlePaths = (doodles.strokes as { ink: string; size: number; points: Poi
   return path;
 });
 
-const selected = (await getWork()).filter((entry) => !entry.data.draft).slice(0, 3);
+// Selected work is my top projects; art has its own page, linked just below.
+const selected = (await getSection('projects')).filter((entry) => !entry.data.draft).slice(0, 3);
 const hasArt = (await getSection('art')).length > 0;
 
 const contacts = [

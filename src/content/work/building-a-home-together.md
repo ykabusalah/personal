@@ -3,7 +3,7 @@ title: Building a Home Together
 kind: fellowship
 summary: A North Korean refugee, a local cafe, and the dream homes we both used to draw as kids.
 order: 5
-draft: true
+draft: false
 coverAlt: "A crayon drawing of a house under a blue sky, with two boys adding to it: one drawing the roof, the other drawing the grass and water around it"
 ---
 
