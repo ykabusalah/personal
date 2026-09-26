@@ -133,9 +133,11 @@ const showPlaceholder = !match && import.meta.env.DEV;
   :global(:root.doodles-pending) .holder :global(img.doodle:not(.is-drawn)) { visibility: hidden; }
 
   /* Side doodles sit in the white space beside the column and only appear when there is room for them. */
+  /* max-content: out in the margin there's no room left over, so without it the drawing shrinks to nothing. */
   .side {
     display: none;
     position: absolute;
+    width: max-content;
     top: var(--top);
     transform: rotate(var(--tilt));
     pointer-events: none;
@@ -153,6 +155,7 @@ const showPlaceholder = !match && import.meta.env.DEV;
     .side.inline {
       display: flex;
       position: static;
+      width: auto;
       justify-content: flex-start;
       margin: 4px 0 16px;
       transform: rotate(var(--tilt)) scale(0.8);
