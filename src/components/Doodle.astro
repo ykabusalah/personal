@@ -94,6 +94,12 @@ const showPlaceholder = !match && import.meta.env.DEV;
     height: auto;
   }
 
+  /* Chalkboard, like the visitor drawings: black lines flip to white on a dark page, and the
+     hue-rotate turns any colors back around so they stay roughly the same. */
+  @media (prefers-color-scheme: dark) {
+    .holder :global(.doodle) { filter: invert(1) hue-rotate(180deg); }
+  }
+
   .slot {
     display: flex;
     flex-direction: column;

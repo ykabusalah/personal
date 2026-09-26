@@ -15,7 +15,8 @@ const { title, noindex, header = false } = Astro.props;
 ---
 
 <!doctype html>
-<html lang="en">
+<!-- Always light: people draw black on white, and the admin pages were built for light. -->
+<html lang="en" data-light-only>
   <head>
     <Head title={title} noindex={noindex} />
   </head>

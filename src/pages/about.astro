@@ -150,9 +150,10 @@ const contacts = [
     pointer-events: none;
   }
 
+  /* Drawn on the photo in black ink, so they stay black in dark mode too. */
   .doodles path {
     fill: none;
-    stroke: var(--ink);
+    stroke: #111111;
     stroke-linecap: round;
     stroke-linejoin: round;
     stroke-dasharray: 1 2;

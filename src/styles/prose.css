@@ -30,7 +30,7 @@
   font-size: 0.9em;
   padding: 1px 5px;
   border-radius: 4px;
-  background: #f3f1ec;
+  background: var(--surface);
 }
 
 /* Wide tables scroll inside themselves instead of widening the page. */
