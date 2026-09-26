@@ -16,6 +16,8 @@ pnpm-debug.log*
 # environment variables
 .env
 .env.production
+# The Doodle Studio owner key (see supabase/studio.sql). Private, unlike .env.
+.env.studio
 
 # macOS-specific files
 .DS_Store
