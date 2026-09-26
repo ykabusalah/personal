@@ -1,5 +1,5 @@
-// How a doodle is stored and drawn. The studio records with this, and the site can replay with it,
-// so a doodle looks exactly the same in both places.
+// How a doodle is stored and drawn. Recording and replaying both go through here, so a doodle
+// always looks exactly the same.
 //
 // A doodle:
 //   { v: 1, size: 1000, crop: [x, y, w, h], strokes: [{ tool: 'pen' | 'eraser', w, pts }] }

@@ -39,6 +39,10 @@ create table if not exists public.studio_doodles (
   deleted_at timestamptz
 );
 
+-- Which doodle spot on the site it fills. Only the owner link sees or sets this, so artists never
+-- see where their doodles end up.
+alter table public.studio_doodles add column if not exists spot text;
+
 alter table public.studio_links enable row level security;
 alter table public.studio_doodles enable row level security;
 revoke all on public.studio_links, public.studio_doodles from anon, authenticated;
@@ -91,9 +95,10 @@ begin
 end;
 $$;
 
--- Saved doodles: your own, or everyone's for the owner link.
-create or replace function public.studio_list(key text)
-returns table (id uuid, name text, artist text, thumb text, updated_at timestamptz)
+-- Saved doodles: your own, or everyone's (and their spots) for the owner link.
+drop function if exists public.studio_list(text);
+create function public.studio_list(key text)
+returns table (id uuid, name text, artist text, spot text, thumb text, updated_at timestamptz)
 language plpgsql
 stable
 security definer
@@ -103,7 +108,7 @@ declare
   link public.studio_links := public.studio_check(key);
 begin
   return query
-    select d.id, d.name, l.label, d.thumb, d.updated_at
+    select d.id, d.name, l.label, case when link.owner then d.spot end, d.thumb, d.updated_at
     from public.studio_doodles d
     join public.studio_links l on l.id = d.link_id
     where d.deleted_at is null and (link.owner or d.link_id = link.id)
@@ -128,7 +133,32 @@ begin
   if not found then
     raise exception 'That doodle couldn''t be found.';
   end if;
-  return json_build_object('id', found_doodle.id, 'name', found_doodle.name, 'strokes', found_doodle.strokes);
+  return json_build_object(
+    'id', found_doodle.id,
+    'name', found_doodle.name,
+    'spot', case when link.owner then found_doodle.spot end,
+    'strokes', found_doodle.strokes
+  );
+end;
+$$;
+
+-- Put a doodle in a spot on the site, or take it out (spot is null). Owner link only.
+create or replace function public.studio_assign(key text, doodle uuid, spot text)
+returns void
+language plpgsql
+volatile
+security definer
+set search_path = public
+as $$
+declare
+  link public.studio_links := public.studio_check(key);
+begin
+  if not link.owner then
+    raise exception 'Only the owner link can place doodles.' using errcode = '42501';
+  end if;
+  update public.studio_doodles d
+  set spot = nullif(trim(studio_assign.spot), '')
+  where d.id = doodle and d.deleted_at is null;
 end;
 $$;
 
@@ -194,8 +224,9 @@ end;
 $$;
 
 -- Everything, full size, for `npm run doodles:pull`. Owner link only.
-create or replace function public.studio_export(key text)
-returns table (id uuid, name text, artist text, strokes jsonb, image text, updated_at timestamptz)
+drop function if exists public.studio_export(text);
+create function public.studio_export(key text)
+returns table (id uuid, name text, artist text, spot text, strokes jsonb, image text, updated_at timestamptz)
 language plpgsql
 stable
 security definer
@@ -208,7 +239,7 @@ begin
     raise exception 'Only the owner link can export doodles.' using errcode = '42501';
   end if;
   return query
-    select d.id, d.name, l.label, d.strokes, d.image, d.updated_at
+    select d.id, d.name, l.label, d.spot, d.strokes, d.image, d.updated_at
     from public.studio_doodles d
     join public.studio_links l on l.id = d.link_id
     where d.deleted_at is null
@@ -243,6 +274,7 @@ revoke all on function public.studio_list(text) from public;
 revoke all on function public.studio_get(text, uuid) from public;
 revoke all on function public.studio_save(text, uuid, text, jsonb, text, text) from public;
 revoke all on function public.studio_delete(text, uuid) from public;
+revoke all on function public.studio_assign(text, uuid, text) from public;
 revoke all on function public.studio_export(text) from public;
 grant execute on function public.studio_hello(text) to anon, authenticated;
 grant execute on function public.studio_accept(text) to anon, authenticated;
@@ -250,4 +282,5 @@ grant execute on function public.studio_list(text) to anon, authenticated;
 grant execute on function public.studio_get(text, uuid) to anon, authenticated;
 grant execute on function public.studio_save(text, uuid, text, jsonb, text, text) to anon, authenticated;
 grant execute on function public.studio_delete(text, uuid) to anon, authenticated;
+grant execute on function public.studio_assign(text, uuid, text) to anon, authenticated;
 grant execute on function public.studio_export(text) to anon, authenticated;

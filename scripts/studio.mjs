@@ -4,7 +4,9 @@
 //   node scripts/studio.mjs build   package it for Vercel (npm run studio:deploy does this, then uploads)
 //
 // Two files are made fresh each time instead of living in studio/: config.js (the public Supabase
-// values from .env) and spots.js (every doodle spot on the site, read from the pages).
+// values from .env) and spots.js (every doodle spot on the site, read from the pages). Only the
+// copy served on this computer gets the spots; the online studio gets an empty list, so artists
+// never see where their doodles go.
 import { createServer } from 'node:http';
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { extname, join, relative, resolve } from 'node:path';
@@ -102,8 +104,8 @@ function build() {
   mkdirSync(join(out, 'static'), { recursive: true });
   for (const file of FILES) writeFileSync(join(out, 'static', file), readFileSync(join(studio, file)));
   writeFileSync(join(out, 'static/config.js'), configJs(false));
-  const spots = spotsJs();
-  writeFileSync(join(out, 'static/spots.js'), spots);
+  // The online studio knows nothing about the site. Placing doodles happens on this computer only.
+  writeFileSync(join(out, 'static/spots.js'), 'export default [];\n');
   writeFileSync(
     join(out, 'config.json'),
     JSON.stringify({
@@ -122,7 +124,7 @@ function build() {
       ],
     }, null, 2),
   );
-  console.log(`Packaged the studio in ${relative(root, out)} with ${findSpots().length} doodle spots.`);
+  console.log(`Packaged the studio in ${relative(root, out)}.`);
 }
 
 const command = process.argv[2];

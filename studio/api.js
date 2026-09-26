@@ -41,12 +41,14 @@ const online = (key) => ({
   save: ({ id = null, name, strokes, image, thumb }) =>
     rpc('studio_save', { key, doodle: id, name, strokes, image, thumb }),
   remove: (doodle) => rpc('studio_delete', { key, doodle }),
+  assign: (doodle, spot) => rpc('studio_assign', { key, doodle, spot }),
 });
 
-// Practice mode for trying the studio on this computer (npm run studio, then open #key=local).
-// Doodles stay in this browser only. The live studio never turns this on.
+// Practice mode for trying the studio on this computer (npm run studio, then open #key=local, or
+// #key=local-artist to see what an artist sees). Doodles stay in this browser only. The live
+// studio never turns this on.
 const LOCAL_STORE = 'studio-local-doodles';
-const local = () => {
+const local = (owner) => {
   const read = () => {
     try {
       return JSON.parse(localStorage.getItem(LOCAL_STORE) || '[]');
@@ -56,12 +58,12 @@ const local = () => {
   };
   const write = (all) => localStorage.setItem(LOCAL_STORE, JSON.stringify(all));
   return {
-    hello: async () => ({ label: 'Practice', owner: true, accepted: true }),
+    hello: async () => ({ label: 'Practice', practice: true, owner, accepted: owner }),
     accept: async () => null,
     list: async () =>
       read()
         .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
-        .map(({ id, name, thumb, updated_at }) => ({ id, name, artist: 'Practice', thumb, updated_at })),
+        .map(({ id, name, spot = null, thumb, updated_at }) => ({ id, name, artist: 'Practice', spot, thumb, updated_at })),
     get: async (id) => {
       const found = read().find((d) => d.id === id);
       if (!found) throw new StudioError("That doodle couldn't be found.", 400);
@@ -77,7 +79,9 @@ const local = () => {
       return id;
     },
     remove: async (id) => write(read().filter((d) => d.id !== id)),
+    assign: async (id, spot) => write(read().map((d) => (d.id === id ? { ...d, spot: spot || null } : d))),
   };
 };
 
-export const connect = (key) => (config.local && key === 'local' ? local() : online(key));
+export const connect = (key) =>
+  config.local && (key === 'local' || key === 'local-artist') ? local(key === 'local') : online(key);

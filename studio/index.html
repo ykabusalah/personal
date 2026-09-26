@@ -61,18 +61,13 @@
         <aside class="side">
           <section class="panel">
             <label class="field">
-              <span>What's it for?</span>
-              <select data-spot></select>
-            </label>
-            <p class="idea" data-idea hidden></p>
-            <label class="field" data-name-field>
-              <span>Name</span>
-              <input data-name type="text" maxlength="60" placeholder="e.g. rocket-cat" autocomplete="off" spellcheck="false" />
+              <span>Name this doodle</span>
+              <input data-name type="text" maxlength="60" placeholder="e.g. sleepy cat" autocomplete="off" />
             </label>
 
             <figure class="actual">
               <div class="actual-box"><canvas data-actual></canvas></div>
-              <figcaption data-actual-caption>Actual size on the site</figcaption>
+              <figcaption data-actual-caption>How it looks small</figcaption>
             </figure>
 
             <div class="actions">
@@ -86,9 +81,17 @@
             <p class="status" data-status role="status" aria-live="polite"></p>
           </section>
 
+          <section class="panel" data-place hidden>
+            <label class="field">
+              <span>Spot</span>
+              <select data-spot></select>
+            </label>
+            <p class="idea" data-idea hidden></p>
+            <p class="owner-note" data-place-note></p>
+          </section>
+
           <section class="panel">
             <h2 data-list-title>Your doodles</h2>
-            <p class="owner-note" data-owner-note hidden>To bring these into the site, run <code>npm run doodles:pull</code>.</p>
             <ul class="saved" data-saved></ul>
             <p class="empty" data-empty>Nothing saved yet.</p>
           </section>
@@ -98,14 +101,14 @@
 
     <dialog class="welcome" data-welcome>
       <h2>Hi <span data-welcome-name></span>!</h2>
-      <p>This is where you draw doodles for Yousef's website. A few things before you start:</p>
+      <p>This is your space to draw doodles for Yousef. A few things before you start:</p>
       <ul>
-        <li>Pick a spot on the right to see what goes there, or draw anything you like.</li>
         <li>Press harder for thicker lines. Your pen's eraser end works too.</li>
-        <li>The small box on the right shows how big it'll really be on the site.</li>
-        <li>Save when you're happy. Open this same link anytime to keep going.</li>
+        <li>The small box on the right shows how your doodle looks when it's small, so you can check the lines don't get too thin.</li>
+        <li>Give each doodle a name and save it. Saved doodles go straight to Yousef.</li>
+        <li>Open this same link anytime to keep going or fix something up.</li>
       </ul>
-      <p class="rights">Everything you save here is Yousef's to use, change, and share anywhere, as you two agreed. Doodles won't be credited on the site.</p>
+      <p class="rights">Everything you save here is Yousef's to use, change, and share anywhere, as you two agreed. Doodles won't be credited to you.</p>
       <p class="status is-error" data-welcome-status role="status" aria-live="polite"></p>
       <form method="dialog">
         <button class="primary" data-accept>Sounds good, let's draw</button>

@@ -1,9 +1,10 @@
-// Brings everything saved in the Doodle Studio into src/art/doodles, where the site's doodle spots
-// pick them up. A doodle saved for a spot lands in that spot; others keep the name they were given.
+// Brings the Doodle Studio's placed doodles into src/art/doodles, each named after its spot, so the
+// site's doodle spots pick them up. Doodles that haven't been placed yet stay in the studio.
+// (Place them by running `npm run studio` and opening it with your own link.)
 //
 // Needs your owner link's key in .env.studio (never committed), as STUDIO_OWNER_KEY=...
 // See supabase/studio.sql for making that link.
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
 import { readEnv } from './env.mjs';
 
@@ -27,27 +28,38 @@ if (!res.ok) {
   process.exit(1);
 }
 
-// Oldest first, so when two doodles share a name, the newest one wins.
+// Oldest first, so when two doodles are in the same spot, the newest one wins.
 const doodles = await res.json();
-const slug = (name) => name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-const byName = new Map();
-const replaced = [];
-for (const doodle of doodles) {
-  const name = slug(doodle.name) || `studio-${doodle.id.slice(0, 8)}`;
-  if (byName.has(name)) replaced.push(name);
-  byName.set(name, doodle);
+const bySpot = new Map();
+const doubled = new Set();
+for (const doodle of doodles.filter((d) => d.spot)) {
+  if (bySpot.has(doodle.spot)) doubled.add(doodle.spot);
+  bySpot.set(doodle.spot, doodle);
 }
 
 const dir = join(root, 'src/art/doodles');
 mkdirSync(dir, { recursive: true });
-for (const [name, doodle] of byName) {
-  writeFileSync(join(dir, `${name}.png`), Buffer.from(doodle.image.replace(/^data:image\/png;base64,/, ''), 'base64'));
-  // The strokes and their timing, so the site can redraw it the way it was drawn.
-  writeFileSync(join(dir, `${name}.json`), JSON.stringify(doodle.strokes));
-  console.log(`  ${name}  (by ${doodle.artist})`);
+
+// Remember which files came from the studio, so a doodle moved to another spot doesn't linger in
+// its old one. Only these files are ever removed; doodles added by hand are never touched.
+const manifest = join(dir, '.from-studio.json');
+const before = existsSync(manifest) ? JSON.parse(readFileSync(manifest, 'utf8')) : [];
+for (const spot of before) {
+  if (bySpot.has(spot)) continue;
+  rmSync(join(dir, `${spot}.png`), { force: true });
+  rmSync(join(dir, `${spot}.json`), { force: true });
+  console.log(`  ${spot}  (emptied: nothing is placed there anymore)`);
 }
 
-console.log(`\nSaved ${byName.size} doodle${byName.size === 1 ? '' : 's'} to src/art/doodles.`);
-if (replaced.length) {
-  console.log(`More than one doodle is named ${[...new Set(replaced)].join(', ')}. The newest of each is the one used.`);
+for (const [spot, doodle] of bySpot) {
+  writeFileSync(join(dir, `${spot}.png`), Buffer.from(doodle.image.replace(/^data:image\/png;base64,/, ''), 'base64'));
+  // The strokes and their timing, so the site can redraw it the way it was drawn.
+  writeFileSync(join(dir, `${spot}.json`), JSON.stringify(doodle.strokes));
+  console.log(`  ${spot}  "${doodle.name}" by ${doodle.artist}`);
 }
+writeFileSync(manifest, JSON.stringify([...bySpot.keys()], null, 2));
+
+const unplaced = doodles.filter((d) => !d.spot).length;
+console.log(`\nPlaced ${bySpot.size} doodle${bySpot.size === 1 ? '' : 's'} in src/art/doodles.`);
+if (doubled.size) console.log(`More than one doodle is in ${[...doubled].join(', ')}. The newest is the one used.`);
+if (unplaced > 0) console.log(`${unplaced} more ${unplaced === 1 ? "isn't" : "aren't"} placed yet.`);

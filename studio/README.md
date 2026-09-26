@@ -2,6 +2,8 @@
 
 A private drawing page for the site's doodles. It's hosted on its own, apart from the site. Whoever has a private link can draw and save. Every stroke is kept with its timing and pen pressure, so a doodle can be redrawn on the site the way it was drawn.
 
+Artists see only a drawing page. Nothing in the online studio mentions the site or where doodles go. Choosing where each doodle goes happens only on your computer.
+
 ## Try it on this computer
 
 ```
@@ -30,10 +32,8 @@ To turn a link off: `update public.studio_links set active = false where label =
 
 ## Bring doodles into the site
 
-```
-npm run doodles:pull
-```
+1. Run `npm run studio` and open `http://localhost:4330/#key=<your key>`. On your computer, your link shows a **Spot** picker.
+2. Open each doodle and pick its spot.
+3. Run `npm run doodles:pull`.
 
-This saves every doodle to `src/art/doodles/`, which stays on your computer and is never committed. A doodle drawn for a spot shows up in that spot. Anything else keeps the name it was given.
-
-After changing a doodle spot on the site, run `npm run studio:deploy` again so the studio's list of spots matches.
+Each placed doodle is saved to `src/art/doodles/` under its spot's name. That folder stays on your computer and is never committed. If you move a doodle to another spot, the next pull clears the old spot. The pull only ever removes files it made itself.

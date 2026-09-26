@@ -10,14 +10,13 @@ const round = (n, places) => Math.round(n * 10 ** places) / 10 ** places;
 // Sizes in board units (the board is 1000 wide). The dots in the toolbar pick one of three.
 const PEN_SIZES = [8, 14, 22];
 const ERASER_SIZES = [24, 48, 96];
-const DEFAULT_SPOT_WIDTH = 96;
+const SMALL_WIDTH = 96;
 
 const board = $('[data-board]');
 const canvas = $('[data-canvas]');
 const ctx = canvas.getContext('2d');
 const cursor = $('[data-cursor]');
 const spotSelect = $('[data-spot]');
-const nameField = $('[data-name-field]');
 const nameInput = $('[data-name]');
 const actual = $('[data-actual]');
 const saveButton = $('[data-save]');
@@ -25,11 +24,12 @@ const watchButton = $('[data-watch]');
 const statusLine = $('[data-status]');
 
 let api;
+let me; // who the link belongs to
 let draftKey = 'studio-draft';
 let strokes = [];
 let undoStack = [];
 let redoStack = [];
-let current = { id: null, name: '' };
+let current = { id: null, name: '', spot: null };
 let dirty = false;
 let saved = [];
 let tool = 'pen';
@@ -265,51 +265,54 @@ function setSize(next) {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Which spot on the site it's for, and how big it will really be there
+// Placing a doodle. The list of places only exists when the owner runs the studio on their own
+// computer, so artists never see it, and the online studio doesn't contain it at all.
 
 const spotNamed = (name) => spots.find((s) => s.name === name);
+const placing = () => Boolean(me?.owner && spots.length);
 
 function fillSpots() {
-  const picked = spotSelect.value;
-  const done = new Set(saved.map((d) => d.name));
-  spotSelect.replaceChildren(new Option('Something else (name it yourself)', ''));
-  const pages = [...new Set(spots.map((s) => s.page))];
-  for (const page of pages) {
+  const taken = new Map(saved.filter((d) => d.spot).map((d) => [d.spot, d.id]));
+  spotSelect.replaceChildren(new Option('Not placed yet', ''));
+  for (const page of [...new Set(spots.map((s) => s.page))]) {
     const group = document.createElement('optgroup');
     group.label = page;
     for (const s of spots.filter((spot) => spot.page === page)) {
-      group.append(new Option(`${s.note}${done.has(s.name) ? '  (drawn)' : ''}`, s.name));
+      const other = taken.has(s.name) && taken.get(s.name) !== current.id;
+      group.append(new Option(`${s.note}${other ? '  (taken)' : ''}`, s.name));
     }
     spotSelect.append(group);
   }
-  spotSelect.value = picked;
+  spotSelect.value = current.spot ?? '';
 }
 
 function showSpot() {
-  const spot = spotNamed(spotSelect.value);
-  nameField.hidden = Boolean(spot);
+  const spot = spotNamed(current.spot);
   const idea = $('[data-idea]');
   idea.hidden = !spot;
   idea.textContent = spot ? `Idea: ${spot.note}` : '';
-  $('[data-actual-caption]').textContent = spot
-    ? `Actual size on ${spot.page}`
-    : `Actual size in a typical ${DEFAULT_SPOT_WIDTH}px spot`;
+  $('[data-place-note]').textContent = !current.id
+    ? 'Save it first, then pick its spot.'
+    : spot ? `Shows on ${spot.page}.` : '';
+  spotSelect.disabled = !current.id;
+  $('[data-actual-caption]').textContent = spot ? 'Actual size in its spot' : 'How it looks small';
   scheduleActual();
 }
 
-function pickSpotFor(name) {
-  spotSelect.value = spotNamed(name) ? name : '';
-  nameInput.value = spotNamed(name) ? '' : name;
-  showSpot();
-}
-
-const currentName = () => (spotSelect.value || nameInput.value).trim();
-
-spotSelect.addEventListener('change', () => {
-  showSpot();
-  current.name = currentName();
-  changed();
+spotSelect.addEventListener('change', async () => {
+  const spot = spotSelect.value || null;
+  try {
+    await api.assign(current.id, spot);
+    current.spot = spot;
+    showSpot();
+    await loadList();
+  } catch (err) {
+    status(err.message, true);
+    spotSelect.value = current.spot ?? '';
+  }
 });
+
+const currentName = () => nameInput.value.trim();
 
 nameInput.addEventListener('input', () => {
   current.name = currentName();
@@ -329,8 +332,8 @@ function drawActual() {
     actual.width = actual.height = 0;
     return;
   }
-  // The site shows a doodle at the spot's width, and as tall as its shape needs.
-  const width = spotNamed(spotSelect.value)?.width ?? DEFAULT_SPOT_WIDTH;
+  // Shown at its spot's width (or a typical small width), and as tall as its shape needs.
+  const width = spotNamed(current.spot)?.width ?? SMALL_WIDTH;
   const height = (width * crop[3]) / crop[2];
   const dpr = Math.min(window.devicePixelRatio || 1, 3);
   const pic = picture(strokes, crop, Math.max(width, height) * dpr);
@@ -341,7 +344,7 @@ function drawActual() {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Watching it draw itself, the way it will on the site
+// Watching it draw itself again, the way it was drawn
 
 function watch() {
   if (watching) return stopWatching();
@@ -383,15 +386,17 @@ function readDraft() {
   }
 }
 
-function load({ id = null, name = '', strokes: next = [] }, isDirty = false) {
+function load({ id = null, name = '', spot = null, strokes: next = [] }, isDirty = false) {
   stopWatching();
-  current = { id, name };
+  current = { id, name, spot };
   strokes = next;
   undoStack = [];
   redoStack = [];
   clockBase = null;
   dirty = isDirty;
-  pickSpotFor(name);
+  nameInput.value = name;
+  spotSelect.value = spot ?? '';
+  showSpot();
   redraw();
   refresh();
   saveDraft();
@@ -406,7 +411,7 @@ async function save() {
   if (!crop) return status('Draw something first.', true);
   const name = currentName();
   if (!name) {
-    status('Pick what it is for, or give it a name, first.', true);
+    status('Give it a name first.', true);
     nameInput.focus();
     return;
   }
@@ -420,7 +425,8 @@ async function save() {
     current.name = name;
     dirty = false;
     saveDraft();
-    status('Saved.');
+    status(me.owner ? 'Saved.' : 'Saved. Yousef can see it now.');
+    showSpot();
     await loadList();
   } catch (err) {
     status(err.message, true);
@@ -435,7 +441,7 @@ async function open(id) {
   status('Opening…');
   try {
     const doodle = await api.get(id);
-    load({ id: doodle.id, name: doodle.name, strokes: doodle.strokes.strokes });
+    load({ id: doodle.id, name: doodle.name, spot: doodle.spot, strokes: doodle.strokes.strokes });
     status('');
   } catch (err) {
     status(err.message, true);
@@ -449,6 +455,8 @@ async function remove(item) {
     // Deleting the one on the board keeps it there, just unsaved.
     if (current.id === item.id) {
       current.id = null;
+      current.spot = null;
+      showSpot();
       dirty = true;
       saveDraft();
       status('Deleted. It\'s still on the board if you want to save it again.');
@@ -474,12 +482,12 @@ async function loadList() {
       img.alt = '';
       const name = document.createElement('span');
       name.className = 'name';
-      name.textContent = spotNamed(item.name)?.note ?? item.name;
+      name.textContent = item.name;
       openButton.append(img, name);
       if (me.owner) {
         const artist = document.createElement('span');
         artist.className = 'artist';
-        artist.textContent = item.artist;
+        artist.textContent = item.spot ? `${item.artist} · placed` : item.artist;
         openButton.append(artist);
       }
       openButton.addEventListener('click', () => open(item.id));
@@ -494,7 +502,13 @@ async function loadList() {
     }),
   );
   $('[data-empty]').hidden = saved.length > 0;
-  fillSpots();
+  // A restored draft doesn't know its spot, so take it from the list.
+  const mine = saved.find((item) => item.id === current.id);
+  if (mine) current.spot = mine.spot ?? null;
+  if (placing()) {
+    fillSpots();
+    showSpot();
+  }
   markCurrent();
 }
 
@@ -504,8 +518,6 @@ function markCurrent() {
 
 // ---------------------------------------------------------------------------------------------
 // Starting up
-
-let me;
 
 async function start(key) {
   api = connect(key);
@@ -522,13 +534,13 @@ async function start(key) {
 
   $('[data-gate]').hidden = true;
   $('[data-app]').hidden = false;
-  $('[data-hello]').textContent = me.label === 'Practice'
+  $('[data-hello]').textContent = me.practice
     ? 'Practice mode: saved in this browser only'
     : me.owner ? "You're seeing everyone's doodles" : `Hi ${me.label}!`;
   $('[data-list-title]').textContent = me.owner ? 'All doodles' : 'Your doodles';
-  $('[data-owner-note]').hidden = !me.owner || me.label === 'Practice';
+  $('[data-place]').hidden = !placing();
+  if (placing()) fillSpots();
 
-  fillSpots();
   new ResizeObserver(fit).observe(board);
   const draft = readDraft();
   if (draft?.strokes?.length) {
