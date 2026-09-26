@@ -4,12 +4,13 @@
 //   node scripts/studio.mjs build   package it for Vercel (npm run studio:deploy does this, then uploads)
 //
 // Two files are made fresh each time instead of living in studio/: config.js (the public Supabase
-// values from .env) and spots.js (every doodle spot on the site, read from the pages). Only the
+// values from .env) and spots.js (every doodle spot on the site, from src/data/doodle-spots.js). Only the
 // copy served on this computer gets the spots; the online studio gets an empty list, so artists
 // never see where their doodles go.
 import { createServer } from 'node:http';
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { extname, join, relative, resolve } from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { readEnv } from './env.mjs';
 
 const root = resolve(import.meta.dirname, '..');
@@ -18,17 +19,6 @@ const PORT = 4330;
 const FILES = ['index.html', 'studio.css', 'studio.js', 'ink.js', 'api.js'];
 const TYPES = { '.html': 'text/html', '.css': 'text/css', '.js': 'text/javascript' };
 
-// Where each page's spots are, in the order the studio lists them.
-const PAGES = [
-  ['info', 'the Draw intro page'],
-  ['about', 'the About page'],
-  ['projects/index', 'the Projects page'],
-  ['projects/[slug]', 'every project page'],
-  ['art/index', 'the Art page'],
-  ['art/[slug]', null], // one spot per art piece, named after it
-  ['thank-you', 'the Thanks for drawing page'],
-];
-
 function configJs(local) {
   const env = readEnv(join(root, '.env'));
   const config = { supabaseUrl: env.PUBLIC_SUPABASE_URL, anonKey: env.PUBLIC_SUPABASE_ANON_KEY, local };
@@ -36,49 +26,17 @@ function configJs(local) {
   return `export default ${JSON.stringify(config, null, 2)};\n`;
 }
 
-/** Art pieces, from the work entries that aren't projects or drafts. */
-function artPieces() {
-  const dir = join(root, 'src/content/work');
-  return readdirSync(dir)
-    .filter((file) => file.endsWith('.md'))
-    .map((file) => {
-      const front = readFileSync(join(dir, file), 'utf8').split(/^---$/m)[1] ?? '';
-      const field = (name) => front.match(new RegExp(`^${name}:\\s*"?(.*?)"?\\s*$`, 'm'))?.[1];
-      return { id: file.replace(/\.md$/, ''), title: field('title'), kind: field('kind'), draft: field('draft') === 'true', order: Number(field('order') ?? 100) };
-    })
-    .filter((piece) => piece.kind !== 'project' && !piece.draft)
-    .sort((a, b) => a.order - b.order);
+/** Every doodle spot on the site (src/data/doodle-spots.js), read fresh so edits show up right away. */
+async function findSpots() {
+  const registry = pathToFileURL(join(root, 'src/data/doodle-spots.js'));
+  const { DOODLE_SPOTS } = await import(`${registry}?t=${Date.now()}`);
+  return DOODLE_SPOTS.map(({ id, idea, width, page }) => ({ name: id, note: idea, width, page: `the ${page} page` }));
 }
 
-/** Every doodle spot on the site: its file name, the idea for it, and how wide it shows. */
-function findSpots() {
-  const spots = [];
-  for (const [page, label] of PAGES) {
-    const src = readFileSync(join(root, 'src/pages', `${page}.astro`), 'utf8');
-    for (const [, attrs] of src.matchAll(/<Doodle\b([^>]*?)\/>/g)) {
-      if (/kind="image"/.test(attrs)) continue;
-      const note = attrs.match(/note="([^"]*)"/)?.[1];
-      const width = Number(attrs.match(/width=\{(\d+)\}/)?.[1] ?? 96);
-      const name = attrs.match(/name="([^"]+)"/)?.[1];
-      if (name && note) spots.push({ name, note, width, page: label });
-      if (attrs.includes('name={`art-${entry.id}-side`}') && note) {
-        for (const piece of artPieces()) {
-          spots.push({ name: `art-${piece.id}-side`, note, width, page: `the page for ${piece.title}` });
-        }
-      }
-    }
-    // The Draw intro page lists its spots in an array instead.
-    for (const [, name, note] of src.matchAll(/\{\s*name:\s*'([^']+)',\s*note:\s*'((?:[^'\\]|\\.)*)'/g)) {
-      spots.push({ name, note: note.replace(/\\'/g, "'"), width: 96, page: label });
-    }
-  }
-  return spots;
-}
-
-const spotsJs = () => `export default ${JSON.stringify(findSpots(), null, 2)};\n`;
+const spotsJs = async () => `export default ${JSON.stringify(await findSpots(), null, 2)};\n`;
 
 function serve() {
-  createServer((req, res) => {
+  createServer(async (req, res) => {
     const path = new URL(req.url, 'http://localhost').pathname;
     const file = path === '/' ? 'index.html' : path.slice(1);
     const send = (status, type, body) => {
@@ -87,7 +45,7 @@ function serve() {
     };
     try {
       if (file === 'config.js') return send(200, TYPES['.js'], configJs(true));
-      if (file === 'spots.js') return send(200, TYPES['.js'], spotsJs());
+      if (file === 'spots.js') return send(200, TYPES['.js'], await spotsJs());
       if (!FILES.includes(file)) return send(404, 'text/plain', 'Not found');
       send(200, TYPES[extname(file)], readFileSync(join(studio, file)));
     } catch (err) {

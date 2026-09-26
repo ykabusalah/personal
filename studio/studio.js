@@ -279,7 +279,7 @@ function fillSpots() {
     group.label = page;
     for (const s of spots.filter((spot) => spot.page === page)) {
       const other = taken.has(s.name) && taken.get(s.name) !== current.id;
-      group.append(new Option(`${s.note}${other ? '  (taken)' : ''}`, s.name));
+      group.append(new Option(`${s.name} · ${s.note}${other ? '  (taken)' : ''}`, s.name));
     }
     spotSelect.append(group);
   }

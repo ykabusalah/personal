@@ -46,9 +46,9 @@ const covers = new Map(await Promise.all(pieces.map(async (entry) => [entry.id, 
 
   {groups.map(({ kind, entries }, i) => (
     <section class="group">
-      {i === 0 && <Doodle side="left" top="10px" tilt={-7} name="art-side-1" note="a paintbrush, sketchbook, or ink pot" width={104} />}
-      {i === 0 && <Doodle side="right" top="50%" tilt={6} mobile="inline" name="art-side-2" note="a character from one of the comics" width={104} />}
-      {i === groups.length - 1 && <Doodle side="left" top="calc(100% - 140px)" tilt={-5} name="art-side-3" note="a crumpled page, tape roll, or eraser" width={104} />}
+      {i === 0 && <Doodle side="left" top="10px" tilt={-7} spot="7a" />}
+      {i === 0 && <Doodle side="right" top="50%" tilt={6} mobile="inline" spot="7b" />}
+      {i === groups.length - 1 && <Doodle side="left" top="calc(100% - 140px)" tilt={-5} spot="7c" />}
       <h2 class="group-title">{kind === 'fellowship' ? <KeeganNote label={KIND_HEADING[kind]} /> : KIND_HEADING[kind]}</h2>
       <ul class="board">
         {entries.map((entry, j) => (

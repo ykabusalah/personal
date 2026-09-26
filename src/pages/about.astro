@@ -78,8 +78,8 @@ const contacts = [
   </header>
 
   <div class="bio">
-    <Doodle side="right" top="120px" tilt={4} mobile="inline" name="about-fellowship" note="a globe, plane, or map pin for the 30+ countries" width={104} />
-    <Doodle side="left" top="20px" tilt={-4} name="about-work-life" note="a laptop or a tiny compliance robot" width={88} />
+    <Doodle side="right" top="120px" tilt={4} mobile="inline" spot="1a" />
+    <Doodle side="left" top="20px" tilt={-4} spot="1b" />
     <p>
       Hi! I'm Yousef. I'm a <strong>Product Manager at Bretton AI (formerly Greenlite, YC 2023)</strong>, where I own AI agent products used by enterprise banks for compliance investigations, from PRDs and staged rollouts to the evaluation frameworks that prove they work. Recent work includes a self-serve agent builder and an embedded investigation assistant that cut per-case research time from <strong>~20 minutes to near-instant</strong>.
     </p>
@@ -92,7 +92,7 @@ const contacts = [
   </div>
 
   <section class="block">
-    <Doodle side="left" top="0px" tilt={-8} name="about-selected-work" note="a small arrow or pointing hand" width={80} />
+    <Doodle side="left" top="0px" tilt={-8} spot="1c" />
     <h2 class="section-title">Selected work</h2>
     <ul class="cards">
       {selected.map((entry) => (
@@ -109,7 +109,7 @@ const contacts = [
       <a href={SECTIONS.projects.path}>All projects →</a>
       {hasArt && <a href={SECTIONS.art.path}>All art →</a>}
     </p>
-    <Doodle side="right" top="45%" tilt={6} mobile="inline" name="about-sign-off" note="a sign-off, like you waving" width={104} />
+    <Doodle side="right" top="45%" tilt={6} mobile="inline" spot="1d" />
   </section>
 </PageLayout>
 

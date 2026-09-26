@@ -47,8 +47,7 @@ The rest of the site:
 
 ## Launch checklist
 
-- [ ] Add my drawings for the doodle spots in `src/art/doodles/`
-- [ ] Turn off the doodle1 test fill (`TEST_DOODLE` in `src/components/Doodle.astro`), unless I want doodle1 in the spots that are still empty
+- [ ] Draw the doodles for every spot (1a, 1b, and so on, listed in `src/data/doodle-spots.js`) and put them in `src/art/doodles/`, or place them from the Doodle Studio and run `npm run doodles:pull`
 - [ ] Run `npx vercel login`, then `npx vercel link`: create a new project, and don't connect the GitHub repo
 - [ ] Run `npm run deploy` and look over the `vercel.app` preview
 - [ ] Point ykabusalah.me at the new Vercel project

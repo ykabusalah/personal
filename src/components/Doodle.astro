@@ -1,12 +1,15 @@
 ---
 import { Image } from 'astro:assets';
 import { doodle } from '../lib/art';
+import { spotById } from '../data/doodle-spots.js';
 
 interface Props {
-  /** File name (without extension) in src/art/doodles/ that fills this spot. */
-  name: string;
-  /** What kind of drawing fits here; shown on the placeholder. */
-  note: string;
+  /** A doodle spot's id from src/data/doodle-spots.js, like "1a". Its drawing is src/art/doodles/1a.png. */
+  spot?: string;
+  /** For image spots: the file name (without extension) in src/art/ that fills it. */
+  name?: string;
+  /** For image spots: what goes there; shown on the placeholder. */
+  note?: string;
   width?: number;
   /** Use 'image' for photo or screenshot spots instead of small drawings. */
   kind?: 'doodle' | 'image';
@@ -22,9 +25,7 @@ interface Props {
 }
 
 const {
-  name,
-  note,
-  width = 88,
+  spot,
   kind = 'doodle',
   aspect = kind === 'image' ? '16 / 10' : '1',
   side,
@@ -33,9 +34,15 @@ const {
   mobile = 'hide',
 } = Astro.props;
 
-// Test: while trying out the draw-in effect, every doodle spot without its own drawing shows this
-// one. Set to null to turn it off (see the launch checklist in ROADMAP.md).
-const TEST_DOODLE: string | null = 'doodle1';
+const found = spot ? spotById(spot) : undefined;
+if (spot && !found) throw new Error(`There's no doodle spot "${spot}" in src/data/doodle-spots.js.`);
+const name = found?.id ?? Astro.props.name ?? '';
+const note = found?.idea ?? Astro.props.note ?? '';
+const width = Astro.props.width ?? found?.width ?? 88;
+
+// Test: while trying out the draw-in effect, every doodle spot without its own drawing can show
+// this one instead, e.g. 'doodle1'. null shows each spot's placeholder while developing.
+const TEST_DOODLE: string | null = null;
 
 const match = (await doodle(name)) ?? (kind === 'doodle' && TEST_DOODLE ? await doodle(TEST_DOODLE) : undefined);
 
@@ -48,8 +55,9 @@ const showPlaceholder = !match && import.meta.env.DEV;
     {match && <Image class="doodle art-image" src={match} width={Math.min(width * 2, match.width)} widths={[width, width * 2]} sizes={`${width}px`} style={`--w:${width}px`} alt="" aria-hidden="true" draggable="false" />}
     {showPlaceholder && (
       <span class:list={['slot', kind]} style={`--w:${width}px;--aspect:${aspect}`} title={`${name}: ${note}`} aria-hidden="true">
-        <strong>{kind === 'image' ? 'image' : 'doodle'}</strong>
-        <span>{name}</span>
+        {kind === 'image'
+          ? <><strong>image</strong><span>{name}</span></>
+          : <strong class="id">{name}</strong>}
         <em>{note}</em>
       </span>
     )}
@@ -168,7 +176,9 @@ const showPlaceholder = !match && import.meta.env.DEV;
     }
   }
 
-  .holder :global(.doodle) {
+  /* The drawing, or the canvas it draws itself in on (not the placeholder, which shares the class). */
+  .holder :global(img.doodle),
+  .holder :global(canvas.doodle) {
     display: block;
     width: var(--w, auto);
     height: auto;
@@ -197,6 +207,15 @@ const showPlaceholder = !match && import.meta.env.DEV;
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: var(--ink);
+  }
+
+  /* The spot's id, big enough to read at a glance when deciding which drawing goes where. */
+  .slot strong.id {
+    font-size: 22px;
+    font-weight: 600;
+    line-height: 1;
+    letter-spacing: 0;
+    text-transform: none;
   }
 
   .slot span { font-family: ui-monospace, Menlo, Consolas, monospace; }

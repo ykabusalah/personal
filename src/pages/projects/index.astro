@@ -12,9 +12,9 @@ const projects = await getSection('projects');
   <h1 class="page-title"><span class="mark">Projects</span></h1>
 
   <section class="list">
-    <Doodle side="left" top="20px" tilt={-6} name="projects-side-1" note="a laptop, gear, or blueprint" width={96} />
-    <Doodle side="right" top="55%" tilt={5} mobile="inline" name="projects-side-2" note="a little robot or wrench" width={96} />
-    <Doodle side="left" top="calc(100% - 130px)" tilt={-4} name="projects-side-3" note="a coffee cup, sticky note, or rubber duck" width={96} />
+    <Doodle side="left" top="20px" tilt={-6} spot="2a" />
+    <Doodle side="right" top="55%" tilt={5} mobile="inline" spot="2b" />
+    <Doodle side="left" top="calc(100% - 130px)" tilt={-4} spot="2c" />
     <ul class="rows">
       {projects.map((entry) => (
         <li>

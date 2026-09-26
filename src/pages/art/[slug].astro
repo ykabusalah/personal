@@ -7,6 +7,7 @@ import Doodle from '../../components/Doodle.astro';
 import KeeganNote from '../../components/KeeganNote.astro';
 import { ART_MAX_WIDTH, ART_WIDTHS, coverFor, pagesFor } from '../../lib/art';
 import { getSection, KIND_LABEL, type WorkEntry } from '../../lib/work';
+import { scatter, spotsFor } from '../../data/doodle-spots.js';
 
 export async function getStaticPaths() {
   const pieces = await getSection('art');
@@ -17,6 +18,8 @@ const { entry } = Astro.props as { entry: WorkEntry };
 const { data } = entry;
 const { Content } = await render(entry);
 const hasBody = Boolean(entry.body?.trim());
+// This piece's doodles (see src/data/doodle-spots.js), spread down both sides of the write-up.
+const doodles = scatter(spotsFor(`art:${entry.id}`), 'right');
 
 // A comic shows its pages in order, so it skips the separate cover (usually one of those pages).
 const pages = await pagesFor(entry.id);
@@ -43,7 +46,7 @@ const cover = pages.length ? undefined : await coverFor(entry.id);
 
   {hasBody && (
     <div class="body">
-      <Doodle side="right" top="20px" tilt={5} name={`art-${entry.id}-side`} note="a sketch from this piece" width={104} />
+      {doodles.map((d) => <Doodle spot={d.id} side={d.side} top={d.top} tilt={d.tilt} />)}
       <article class="prose">
         <Content />
       </article>

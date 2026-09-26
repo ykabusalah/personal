@@ -6,6 +6,7 @@ import PageLayout from '../../layouts/PageLayout.astro';
 import Doodle from '../../components/Doodle.astro';
 import DrawingStats from '../../components/DrawingStats.astro';
 import { getSection, KIND_LABEL, type WorkEntry } from '../../lib/work';
+import { scatter, spotsFor } from '../../data/doodle-spots.js';
 
 export async function getStaticPaths() {
   const projects = await getSection('projects');
@@ -16,6 +17,8 @@ const { entry } = Astro.props as { entry: WorkEntry };
 const { data } = entry;
 const { Content } = await render(entry);
 const hasBody = Boolean(entry.body?.trim());
+// This project's doodles (see src/data/doodle-spots.js), spread down both sides of the write-up.
+const doodles = scatter(spotsFor(`project:${entry.id}`), 'left');
 
 const links = [
   data.live && { label: data.live.startsWith('/') ? 'Try it' : 'Live site', href: data.live },
@@ -68,7 +71,7 @@ const glance = [
 
   {hasBody && (
     <div class="body">
-      <Doodle side="left" top="40px" tilt={-5} name="project-side" note="a sketch of how it works" width={96} />
+      {doodles.map((d) => <Doodle spot={d.id} side={d.side} top={d.top} tilt={d.tilt} />)}
       <article class="prose">
         <Content />
       </article>
