@@ -122,12 +122,10 @@ const cover = pages.length ? undefined : await coverFor(entry.id);
   }
 
   /* On a dark page, multiply would make the tape vanish off the edge of the print. */
-  @media (prefers-color-scheme: dark) {
-    .cover:not(:empty)::before,
-    .cover:not(:empty)::after {
-      background: color-mix(in srgb, var(--accent) 70%, transparent);
-      mix-blend-mode: normal;
-    }
+  :global(:root[data-theme='dark']) .cover:not(:empty)::before,
+  :global(:root[data-theme='dark']) .cover:not(:empty)::after {
+    background: color-mix(in srgb, var(--accent) 70%, transparent);
+    mix-blend-mode: normal;
   }
 
   .cover:not(:empty)::before { left: -26px; transform: rotate(-36deg); }

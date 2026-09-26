@@ -280,9 +280,7 @@
   }
 
   /* Chalkboard: visitors draw in black, so in dark mode their lines flip to white. */
-  @media (prefers-color-scheme: dark) {
-    .stack canvas { filter: invert(1); }
-  }
+  :global(:root[data-theme='dark']) .stack canvas { filter: invert(1); }
 
   .credit {
     position: absolute;

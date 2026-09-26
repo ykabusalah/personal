@@ -188,11 +188,9 @@ const covers = new Map(await Promise.all(pieces.map(async (entry) => [entry.id, 
   }
 
   /* On a dark page, multiply would make the tape vanish off the edge of the print. */
-  @media (prefers-color-scheme: dark) {
-    .tape {
-      background: color-mix(in srgb, var(--accent) 70%, transparent);
-      mix-blend-mode: normal;
-    }
+  :global(:root[data-theme='dark']) .tape {
+    background: color-mix(in srgb, var(--accent) 70%, transparent);
+    mix-blend-mode: normal;
   }
 
   .center .tape.one {

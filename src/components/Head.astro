@@ -45,6 +45,11 @@ const {
   document.documentElement.style.setProperty('--accent', theme.accent);
   document.documentElement.style.setProperty('--accent-ink-light', theme.ink);
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme.accent);
+
+  // Light is the default; bring back dark mode if this visitor turned it on with the menu button.
+  try {
+    if (localStorage.getItem('theme') === 'dark') document.documentElement.dataset.theme = 'dark';
+  } catch {}
 </script>
 <title>{title}</title>
 <meta name="description" content={description} />

@@ -1,5 +1,6 @@
 ---
 import SeasonalLogo from './SeasonalLogo.astro';
+import ThemeToggle from './ThemeToggle.astro';
 import { getSection, SECTIONS } from '../lib/work';
 
 const path = Astro.url.pathname.replace(/\/+$/, '') || '/';
@@ -20,6 +21,7 @@ const isCurrent = (href: string) => path === href || path.startsWith(`${href}/`)
     {links.map(({ href, label }) => (
       <a href={href} aria-current={isCurrent(href) ? 'page' : undefined}>{label}</a>
     ))}
+    <ThemeToggle />
   </nav>
 </header>
 
@@ -41,6 +43,7 @@ const isCurrent = (href: string) => path === href || path.startsWith(`${href}/`)
 
   nav {
     display: flex;
+    align-items: center;
     gap: clamp(16px, 2.5vw, 28px);
   }
 

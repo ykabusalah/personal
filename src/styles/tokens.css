@@ -24,17 +24,16 @@
   :root { --gutter: 40px; }
 }
 
-/* Dark mode follows the visitor's device setting. The canvas, moderation, and stats pages opt out
-   (data-light-only), since drawings are made black on white. Every seasonal accent already reads well
-   on this dark ground, so it doubles as its own text color here. */
-@media (prefers-color-scheme: dark) {
-  :root:not([data-light-only]) {
-    color-scheme: dark;
-    --ground: #141311;
-    --ink: #f2efe8;
-    --muted: #a8a296;
-    --line: #34312b;
-    --surface: #26241f;
-    --accent-ink: var(--accent);
-  }
+/* Dark mode, switched on by the button in the menu (data-theme="dark", remembered per visitor).
+   Light is the default. The canvas, moderation, and stats pages always stay light (data-light-only),
+   since drawings are made black on white. Every seasonal accent already reads well on this dark
+   ground, so it doubles as its own text color here. */
+:root[data-theme='dark']:not([data-light-only]) {
+  color-scheme: dark;
+  --ground: #141311;
+  --ink: #f2efe8;
+  --muted: #a8a296;
+  --line: #34312b;
+  --surface: #26241f;
+  --accent-ink: var(--accent);
 }
