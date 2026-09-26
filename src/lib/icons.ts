@@ -5,23 +5,28 @@ import sharp from 'sharp';
 // sits in git or gets served at full size.
 const SOURCE = 'src/art/seasonal/base.png';
 
-async function iconPng(size: number) {
+/**
+ * 'transparent' is just the head, for browser tabs and app icons. 'white' puts it on a white square,
+ * for the iPhone home screen, which fills see-through areas with black and would swallow the outline.
+ */
+type Backdrop = 'transparent' | 'white';
+
+async function iconPng(size: number, backdrop: Backdrop = 'transparent') {
+  const background = backdrop === 'white' ? '#ffffff' : { r: 0, g: 0, b: 0, alpha: 0 };
   // No art on this machine: a blank icon keeps the build working.
   if (!fs.existsSync(SOURCE)) {
-    return sharp({ create: { width: size, height: size, channels: 3, background: '#ffffff' } }).png().toBuffer();
+    return sharp({ create: { width: size, height: size, channels: 4, background } }).png().toBuffer();
   }
-  const pad = Math.round(size * 0.06);
-  return sharp(SOURCE)
+  const pad = backdrop === 'white' ? Math.round(size * 0.06) : 0;
+  const icon = sharp(SOURCE)
     .trim()
-    .resize(size - pad * 2, size - pad * 2, { fit: 'contain', background: '#ffffff' })
-    .extend({ top: pad, bottom: pad, left: pad, right: pad, background: '#ffffff' })
-    .flatten({ background: '#ffffff' })
-    .png()
-    .toBuffer();
+    .resize(size - pad * 2, size - pad * 2, { fit: 'contain', background })
+    .extend({ top: pad, bottom: pad, left: pad, right: pad, background });
+  return (backdrop === 'white' ? icon.flatten({ background: '#ffffff' }) : icon).png().toBuffer();
 }
 
-export async function iconResponse(size: number) {
-  return new Response(new Uint8Array(await iconPng(size)), { headers: { 'Content-Type': 'image/png' } });
+export async function iconResponse(size: number, backdrop: Backdrop = 'transparent') {
+  return new Response(new Uint8Array(await iconPng(size, backdrop)), { headers: { 'Content-Type': 'image/png' } });
 }
 
 /** An .ico file can simply wrap a PNG: a 6-byte header, one 16-byte entry, then the PNG itself. */
