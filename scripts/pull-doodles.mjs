@@ -1,6 +1,6 @@
 // Brings the Doodle Studio's placed doodles into src/art/doodles, each named after its spot, so the
-// site's doodle spots pick them up. Doodles that haven't been placed yet stay in the studio.
-// (Place them by running `npm run studio` and opening it with your own link.)
+// site's doodle spots pick them up. (Place them by running `npm run studio` and opening it with your
+// own link.) Every doodle, placed or not, is also copied to src/art/studio-archive.
 //
 // Needs your owner link's key in .env.studio (never committed), as STUDIO_OWNER_KEY=...
 // See supabase/studio.sql for making that link.
@@ -59,7 +59,18 @@ for (const [spot, doodle] of bySpot) {
 }
 writeFileSync(manifest, JSON.stringify([...bySpot.keys()], null, 2));
 
+// A copy of every doodle, placed or not, so nothing is lost once the studio is taken down.
+const archive = join(root, 'src/art/studio-archive');
+mkdirSync(archive, { recursive: true });
+const slug = (name) => name.toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '') || 'untitled';
+for (const doodle of doodles) {
+  const file = join(archive, `${slug(doodle.name)}-${doodle.id.slice(0, 8)}`);
+  writeFileSync(`${file}.png`, Buffer.from(doodle.image.replace(/^data:image\/png;base64,/, ''), 'base64'));
+  writeFileSync(`${file}.json`, JSON.stringify({ name: doodle.name, artist: doodle.artist, saved: doodle.updated_at, ...doodle.strokes }));
+}
+
 const unplaced = doodles.filter((d) => !d.spot).length;
 console.log(`\nPlaced ${bySpot.size} doodle${bySpot.size === 1 ? '' : 's'} in src/art/doodles.`);
+console.log(`Copied all ${doodles.length} to src/art/studio-archive.`);
 if (doubled.size) console.log(`More than one doodle is in ${[...doubled].join(', ')}. The newest is the one used.`);
 if (unplaced > 0) console.log(`${unplaced} more ${unplaced === 1 ? "isn't" : "aren't"} placed yet.`);

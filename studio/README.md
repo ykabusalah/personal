@@ -36,4 +36,12 @@ To turn a link off: `update public.studio_links set active = false where label =
 2. Open each doodle and pick its spot.
 3. Run `npm run doodles:pull`.
 
-Each placed doodle is saved to `src/art/doodles/` under its spot's name. That folder stays on your computer and is never committed. If you move a doodle to another spot, the next pull clears the old spot. The pull only ever removes files it made itself.
+Each placed doodle is saved to `src/art/doodles/` under its spot's name, and every doodle, placed or not, is copied to `src/art/studio-archive/`. Both folders stay on your computer and are never committed. If you move a doodle to another spot, the next pull clears the old spot. The pull only ever removes files it made itself.
+
+## When you're done with it
+
+The studio is meant to be temporary. To take it down:
+
+1. Run `npm run doodles:pull` one last time, so every doodle is saved on your computer.
+2. In the Supabase SQL editor, run `supabase/studio-remove.sql`. This deletes the studio's doodles and links for good, and nothing else.
+3. In Vercel, open the studio's project, go to Settings, and delete it. Or run `npx vercel remove <project name>`.
