@@ -33,7 +33,11 @@ const {
   mobile = 'hide',
 } = Astro.props;
 
-const match = await doodle(name);
+// Test: while trying out the draw-in effect, every doodle spot without its own drawing shows this
+// one. Set to null to turn it off (see the launch checklist in ROADMAP.md).
+const TEST_DOODLE: string | null = 'doodle1';
+
+const match = (await doodle(name)) ?? (kind === 'doodle' && TEST_DOODLE ? await doodle(TEST_DOODLE) : undefined);
 
 // Empty spots only show while developing, so a placeholder can never ship to the live site.
 const showPlaceholder = !match && import.meta.env.DEV;
@@ -52,8 +56,68 @@ const showPlaceholder = !match && import.meta.env.DEV;
   </span>
 )}
 
+<script>
+  import { drawIn } from '../lib/draw-in';
+
+  // Each doodle draws itself in the first time it scrolls into view. The page head hides doodles
+  // until this script is ready (see Head.astro), so they never flash in already drawn.
+  const root = document.documentElement;
+  root.dataset.doodles = 'ready';
+
+  const reveal = (img: HTMLImageElement) => img.classList.add('is-drawn');
+
+  async function drawDoodle(img: HTMLImageElement) {
+    try {
+      await img.decode();
+      const w = img.offsetWidth;
+      const h = img.offsetHeight;
+      if (w && h) {
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const full = document.createElement('canvas');
+        full.width = Math.round(w * dpr);
+        full.height = Math.round(h * dpr);
+        full.getContext('2d')!.drawImage(img, 0, 0, full.width, full.height);
+
+        // Draw on a canvas that takes the image's exact place, then swap the image back.
+        const canvas = document.createElement('canvas');
+        canvas.className = img.className;
+        canvas.style.cssText = `${img.style.cssText};width:${w}px;height:${h}px`;
+        canvas.setAttribute('aria-hidden', 'true');
+        img.before(canvas);
+        img.style.display = 'none';
+        // If the browser pauses the animation, show the finished doodle anyway.
+        const gaveUp = new Promise((resolve) => setTimeout(resolve, 3000));
+        await Promise.race([drawIn(canvas, full, { duration: 1100, maxPixels: 400_000 }), gaveUp]);
+        canvas.remove();
+        img.style.display = '';
+      }
+    } catch {}
+    reveal(img);
+  }
+
+  const doodles = [...document.querySelectorAll<HTMLImageElement>('img.doodle')];
+  if (!root.classList.contains('doodles-pending') || !('IntersectionObserver' in window)) {
+    doodles.forEach(reveal);
+  } else {
+    const watcher = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          watcher.unobserve(entry.target);
+          drawDoodle(entry.target as HTMLImageElement);
+        }
+      },
+      { threshold: 0.3 },
+    );
+    doodles.forEach((img) => watcher.observe(img));
+  }
+</script>
+
 <style>
   .holder { display: contents; }
+
+  /* Hidden until they draw themselves in (the page head adds doodles-pending). */
+  :global(:root.doodles-pending) .holder :global(img.doodle:not(.is-drawn)) { visibility: hidden; }
 
   /* Side doodles sit in the white space beside the column and only appear when there is room for them. */
   .side {

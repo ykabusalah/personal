@@ -43,6 +43,16 @@ const {
   document.documentElement.style.setProperty('--accent', theme.accent);
   document.documentElement.style.setProperty('--accent-ink', theme.ink);
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', theme.accent);
+
+  // Doodles draw themselves in as they scroll into view (Doodle.astro), so hide them until that
+  // script is ready. If it never loads, show them anyway after a few seconds.
+  if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const root = document.documentElement;
+    root.classList.add('doodles-pending');
+    setTimeout(() => {
+      if (root.dataset.doodles !== 'ready') root.classList.remove('doodles-pending');
+    }, 4000);
+  }
 </script>
 <title>{title}</title>
 <meta name="description" content={description} />
