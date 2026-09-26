@@ -5,6 +5,7 @@ import '../../styles/prose.css';
 import PageLayout from '../../layouts/PageLayout.astro';
 import Doodle from '../../components/Doodle.astro';
 import DrawingStats from '../../components/DrawingStats.astro';
+import ZoomImages from '../../components/ZoomImages.astro';
 import { getSection, KIND_LABEL, type WorkEntry } from '../../lib/work';
 import { scatter, spotsFor } from '../../data/doodle-spots.js';
 
@@ -61,22 +62,23 @@ const glance = [
     </dl>
   )}
 
-  <div class="hero-image">
+  <div class="hero-image" data-zoomable>
     {data.cover
-      ? <Image src={data.cover} alt={data.coverAlt} widths={[680, 1360]} sizes="(min-width: 720px) 680px, 100vw" loading="eager" />
+      ? <Image src={data.cover} alt={data.coverAlt} widths={[680, 1360]} sizes="(min-width: 720px) 680px, 100vw" loading="eager" data-tall={data.cover.height > data.cover.width ? '' : undefined} />
       : <Doodle kind="image" name={`project-${entry.id}`} note="a screenshot of it" width={680} />}
   </div>
 
   {entry.id === 'drawing-canvas' && <DrawingStats />}
 
   {hasBody && (
-    <div class="body">
+    <div class="body" data-zoomable>
       {doodles.map((d) => <Doodle spot={d.id} side={d.side} top={d.top} tilt={d.tilt} />)}
       <article class="prose">
         <Content />
       </article>
     </div>
   )}
+  <ZoomImages />
 </PageLayout>
 
 <style>
@@ -131,14 +133,24 @@ const glance = [
     }
   }
 
-  .hero-image:not(:empty) {
-    margin-top: 32px;
+  .hero-image:not(:empty) { margin-top: 32px; }
+
+  .hero-image :global(img) {
+    display: block;
+    width: 100%;
+    height: auto;
+    margin: 0 auto;
     border: 1px solid var(--line);
     border-radius: 12px;
-    overflow: hidden;
   }
 
-  .hero-image :global(img) { display: block; width: 100%; height: auto; }
+  /* A tall phone screenshot fits on screen, like the ones in the write-up below. */
+  .hero-image :global(img[data-tall]) {
+    width: auto;
+    max-width: 100%;
+    height: min(80vh, 720px);
+    object-fit: contain;
+  }
 
   .body {
     position: relative;

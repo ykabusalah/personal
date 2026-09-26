@@ -5,6 +5,7 @@ import '../../styles/prose.css';
 import PageLayout from '../../layouts/PageLayout.astro';
 import Doodle from '../../components/Doodle.astro';
 import KeeganNote from '../../components/KeeganNote.astro';
+import ZoomImages from '../../components/ZoomImages.astro';
 import { ART_MAX_WIDTH, ART_WIDTHS, coverFor, pagesFor } from '../../lib/art';
 import { getSection, KIND_LABEL, type WorkEntry } from '../../lib/work';
 import { scatter, spotsFor } from '../../data/doodle-spots.js';
@@ -39,13 +40,13 @@ const cover = pages.length ? undefined : await coverFor(entry.id);
   )}
 
   {!pages.length && (
-    <div class="cover">{cover
+    <div class="cover" data-zoomable>{cover
       ? <Image class="art-image" src={cover} alt={data.coverAlt} width={Math.min(ART_MAX_WIDTH, cover.width)} widths={ART_WIDTHS} sizes="(min-width: 720px) 680px, 100vw" loading="eager" draggable="false" />
       : <Doodle kind="image" name={`art-${entry.id}`} note={`${entry.id}/cover.jpg in src/art`} width={680} aspect="4 / 3" />}</div>
   )}
 
   {hasBody && (
-    <div class="body">
+    <div class="body" data-zoomable>
       {doodles.map((d) => <Doodle spot={d.id} side={d.side} top={d.top} tilt={d.tilt} />)}
       <article class="prose">
         <Content />
@@ -54,7 +55,7 @@ const cover = pages.length ? undefined : await coverFor(entry.id);
   )}
 
   {pages.length > 0 && (
-    <section class="pages" aria-labelledby="read-it">
+    <section class="pages" aria-labelledby="read-it" data-zoomable>
       <h2 id="read-it" class="section-title">Read it</h2>
       {pages.map((page, i) => (
         <Image
@@ -70,6 +71,7 @@ const cover = pages.length ? undefined : await coverFor(entry.id);
       ))}
     </section>
   )}
+  <ZoomImages />
 </PageLayout>
 
 <style>

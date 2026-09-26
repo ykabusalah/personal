@@ -1,0 +1,103 @@
+---
+// Click a wide screenshot or comic page to see it larger. Wide images get squeezed into the text
+// column, which makes the words in them hard to read, so this opens them to fill the screen.
+// Tall ones already show whole (see prose.css), so they're left alone. Works on images inside any
+// element marked data-zoomable.
+---
+
+<dialog class="zoom" data-zoom aria-label="Enlarged image">
+  <button type="button" class="close" aria-label="Close">×</button>
+  <img data-zoom-image alt="" draggable="false" />
+</dialog>
+
+<script>
+  const dialog = document.querySelector<HTMLDialogElement>('[data-zoom]')!;
+  const big = dialog.querySelector<HTMLImageElement>('[data-zoom-image]')!;
+
+  // The biggest version the page already has, so the enlarged view is sharp.
+  function largest(img: HTMLImageElement) {
+    const candidates = (img.getAttribute('srcset') || '')
+      .split(',')
+      .map((part) => part.trim().split(/\s+/))
+      .filter(([url]) => url)
+      .map(([url, size]) => ({ url, width: parseInt(size) || 0 }))
+      .sort((a, b) => b.width - a.width);
+    return candidates[0]?.url || img.currentSrc || img.src;
+  }
+
+  function open(img: HTMLImageElement) {
+    big.src = largest(img);
+    big.alt = img.alt;
+    big.className = img.classList.contains('art-image') ? 'art-image' : '';
+    dialog.showModal();
+  }
+
+  for (const img of document.querySelectorAll<HTMLImageElement>('[data-zoomable] img')) {
+    const wide = Number(img.getAttribute('width')) > Number(img.getAttribute('height'));
+    if (!wide) continue;
+    img.classList.add('can-zoom');
+    img.tabIndex = 0;
+    img.setAttribute('role', 'button');
+    img.setAttribute('aria-label', `Enlarge: ${img.alt || 'image'}`);
+    img.addEventListener('click', () => open(img));
+    img.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        open(img);
+      }
+    });
+  }
+
+  // Any click closes it, on the picture or around it. Escape does too, on its own.
+  dialog.addEventListener('click', () => dialog.close());
+  dialog.addEventListener('close', () => big.removeAttribute('src'));
+</script>
+
+<style>
+  :global(img.can-zoom) { cursor: zoom-in; }
+
+  .zoom {
+    width: 100vw;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    margin: 0;
+    padding: 16px;
+    border: 0;
+    background: color-mix(in srgb, var(--ground) 96%, transparent);
+    cursor: zoom-out;
+  }
+
+  .zoom[open] {
+    display: grid;
+    place-items: center;
+  }
+
+  .zoom::backdrop { background: transparent; }
+
+  .zoom img {
+    display: block;
+    width: auto;
+    max-width: 100%;
+    height: auto;
+    max-height: calc(100dvh - 32px);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    box-shadow: 0 20px 60px -20px rgb(0 0 0 / 0.35);
+  }
+
+  .close {
+    position: fixed;
+    top: 12px;
+    right: 16px;
+    width: 40px;
+    height: 40px;
+    border: 1px solid var(--line);
+    border-radius: 50%;
+    background: var(--ground);
+    color: var(--ink);
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+  }
+</style>

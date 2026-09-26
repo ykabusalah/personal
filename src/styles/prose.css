@@ -1,6 +1,6 @@
 /* Long-form Markdown (PRDs, essays) rendered on project and art pages. */
 .prose {
-  font-size: 16px;
+  font-size: 17px;
   line-height: 1.7;
 }
 
@@ -73,9 +73,17 @@
   display: block;
   max-width: 100%;
   height: auto;
-  margin: 24px 0 0;
+  margin: 24px auto 0;
   border: 1px solid var(--line);
   border-radius: 10px;
+}
+
+/* Tall screenshots, like phone ones (tagged in astro.config.mjs), fit on screen instead of
+   stretching to the full width of the text. Phone screenshots end up about the size of a real phone. */
+.prose img[data-tall] {
+  width: auto;
+  height: min(80vh, 720px);
+  object-fit: contain;
 }
 
 .prose p:has(> img:only-child) { margin-bottom: 8px; }
@@ -84,4 +92,5 @@
   margin-bottom: 28px;
   font-size: 13px;
   color: var(--muted);
+  text-align: center;
 }
