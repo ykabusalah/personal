@@ -100,8 +100,9 @@ function serve() {
 // studio out of search engines and keep its address from leaking to other sites.
 function build() {
   const out = join(studio, '.vercel/output');
-  rmSync(out, { recursive: true, force: true });
+  // Clear out old files one by one rather than deleting the folder, which OneDrive can hold open.
   mkdirSync(join(out, 'static'), { recursive: true });
+  for (const old of readdirSync(join(out, 'static'))) rmSync(join(out, 'static', old), { recursive: true, force: true });
   for (const file of FILES) writeFileSync(join(out, 'static', file), readFileSync(join(studio, file)));
   writeFileSync(join(out, 'static/config.js'), configJs(false));
   // The online studio knows nothing about the site. Placing doodles happens on this computer only.
