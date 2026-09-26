@@ -121,13 +121,6 @@ const cover = pages.length ? undefined : await coverFor(entry.id);
     clip-path: polygon(0 12%, 5% 0, 50% 6%, 95% 0, 100% 14%, 97% 50%, 100% 88%, 94% 100%, 50% 94%, 6% 100%, 0 86%, 3% 50%);
   }
 
-  /* On a dark page, multiply would make the tape vanish off the edge of the print. */
-  :global(:root[data-theme='dark']) .cover:not(:empty)::before,
-  :global(:root[data-theme='dark']) .cover:not(:empty)::after {
-    background: color-mix(in srgb, var(--accent) 70%, transparent);
-    mix-blend-mode: normal;
-  }
-
   .cover:not(:empty)::before { left: -26px; transform: rotate(-36deg); }
   .cover:not(:empty)::after { right: -26px; transform: rotate(36deg); }
 
