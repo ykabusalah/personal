@@ -536,7 +536,7 @@ async function start(key) {
   $('[data-app]').hidden = false;
   $('[data-hello]').textContent = me.practice
     ? 'Practice mode: saved in this browser only'
-    : me.owner ? "You're seeing everyone's doodles" : `Hi ${me.label}!`;
+    : me.owner ? "You're seeing everyone's doodles" : 'Hi!';
   $('[data-list-title]').textContent = me.owner ? 'All doodles' : 'Your doodles';
   $('[data-place]').hidden = !placing();
   if (placing()) fillSpots();
@@ -550,27 +550,6 @@ async function start(key) {
     load({});
   }
   loadList().catch((err) => status(err.message, true));
-
-  if (!me.accepted) welcome();
-}
-
-function welcome() {
-  const dialog = $('[data-welcome]');
-  $('[data-welcome-name]').textContent = me.label;
-  dialog.addEventListener('cancel', (e) => e.preventDefault());
-  $('[data-accept]').addEventListener('click', async (e) => {
-    e.preventDefault();
-    const button = e.currentTarget;
-    button.disabled = true;
-    try {
-      await api.accept();
-      dialog.close();
-    } catch (err) {
-      $('[data-welcome-status]').textContent = err.message;
-      button.disabled = false;
-    }
-  });
-  dialog.showModal();
 }
 
 $$('[data-tool]').forEach((b) => b.addEventListener('click', () => setTool(b.dataset.tool)));

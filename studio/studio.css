@@ -201,21 +201,6 @@ code { font-size: 12px; padding: 1px 4px; border-radius: 4px; background: var(--
 
 .empty { margin: 0; font-size: 13px; color: var(--muted); }
 
-.welcome {
-  max-width: 460px;
-  padding: 28px;
-  border: 0;
-  border-radius: 14px;
-  box-shadow: 0 20px 60px rgb(0 0 0 / 0.2);
-}
-
-.welcome::backdrop { background: rgb(0 0 0 / 0.35); }
-.welcome h2 { font-size: 32px; }
-.welcome ul { padding-left: 20px; }
-.welcome li { margin-bottom: 6px; }
-.welcome .rights { padding: 10px 12px; border-radius: 8px; background: var(--accent-soft); font-size: 14px; }
-.welcome form { display: flex; justify-content: flex-end; margin-top: 16px; }
-
 @media (max-width: 960px) {
   .layout { grid-template-columns: 1fr; padding: 0 16px 16px; }
   .top { padding: 12px 16px 8px; }

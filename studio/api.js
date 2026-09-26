@@ -35,7 +35,6 @@ async function rpc(name, body) {
 
 const online = (key) => ({
   hello: () => rpc('studio_hello', { key }),
-  accept: () => rpc('studio_accept', { key }),
   list: () => rpc('studio_list', { key }),
   get: (doodle) => rpc('studio_get', { key, doodle }),
   save: ({ id = null, name, strokes, image, thumb }) =>
@@ -58,8 +57,7 @@ const local = (owner) => {
   };
   const write = (all) => localStorage.setItem(LOCAL_STORE, JSON.stringify(all));
   return {
-    hello: async () => ({ label: 'Practice', practice: true, owner, accepted: owner }),
-    accept: async () => null,
+    hello: async () => ({ label: 'Practice', practice: true, owner }),
     list: async () =>
       read()
         .sort((a, b) => b.updated_at.localeCompare(a.updated_at))
