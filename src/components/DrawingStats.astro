@@ -32,14 +32,15 @@ const stats = await fetchDrawingTotals();
 )}
 
 <script>
-  import { approvalRate, formatCount, setCount, watchDrawingTotals } from '../lib/drawing-totals';
+  import { approvalRate, formatCount, watchDrawingTotals } from '../lib/drawing-totals';
+  import { showNumber } from '../lib/ticker';
 
   // The numbers above are from the last build; swap in today's, and keep them current while the
-  // page is open.
+  // page is open, animating each change.
   const box = document.querySelector('[data-drawing-stats]');
   if (box) {
     watchDrawingTotals((t, first) => {
-      const set = (key: string, value: string) => setCount(box.querySelector(`[data-stat="${key}"]`), value, !first);
+      const set = (key: string, value: string) => showNumber(box.querySelector(`[data-stat="${key}"]`), value, !first);
       set('visitors', formatCount(t.visitors));
       set('submitted', formatCount(t.submitted));
       set('approved', formatCount(t.approved));

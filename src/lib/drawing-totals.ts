@@ -24,6 +24,26 @@ export async function fetchDrawingTotals(): Promise<DrawingTotals | null> {
  * view, and right away when someone comes back to it. Skips the checks while the tab is hidden.
  */
 export function watchDrawingTotals(onTotals: (totals: DrawingTotals, first: boolean) => void, everyMs = 30_000) {
+  // While developing, ?ticker-demo pretends visits and drawings keep coming in every few seconds,
+  // so the number animations (lib/ticker.ts) can be watched without waiting on real ones.
+  if (import.meta.env.DEV && new URLSearchParams(location.search).has('ticker-demo')) {
+    fetchDrawingTotals().then((start) => {
+      if (!start) return;
+      let t = start;
+      onTotals(t, true);
+      let round = 0;
+      setInterval(() => {
+        const some = (max: number) => Math.floor(Math.random() * (max + 1));
+        const big = ++round % 3 === 0; // now and then a bigger jump, to flip through more digits
+        const submitted = big ? 6 + some(8) : some(2);
+        const approved = Math.min(submitted, big ? 2 + some(3) : some(1));
+        t = { visitors: t.visitors + 1 + some(big ? 25 : 3), submitted: t.submitted + submitted, approved: t.approved + approved, rejected: t.rejected + submitted - approved };
+        onTotals(t, false);
+      }, 3500);
+    });
+    return;
+  }
+
   let first = true;
   const check = () =>
     fetchDrawingTotals().then((t) => {
@@ -34,19 +54,6 @@ export function watchDrawingTotals(onTotals: (totals: DrawingTotals, first: bool
   check();
   setInterval(() => document.visibilityState === 'visible' && check(), everyMs);
   document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && check());
-}
-
-/**
- * Swap in a new value. With pulse, a number that actually changed gives a small pulse (see
- * .bumped in global.css); the first swap on page load, from the build's numbers, stays quiet.
- */
-export function setCount(el: Element | null, value: string, pulse: boolean) {
-  if (!el || el.textContent === value) return;
-  el.textContent = value;
-  if (!pulse) return;
-  el.classList.remove('bumped');
-  void (el as HTMLElement).offsetWidth; // restart the animation if it's mid-pulse
-  el.classList.add('bumped');
 }
 
 /** Approved out of everything I've reviewed; drawings still waiting don't count against it. */

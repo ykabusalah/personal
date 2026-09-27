@@ -97,15 +97,100 @@ a.chip:hover { border-color: var(--accent); }
   .button svg { transition: none; }
 }
 
-/* A live number that just changed flashes the accent color (setCount in lib/drawing-totals.ts). */
-.bumped { animation: bumped 1.4s ease-out; }
-
-@keyframes bumped {
-  from { color: var(--accent-ink); }
+/* Live numbers (lib/ticker.ts): the drawing totals, updating like a train station board. */
+.tk-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .bumped { animation: none; }
+.tk-visual { display: inline-flex; align-items: flex-end; }
+
+/* flap: each character is a small paper card with a fold across the middle. */
+.tk-cards { gap: 0.07em; }
+
+.tk-card {
+  position: relative;
+  display: inline-block;
+  min-width: 0.62em;
+  padding: 0.1em 0.07em 0.04em;
+  text-align: center;
+  background: #fbf9f4;
+  border: 1px solid var(--line);
+  border-radius: 0.1em;
+  box-shadow: 0 0.1em 0.22em -0.12em rgb(0 0 0 / 0.35);
+  transform: rotate(var(--r, 0deg));
+  perspective: 3em;
+}
+
+.tk-card::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 50%;
+  height: 1px;
+  background: rgb(0 0 0 / 0.09);
+}
+
+.tk-face { display: block; }
+.tk-sizer { visibility: hidden; }
+
+.tk-half {
+  position: absolute;
+  inset: 0;
+  padding: inherit;
+  background: inherit;
+  border-radius: inherit;
+  backface-visibility: hidden;
+}
+
+.tk-top { clip-path: inset(0 0 50% 0); }
+.tk-bottom { clip-path: inset(50% 0 0 0); }
+.tk-flap { z-index: 1; }
+
+/* roll: a changed digit rolls up and out while the new one rolls in. */
+.tk-cell {
+  position: relative;
+  display: inline-block;
+  overflow: hidden;
+}
+
+.tk-in { display: inline-block; }
+
+.tk-out {
+  position: absolute;
+  left: 0;
+  top: 0;
+}
+
+/* scribble: the old number crossed out in pen, the new one written in its place. */
+.tk-scribble { position: relative; display: inline-grid; }
+.tk-scribble > * { grid-area: 1 / 1; }
+
+/* Floats over the number, a little past each end, without taking up any room. */
+.tk-strike {
+  position: absolute;
+  left: -8%;
+  top: 50%;
+  width: 116%;
+  height: 0.45em;
+  transform: translateY(-40%);
+  overflow: visible;
+  pointer-events: none;
+}
+
+.tk-strike path {
+  fill: none;
+  stroke: var(--accent-ink);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  vector-effect: non-scaling-stroke;
 }
 
 /* My artwork: no dragging it out, selecting it, or long-pressing to save it on phones. */
