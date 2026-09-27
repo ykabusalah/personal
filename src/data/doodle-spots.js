@@ -95,8 +95,9 @@ function randomFrom(seed) {
 /**
  * Spread a page's spots down both margins, for pages whose doodles aren't placed one by one
  * (project and art pages). Loosely, like they were dropped there by hand: sides mostly take turns
- * but not always, the gaps between them are uneven, and each sits a different distance from the
- * text, a little bigger or smaller, at its own tilt. A single spot sits near the top on firstSide.
+ * but not always, the gaps between them are uneven, no two sit exactly across from each other,
+ * and each sits a slightly different distance from the text, a little bigger or smaller, at its
+ * own tilt. A single spot sits near the top on firstSide.
  */
 export function scatter(spots, firstSide = 'left') {
   const other = firstSide === 'left' ? 'right' : 'left';
@@ -111,21 +112,15 @@ export function scatter(spots, firstSide = 'left') {
     if (random() < 0.3) [sides[i - 1], sides[i]] = [sides[i], sides[i - 1]];
   }
 
-  // Down each side, give every spot an even share of the height, then nudge it somewhere inside
-  // its share so the gaps come out uneven without two ever landing on top of each other.
-  const placed = spots.map((spot) => ({ ...spot }));
-  for (const side of [firstSide, other]) {
-    const mine = placed.filter((_, i) => sides[i] === side);
-    mine.forEach((spot, j) => {
-      const share = (j + 0.15 + 0.7 * random()) / mine.length;
-      Object.assign(spot, {
-        side,
-        top: `${(share * 100).toFixed(2)}%`,
-        tilt: tilt(),
-        lane: Number((random() ** 1.5).toFixed(2)),
-        width: Math.round(spot.width * (0.85 + 0.3 * random())),
-      });
-    });
-  }
-  return placed;
+  // One after another down the page: each spot gets its own stretch of the height and is nudged
+  // somewhere inside it. Neighbors are usually on opposite sides, so no two sit exactly across
+  // from each other, and the gaps come out uneven. Each stays fairly close to the text.
+  return spots.map((spot, i) => ({
+    ...spot,
+    side: sides[i],
+    top: `${(((i + 0.25 + 0.5 * random()) / spots.length) * 100).toFixed(2)}%`,
+    tilt: tilt(),
+    lane: Number((0.4 * random()).toFixed(2)),
+    width: Math.round(spot.width * (0.85 + 0.3 * random())),
+  }));
 }
