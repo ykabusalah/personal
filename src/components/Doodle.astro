@@ -20,6 +20,8 @@ interface Props {
   top?: string;
   /** Slight tilt in degrees, for a hand-placed feel. */
   tilt?: number;
+  /** How far out a side drawing sits: 0 hugs the text, 1 is out near the screen edge. */
+  lane?: number;
   /** Phones have no side space: 'hide' drops a side drawing there, 'inline' shows it smaller between sections. */
   mobile?: 'hide' | 'inline';
 }
@@ -31,6 +33,7 @@ const {
   side,
   top = '0px',
   tilt = 0,
+  lane = 0,
   mobile = 'hide',
 } = Astro.props;
 
@@ -51,7 +54,7 @@ const showPlaceholder = !match && import.meta.env.DEV;
 ---
 
 {(match || showPlaceholder) && (
-  <span class:list={['holder', side && `side ${side}`, side && mobile === 'inline' && 'inline']} style={`--top:${top};--tilt:${tilt}deg`}>
+  <span class:list={['holder', side && `side ${side}`, side && mobile === 'inline' && 'inline']} style={`--top:${top};--tilt:${tilt}deg;--lane:${lane};--dw:${width}px`}>
     {match && <Image class="doodle art-image" src={match} width={Math.min(width * 2, match.width)} widths={[width, width * 2]} sizes={`${width}px`} style={`--w:${width}px`} alt="" aria-hidden="true" draggable="false" />}
     {showPlaceholder && (
       <span class:list={['slot', kind]} style={`--w:${width}px;--aspect:${aspect}`} title={`${name}: ${note}`} aria-hidden="true">
@@ -151,8 +154,15 @@ const showPlaceholder = !match && import.meta.env.DEV;
     pointer-events: none;
   }
 
-  .side.left { right: calc(100% + clamp(32px, 6vw, 96px)); }
-  .side.right { left: calc(100% + clamp(32px, 6vw, 96px)); }
+  /* --room is the white space left between the drawing and the screen edge; --lane picks how much
+     of it to use, so drawings don't all line up in one straight column. */
+  .side {
+    --gap: clamp(32px, 6vw, 96px);
+    --room: max(0px, (100vw - 100%) / 2 - var(--gap) - var(--dw) - 40px);
+  }
+
+  .side.left { right: calc(100% + var(--gap) + var(--lane) * var(--room)); }
+  .side.right { left: calc(100% + var(--gap) + var(--lane) * var(--room)); }
 
   @media (min-width: 1100px) {
     .side { display: block; }

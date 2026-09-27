@@ -77,22 +77,55 @@ export const DOODLE_SPOTS = DOODLE_PAGES.flatMap(({ number, key, label, spots })
 export const spotById = (id) => DOODLE_SPOTS.find((spot) => spot.id === id);
 export const spotsFor = (key) => DOODLE_SPOTS.filter((spot) => spot.key === key);
 
-const TILTS = [-6, 5, -3, 7, -5, 4, -8, 3];
+/**
+ * Random numbers from 0 to 1 that come out the same every time for the same seed, so a page's
+ * doodles look hand-placed but don't jump around between builds.
+ */
+function randomFrom(seed) {
+  let h = 2166136261;
+  for (const ch of seed) h = Math.imul(h ^ ch.charCodeAt(0), 16777619);
+  return () => {
+    h = (h + 0x6d2b79f5) | 0;
+    let t = Math.imul(h ^ (h >>> 15), 1 | h);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
 
 /**
- * Spread a page's spots down both margins, alternating sides, for pages whose doodles aren't
- * placed one by one (project and art pages). One spot sits near the top on the first side.
+ * Spread a page's spots down both margins, for pages whose doodles aren't placed one by one
+ * (project and art pages). Loosely, like they were dropped there by hand: sides mostly take turns
+ * but not always, the gaps between them are uneven, and each sits a different distance from the
+ * text, a little bigger or smaller, at its own tilt. A single spot sits near the top on firstSide.
  */
 export function scatter(spots, firstSide = 'left') {
   const other = firstSide === 'left' ? 'right' : 'left';
-  const rows = Math.ceil(spots.length / 2);
-  return spots.map((spot, i) => {
-    const row = Math.floor(i / 2);
-    return {
-      ...spot,
-      side: i % 2 ? other : firstSide,
-      top: spots.length === 1 ? '40px' : `calc(${((row / rows) * 100).toFixed(2)}% + ${i % 2 ? 80 : 24}px)`,
-      tilt: TILTS[i % TILTS.length],
-    };
-  });
+  const random = randomFrom(spots.map((spot) => spot.id).join());
+  const tilt = () => Math.round(-9 + 18 * random());
+
+  if (spots.length === 1) return [{ ...spots[0], side: firstSide, top: '40px', tilt: tilt(), lane: Number((0.25 * random()).toFixed(2)) }];
+
+  // Take turns, but now and then let two in a row land on the same side.
+  const sides = spots.map((_, i) => (i % 2 ? other : firstSide));
+  for (let i = 1; i < sides.length; i++) {
+    if (random() < 0.3) [sides[i - 1], sides[i]] = [sides[i], sides[i - 1]];
+  }
+
+  // Down each side, give every spot an even share of the height, then nudge it somewhere inside
+  // its share so the gaps come out uneven without two ever landing on top of each other.
+  const placed = spots.map((spot) => ({ ...spot }));
+  for (const side of [firstSide, other]) {
+    const mine = placed.filter((_, i) => sides[i] === side);
+    mine.forEach((spot, j) => {
+      const share = (j + 0.15 + 0.7 * random()) / mine.length;
+      Object.assign(spot, {
+        side,
+        top: `${(share * 100).toFixed(2)}%`,
+        tilt: tilt(),
+        lane: Number((random() ** 1.5).toFixed(2)),
+        width: Math.round(spot.width * (0.85 + 0.3 * random())),
+      });
+    });
+  }
+  return placed;
 }

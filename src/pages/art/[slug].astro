@@ -47,7 +47,7 @@ const cover = pages.length ? undefined : await coverFor(entry.id);
 
   {hasBody && (
     <div class="body" data-zoomable>
-      {doodles.map((d) => <Doodle spot={d.id} side={d.side} top={d.top} tilt={d.tilt} />)}
+      {doodles.map((d) => <Doodle spot={d.id} side={d.side} top={d.top} tilt={d.tilt} lane={d.lane} width={d.width} />)}
       <article class="prose">
         <Content />
       </article>
