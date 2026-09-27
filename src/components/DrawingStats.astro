@@ -32,17 +32,14 @@ const stats = await fetchDrawingTotals();
 )}
 
 <script>
-  import { approvalRate, fetchDrawingTotals, formatCount } from '../lib/drawing-totals';
+  import { approvalRate, formatCount, setCount, watchDrawingTotals } from '../lib/drawing-totals';
 
-  // The numbers above are from the last build; swap in today's.
+  // The numbers above are from the last build; swap in today's, and keep them current while the
+  // page is open.
   const box = document.querySelector('[data-drawing-stats]');
   if (box) {
-    fetchDrawingTotals().then((t) => {
-      if (!t) return;
-      const set = (key: string, value: string) => {
-        const el = box.querySelector(`[data-stat="${key}"]`);
-        if (el) el.textContent = value;
-      };
+    watchDrawingTotals((t, first) => {
+      const set = (key: string, value: string) => setCount(box.querySelector(`[data-stat="${key}"]`), value, !first);
       set('visitors', formatCount(t.visitors));
       set('submitted', formatCount(t.submitted));
       set('approved', formatCount(t.approved));

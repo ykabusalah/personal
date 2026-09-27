@@ -97,6 +97,17 @@ a.chip:hover { border-color: var(--accent); }
   .button svg { transition: none; }
 }
 
+/* A live number that just changed flashes the accent color (setCount in lib/drawing-totals.ts). */
+.bumped { animation: bumped 1.4s ease-out; }
+
+@keyframes bumped {
+  from { color: var(--accent-ink); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bumped { animation: none; }
+}
+
 /* My artwork: no dragging it out, selecting it, or long-pressing to save it on phones. */
 .art-image {
   user-select: none;

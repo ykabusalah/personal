@@ -19,6 +19,36 @@ export async function fetchDrawingTotals(): Promise<DrawingTotals | null> {
   }
 }
 
+/**
+ * Keep numbers on the page current: fetch now, then every 30 seconds while the tab is open and in
+ * view, and right away when someone comes back to it. Skips the checks while the tab is hidden.
+ */
+export function watchDrawingTotals(onTotals: (totals: DrawingTotals, first: boolean) => void, everyMs = 30_000) {
+  let first = true;
+  const check = () =>
+    fetchDrawingTotals().then((t) => {
+      if (!t) return;
+      onTotals(t, first);
+      first = false;
+    });
+  check();
+  setInterval(() => document.visibilityState === 'visible' && check(), everyMs);
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && check());
+}
+
+/**
+ * Swap in a new value. With pulse, a number that actually changed gives a small pulse (see
+ * .bumped in global.css); the first swap on page load, from the build's numbers, stays quiet.
+ */
+export function setCount(el: Element | null, value: string, pulse: boolean) {
+  if (!el || el.textContent === value) return;
+  el.textContent = value;
+  if (!pulse) return;
+  el.classList.remove('bumped');
+  void (el as HTMLElement).offsetWidth; // restart the animation if it's mid-pulse
+  el.classList.add('bumped');
+}
+
 /** Approved out of everything I've reviewed; drawings still waiting don't count against it. */
 export const approvalRate = (t: DrawingTotals) => {
   const reviewed = t.approved + t.rejected;
