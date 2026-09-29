@@ -1,9 +1,12 @@
 ---
 // Live totals for the drawing site, shown on its project page. No totals means no box,
 // rather than numbers that could be wrong.
-import { approvalRate, fetchDrawingTotals, formatCount } from '../lib/drawing-totals';
+import { approvalRate, fetchDrawingTotals, finishRate, formatCount, formatDuration } from '../lib/drawing-totals';
 
 const stats = await fetchDrawingTotals();
+// The last two tiles need the updated drawing_stats function; until it's in, they stay hidden.
+const finish = stats ? finishRate(stats) : null;
+const drawTime = stats?.draw_seconds ? formatDuration(stats.draw_seconds) : null;
 ---
 
 {stats && (
@@ -26,13 +29,21 @@ const stats = await fetchDrawingTotals();
         <dt>Approval rate</dt>
         <dd data-stat="rate">{approvalRate(stats)}%</dd>
       </div>
+      <div class="tile" data-tile="finish" hidden={finish === null}>
+        <dt>Finished their drawing</dt>
+        <dd data-stat="finish">{finish ?? 0}%</dd>
+      </div>
+      <div class="tile" data-tile="time" hidden={!drawTime}>
+        <dt>Time spent drawing</dt>
+        <dd data-stat="time">{drawTime}</dd>
+      </div>
     </dl>
     <p class="note">Live from the site's database. I review every single drawing by hand, so if you're wondering about that approval rate, yes, blame me.</p>
   </section>
 )}
 
 <script>
-  import { approvalRate, formatCount, watchDrawingTotals } from '../lib/drawing-totals';
+  import { approvalRate, finishRate, formatCount, formatDuration, watchDrawingTotals } from '../lib/drawing-totals';
   import { showNumber } from '../lib/ticker';
 
   // The numbers above are from the last build; swap in today's, and keep them current while the
@@ -45,6 +56,17 @@ const stats = await fetchDrawingTotals();
       set('submitted', formatCount(t.submitted));
       set('approved', formatCount(t.approved));
       set('rate', `${approvalRate(t)}%`);
+      // Shown once there's something to show. A tile that just appeared isn't crossed out.
+      const show = (key: string, value: string | null) => {
+        const tile = box.querySelector<HTMLElement>(`[data-tile="${key}"]`);
+        if (!tile || value === null) return;
+        const appearing = tile.hidden;
+        tile.hidden = false;
+        showNumber(tile.querySelector('dd'), value, !first && !appearing);
+      };
+      const finish = finishRate(t);
+      show('finish', finish === null ? null : `${finish}%`);
+      show('time', t.draw_seconds ? formatDuration(t.draw_seconds) : null);
     });
   }
 </script>
@@ -72,10 +94,16 @@ const stats = await fetchDrawingTotals();
 
   .tiles {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    grid-template-columns: repeat(2, 1fr);
     gap: 12px;
     margin: 0;
   }
+
+  @media (min-width: 560px) {
+    .tiles { grid-template-columns: repeat(3, 1fr); }
+  }
+
+  .tile[hidden] { display: none; }
 
   .tile {
     padding: 16px 18px;

@@ -1,6 +1,16 @@
 // Totals for the drawing site, from the drawing_stats database function (supabase/drawing-stats.sql).
 // It returns counts only, never individual visits or drawings. Used at build time and in the browser.
-export type DrawingTotals = { visitors: number; submitted: number; approved: number; rejected: number };
+export type DrawingTotals = {
+  visitors: number;
+  submitted: number;
+  approved: number;
+  rejected: number;
+  /** Visits that started a drawing, and how many of those submitted it. Missing until the updated function is in. */
+  started?: number;
+  finished?: number;
+  /** The typical time from first stroke to submitting, in seconds; null before anyone has. */
+  draw_seconds?: number | null;
+};
 
 const SUPABASE_URL = import.meta.env.PUBLIC_SUPABASE_URL;
 const SUPABASE_KEY = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
@@ -37,7 +47,15 @@ export function watchDrawingTotals(onTotals: (totals: DrawingTotals, first: bool
         const big = ++round % 3 === 0; // now and then a bigger jump, to flip through more digits
         const submitted = big ? 6 + some(8) : some(2);
         const approved = Math.min(submitted, big ? 2 + some(3) : some(1));
-        t = { visitors: t.visitors + 1 + some(big ? 25 : 3), submitted: t.submitted + submitted, approved: t.approved + approved, rejected: t.rejected + submitted - approved };
+        t = {
+          visitors: t.visitors + 1 + some(big ? 25 : 3),
+          submitted: t.submitted + submitted,
+          approved: t.approved + approved,
+          rejected: t.rejected + submitted - approved,
+          started: (t.started ?? 0) + submitted + some(big ? 6 : 2),
+          finished: (t.finished ?? 0) + submitted,
+          draw_seconds: Math.max(20, (t.draw_seconds ?? 180) + some(40) - 20),
+        };
         onTotals(t, false);
       }, 3500);
     });
@@ -63,3 +81,14 @@ export const approvalRate = (t: DrawingTotals) => {
 };
 
 export const formatCount = (n: number) => n.toLocaleString('en-US');
+
+/** Of the visits that started a drawing, the share that submitted it. null until there's data. */
+export const finishRate = (t: DrawingTotals) => (t.started ? Math.round(((t.finished ?? 0) / t.started) * 100) : null);
+
+/** Seconds as a short time, like "45s", "4m 12s", or "1h 5m". */
+export const formatDuration = (seconds: number) => {
+  const s = Math.round(seconds);
+  if (s < 60) return `${s}s`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ${s % 60}s`;
+  return `${Math.floor(s / 3600)}h ${Math.floor((s % 3600) / 60)}m`;
+};

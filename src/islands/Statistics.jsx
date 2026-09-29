@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { formatDuration } from '../lib/drawing-totals';
 import { 
   ArrowLeft, Users, Image, MousePointer, TrendingUp, Clock, 
   RefreshCw, Undo2, Paintbrush, LogOut, Calendar, UserCheck, Home, ExternalLink
@@ -24,23 +25,28 @@ export default function Statistics() {
 
   useEffect(() => { if (user) fetchStats(); }, [timeRange]);
 
+  // Supabase hands back a limited number of rows per request (1,000 by default), and every stroke
+  // is an event, so read each table a page at a time, oldest first. null if a request fails.
+  const fetchAll = async (table) => {
+    const rows = [];
+    for (;;) {
+      const { data, error } = await supabase.from(table).select('*').order('created_at').range(rows.length, rows.length + 999);
+      if (error || !data) return null;
+      if (data.length === 0) return rows;
+      rows.push(...data);
+    }
+  };
+
   const fetchStats = async () => {
     setLoading(true);
+    const [allEvents, allDrawings] = await Promise.all([fetchAll('analytics'), fetchAll('drawings')]);
+
+    // 0 is all time.
     const since = new Date();
     since.setDate(since.getDate() - timeRange);
-
-    const { data: events } = await supabase
-      .from('analytics')
-      .select('*')
-      .gte('created_at', since.toISOString());
-
-    const { data: drawings } = await supabase
-      .from('drawings')
-      .select('*')
-      .gte('created_at', since.toISOString());
-
-    const { data: allDrawings } = await supabase.from('drawings').select('*');
-    const { data: allEvents } = await supabase.from('analytics').select('*');
+    const inRange = (row) => !timeRange || new Date(row.created_at) >= since;
+    const events = allEvents?.filter(inRange);
+    const drawings = allDrawings?.filter(inRange);
 
     if (events && drawings) {
       const uniqueSessions = [...new Set(events.map(e => e.session_id))].length;
@@ -66,7 +72,9 @@ export default function Statistics() {
       const sessionsWithDrawClick = [...new Set(events.filter(e => e.event_name === 'draw_link_click').map(e => e.session_id))];
       const sessionsWithDrawView = [...new Set(pageViews.filter(e => e.event_data?.page === 'draw').map(e => e.session_id))];
       const sessionsWithSubmit = [...new Set(events.filter(e => e.event_name === 'submit_success').map(e => e.session_id))];
-      
+      // Visits where someone actually drew. drawing_start fires on every stroke, so count visits, not events.
+      const sessionsWithDrawing = [...new Set(events.filter(e => e.event_name === 'drawing_start').map(e => e.session_id))];
+
       // Home → Click
       const homeToClickRate = homeViews > 0 ? ((drawLinkClicks / homeViews) * 100).toFixed(1) : 0;
       // Click → Info (sessions that clicked and viewed info)
@@ -92,7 +100,8 @@ export default function Statistics() {
       // Undo/Redo frequency
       const undoCount = events.filter(e => e.event_name === 'undo').length;
       const redoCount = events.filter(e => e.event_name === 'redo').length;
-      const undoPerSession = uniqueSessions > 0 ? (undoCount / uniqueSessions).toFixed(1) : 0;
+      // Per visit that drew, not per visit: most visits never open the canvas.
+      const undoPerSession = sessionsWithDrawing.length > 0 ? (undoCount / sessionsWithDrawing.length).toFixed(1) : 0;
 
       // Brush size stats
       const brushChanges = events.filter(e => e.event_name === 'brush_size_change');
@@ -103,24 +112,22 @@ export default function Statistics() {
       }, {});
       const mostPopularBrushSize = Object.entries(brushSizeFrequency)
         .sort((a, b) => b[1] - a[1])[0]?.[0] || 'N/A';
-      const brushChangesPerSession = uniqueSessions > 0 ? (brushChanges.length / uniqueSessions).toFixed(1) : 0;
+      const brushChangesPerSession = sessionsWithDrawing.length > 0 ? (brushChanges.length / sessionsWithDrawing.length).toFixed(1) : 0;
 
-      // Average time on draw page before submitting
-      let avgTimeToSubmit = 0;
-      if (sessionsWithSubmit.length > 0) {
-        const times = sessionsWithSubmit.map(sessionId => {
-          const sessionEvents = events.filter(e => e.session_id === sessionId);
-          const drawPageView = sessionEvents.find(e => e.event_name === 'page_view' && e.event_data?.page === 'draw');
-          const submitEvent = sessionEvents.find(e => e.event_name === 'submit_success');
-          if (drawPageView && submitEvent) {
-            return new Date(submitEvent.created_at) - new Date(drawPageView.created_at);
-          }
-          return null;
-        }).filter(Boolean);
-        if (times.length > 0) {
-          avgTimeToSubmit = Math.round(times.reduce((a, b) => a + b, 0) / times.length / 1000 / 60);
-        }
-      }
+      // Typical time from first stroke to submitting, per visit that submitted. The median, so a
+      // tab left open overnight doesn't drag it out. Same as the public number on the project page.
+      const drawTimes = sessionsWithSubmit.map(sessionId => {
+        const sessionEvents = events.filter(e => e.session_id === sessionId);
+        const firstStroke = sessionEvents.find(e => e.event_name === 'drawing_start');
+        const submitEvent = sessionEvents.find(e => e.event_name === 'submit_success');
+        if (!firstStroke || !submitEvent) return null;
+        const seconds = (new Date(submitEvent.created_at) - new Date(firstStroke.created_at)) / 1000;
+        return seconds > 0 ? seconds : null;
+      }).filter(Boolean).sort((a, b) => a - b);
+      const middle = Math.floor(drawTimes.length / 2);
+      const medianDrawSeconds = drawTimes.length === 0 ? null
+        : drawTimes.length % 2 ? drawTimes[middle] : (drawTimes[middle - 1] + drawTimes[middle]) / 2;
+      const timeToSubmit = medianDrawSeconds === null ? 'N/A' : formatDuration(medianDrawSeconds);
 
       // Activity by day of week
       const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
@@ -152,9 +159,9 @@ export default function Statistics() {
       const modalCloses = events.filter(e => e.event_name === 'modal_close').length;
       const modalAbandonRate = modalOpens > 0 ? ((modalCloses / modalOpens) * 100).toFixed(1) : 0;
 
-      // Drawing completion rate
-      const drawingStarts = events.filter(e => e.event_name === 'drawing_start').length;
-      const completionRate = drawingStarts > 0 ? ((submissions / drawingStarts) * 100).toFixed(1) : 0;
+      // Drawing completion rate: of the visits where someone drew, the share that submitted.
+      const drewAndSubmitted = sessionsWithDrawing.filter(s => sessionsWithSubmit.includes(s)).length;
+      const completionRate = sessionsWithDrawing.length > 0 ? ((drewAndSubmitted / sessionsWithDrawing.length) * 100).toFixed(1) : 0;
 
       // Canvas clears
       const canvasClears = events.filter(e => e.event_name === 'canvas_clear').length;
@@ -209,7 +216,7 @@ export default function Statistics() {
         brushChangesPerSession,
         mostPopularBrushSize,
         brushSizeFrequency,
-        avgTimeToSubmit,
+        timeToSubmit,
         // Activity
         activityByDay,
         dayNames,
@@ -291,7 +298,8 @@ export default function Statistics() {
                 <option value={7}>Last 7 days</option>
                 <option value={30}>Last 30 days</option>
                 <option value={90}>Last 90 days</option>
-                <option value={365}>All time</option>
+                <option value={365}>Last 365 days</option>
+                <option value={0}>All time</option>
               </select>
               <button onClick={fetchStats} disabled={loading} className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition">
                 <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
@@ -464,7 +472,7 @@ export default function Statistics() {
                     <span className="font-semibold">{stats.redoCount}</span>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t">
-                    <span className="text-slate-600">Avg Undos/Session</span>
+                    <span className="text-slate-600">Undos per Drawing Visit</span>
                     <span className="font-semibold text-violet-600">{stats.undoPerSession}</span>
                   </div>
                 </div>
@@ -484,7 +492,7 @@ export default function Statistics() {
                     <span className="font-semibold">{stats.brushChanges}</span>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t">
-                    <span className="text-slate-600">Changes/Session</span>
+                    <span className="text-slate-600">Changes per Drawing Visit</span>
                     <span className="font-semibold text-violet-600">{stats.brushChangesPerSession}</span>
                   </div>
                 </div>
@@ -496,8 +504,8 @@ export default function Statistics() {
                 </h3>
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
-                    <span className="text-slate-600">Avg Time to Submit</span>
-                    <span className="font-semibold">{stats.avgTimeToSubmit} min</span>
+                    <span className="text-slate-600">Typical Time to Submit</span>
+                    <span className="font-semibold">{stats.timeToSubmit}</span>
                   </div>
                   <div className="flex justify-between items-center">
                     <span className="text-slate-600">Canvas Clears</span>

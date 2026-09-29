@@ -29,12 +29,21 @@ const getDeviceType = () => {
   return 'desktop';
 };
 
-// Local testing shouldn't pollute the production analytics table.
-const IS_LOCAL = ['localhost', '127.0.0.1'].includes(window.location.hostname);
+// Only real visits to the live site count: not local testing, preview deploys, bots, or my own
+// browser, which signing in to /moderate marks as mine (see ModerationPanel.jsx).
+const IS_LIVE = ['ykabusalah.me', 'www.ykabusalah.me'].includes(window.location.hostname);
+const IS_BOT = navigator.webdriver || /bot|crawl|spider|slurp|headless|lighthouse/i.test(navigator.userAgent);
+const isMine = () => {
+  try {
+    return localStorage.getItem('site_owner') === '1';
+  } catch {
+    return false;
+  }
+};
 
 export const track = async (eventName, eventData = {}) => {
-  if (IS_LOCAL) {
-    console.debug('[analytics:local]', eventName, eventData);
+  if (!IS_LIVE || IS_BOT || isMine()) {
+    console.debug('[analytics:skipped]', eventName, eventData);
     return;
   }
   try {

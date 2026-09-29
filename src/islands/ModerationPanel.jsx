@@ -3,6 +3,14 @@ import { supabase } from '../lib/supabase';
 import { Check, X, RefreshCw, LogOut, Clock, User, BarChart3 } from 'lucide-react';
 
 
+// Once I've signed in on a browser, my own visits there stop counting in the stats (lib/events.js
+// checks this). It's set here, not by importing the tracking code, which ad blockers may block.
+const markMine = () => {
+  try {
+    localStorage.setItem('site_owner', '1');
+  } catch {}
+};
+
 export default function ModerationPanel() {
   const [drawings, setDrawings] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -19,6 +27,7 @@ export default function ModerationPanel() {
       const { data: { session } } = await supabase.auth.getSession();
       setUser(session?.user ?? null);
       if (session?.user) {
+        markMine();
         fetchDrawings();
         fetchStats();
       }
@@ -28,6 +37,7 @@ export default function ModerationPanel() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
+        markMine();
         fetchDrawings();
         fetchStats();
       } else {
@@ -58,14 +68,13 @@ export default function ModerationPanel() {
   };
 
   const fetchStats = async () => {
-    const { data: pending } = await supabase.from('drawings').select('id', { count: 'exact' }).eq('status', 'pending');
-    const { data: approved } = await supabase.from('drawings').select('id', { count: 'exact' }).eq('status', 'approved');
-    const { data: rejected } = await supabase.from('drawings').select('id', { count: 'exact' }).eq('status', 'rejected');
-    setStats({
-      pending: pending?.length || 0,
-      approved: approved?.length || 0,
-      rejected: rejected?.length || 0
-    });
+    // Ask for the counts alone: listing the rows would stop at Supabase's per-request row limit.
+    const count = async (status) => {
+      const { count: n } = await supabase.from('drawings').select('id', { count: 'exact', head: true }).eq('status', status);
+      return n || 0;
+    };
+    const [pending, approved, rejected] = await Promise.all(['pending', 'approved', 'rejected'].map(count));
+    setStats({ pending, approved, rejected });
   };
 
   const fetchDrawings = async () => {
