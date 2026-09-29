@@ -27,6 +27,8 @@ pnpm-debug.log*
 
 # My art stays on my computer only: never in git, never on GitHub.
 src/art/
+# Stroke-by-stroke copies of the stand-in doodles, made by npm run doodles:mock.
+public/doodle-strokes/
 
 # Vercel's link to my project and the packaged upload, made on this computer.
 .vercel/

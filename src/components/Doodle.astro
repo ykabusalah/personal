@@ -1,4 +1,6 @@
 ---
+import { existsSync } from 'node:fs';
+import { join } from 'node:path';
 import { Image } from 'astro:assets';
 import { doodle, mockDoodle } from '../lib/art';
 import { spotById } from '../data/doodle-spots.js';
@@ -49,9 +51,13 @@ const TEST_DOODLE: string | null = null;
 
 // Stand-ins from `npm run doodles:mock` fill spots that don't have their real doodle yet, on the
 // live site too, until the real ones are drawn. `npm run doodles:unmock` removes them all.
-const standIn = kind === 'doodle' ? await mockDoodle(name) : undefined;
+const real = await doodle(name);
+const standIn = !real && kind === 'doodle' ? await mockDoodle(name) : undefined;
 
-const match = (await doodle(name)) ?? standIn ?? (kind === 'doodle' && TEST_DOODLE ? await doodle(TEST_DOODLE) : undefined);
+const match = real ?? standIn ?? (kind === 'doodle' && TEST_DOODLE ? await doodle(TEST_DOODLE) : undefined);
+
+// A stand-in also has its strokes saved in order, so it can be drawn in line by line.
+const strokesFile = standIn && existsSync(join(process.cwd(), 'public/doodle-strokes', `${name}.svg`)) ? `/doodle-strokes/${name}.svg` : undefined;
 
 // Empty spots only show while developing, so a placeholder can never ship to the live site.
 const showPlaceholder = !match && import.meta.env.DEV;
@@ -59,7 +65,7 @@ const showPlaceholder = !match && import.meta.env.DEV;
 
 {(match || showPlaceholder) && (
   <span class:list={['holder', side && `side ${side}`, side && mobile === 'inline' && 'inline']} style={`--top:${top};--tilt:${tilt}deg;--lane:${lane};--dw:${width}px`}>
-    {match && <Image class="doodle art-image" src={match} width={Math.min(width * 2, match.width)} widths={[width, width * 2]} sizes={`${width}px`} style={`--w:${width}px`} alt="" aria-hidden="true" draggable="false" />}
+    {match && <Image class="doodle art-image" src={match} width={Math.min(width * 2, match.width)} widths={[width, width * 2]} sizes={`${width}px`} style={`--w:${width}px`} alt="" aria-hidden="true" draggable="false" data-strokes={strokesFile} />}
     {showPlaceholder && (
       <span class:list={['slot', kind]} style={`--w:${width}px;--aspect:${aspect}`} title={`${name}: ${note}`} aria-hidden="true">
         {kind === 'image'
@@ -81,32 +87,84 @@ const showPlaceholder = !match && import.meta.env.DEV;
 
   const reveal = (img: HTMLImageElement) => img.classList.add('is-drawn');
 
-  async function drawDoodle(img: HTMLImageElement) {
-    // Draw on a canvas that takes the image's exact place, then swap the image back.
+  /**
+   * Draw a doodle stroke by stroke, the way a pen would, from its saved strokes: an SVG where each
+   * stroke says when it starts and how long it takes (made by `npm run doodles:mock`).
+   */
+  async function penDraw(img: HTMLImageElement, w: number, h: number, layer: { el?: Element }, isOver: () => boolean) {
+    const res = await fetch(img.dataset.strokes!);
+    if (!res.ok) throw new Error('No strokes');
+    const markup = await res.text();
+    if (isOver()) return;
+    const box = document.createElement('span');
+    box.style.cssText = `${img.style.cssText};display:block;width:${w}px;height:${h}px`;
+    box.setAttribute('aria-hidden', 'true');
+    box.innerHTML = markup;
+    const svg = box.querySelector('svg');
+    if (!svg) throw new Error('No strokes');
+    svg.setAttribute('width', String(w));
+    svg.setAttribute('height', String(h));
+    svg.style.display = 'block';
+    const strokes: Animation[] = [];
+    for (const el of svg.querySelectorAll<SVGElement>('[data-t]')) {
+      const delay = Number(el.dataset.t);
+      const duration = Number(el.dataset.d);
+      if (el.tagName === 'circle') {
+        strokes.push(el.animate([{ opacity: 0 }, { opacity: 1 }], { delay, duration, fill: 'backwards' }));
+        continue;
+      }
+      // Each stroke is one unit long (pathLength="1"), so a dash of 1 is the whole line.
+      el.style.strokeDasharray = '1 3';
+      strokes.push(el.animate([{ strokeDashoffset: 1.02 }, { strokeDashoffset: 0 }], { delay, duration, easing: 'cubic-bezier(0.45, 0.05, 0.4, 1)', fill: 'backwards' }));
+      if (el.dataset.f) strokes.push(el.animate([{ fillOpacity: 0 }, { fillOpacity: 1 }], { delay: delay + duration, duration: 120, fill: 'backwards' }));
+    }
+    layer.el = box;
+    img.before(box);
+    img.style.display = 'none';
+    await Promise.all(strokes.map((stroke) => stroke.finished));
+  }
+
+  /** Reveal the ink along each stroke of a finished drawing, on a canvas in the image's place. */
+  async function inkDraw(img: HTMLImageElement, w: number, h: number, layer: { el?: Element }) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const full = document.createElement('canvas');
+    full.width = Math.round(w * dpr);
+    full.height = Math.round(h * dpr);
+    full.getContext('2d')!.drawImage(img, 0, 0, full.width, full.height);
     const canvas = document.createElement('canvas');
+    canvas.className = img.className;
+    canvas.style.cssText = `${img.style.cssText};width:${w}px;height:${h}px`;
+    canvas.setAttribute('aria-hidden', 'true');
+    layer.el = canvas;
+    img.before(canvas);
+    img.style.display = 'none';
+    await drawIn(canvas, full, { duration: 1100, maxPixels: 400_000 });
+  }
+
+  async function drawDoodle(img: HTMLImageElement) {
+    // Whatever draws the doodle takes the image's exact place, then the image comes back.
+    const layer: { el?: Element } = {};
     let over = false;
     const draw = async () => {
       await img.decode();
       const w = img.offsetWidth;
       const h = img.offsetHeight;
       if (over || !w || !h) return;
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const full = document.createElement('canvas');
-      full.width = Math.round(w * dpr);
-      full.height = Math.round(h * dpr);
-      full.getContext('2d')!.drawImage(img, 0, 0, full.width, full.height);
-      canvas.className = img.className;
-      canvas.style.cssText = `${img.style.cssText};width:${w}px;height:${h}px`;
-      canvas.setAttribute('aria-hidden', 'true');
-      img.before(canvas);
-      img.style.display = 'none';
-      await drawIn(canvas, full, { duration: 1100, maxPixels: 400_000 });
+      if (img.dataset.strokes) {
+        try {
+          return await penDraw(img, w, h, layer, () => over);
+        } catch {
+          layer.el?.remove();
+          if (over) return;
+        }
+      }
+      await inkDraw(img, w, h, layer);
     };
     // If the browser pauses (a background tab, or an app's preview panel), show the finished doodle anyway.
-    const gaveUp = new Promise((resolve) => setTimeout(resolve, 3000));
+    const gaveUp = new Promise((resolve) => setTimeout(resolve, img.dataset.strokes ? 5000 : 3000));
     await Promise.race([draw(), gaveUp]).catch(() => {});
     over = true;
-    canvas.remove();
+    layer.el?.remove();
     img.style.display = '';
     reveal(img);
   }
