@@ -3,7 +3,7 @@ User-agent: *
 Disallow: /moderate
 Disallow: /stats
 
-# Crawlers that collect images and text to train AI are not. Everything drawn here is made by hand.
+# Crawlers that collect images and text to train AI are not.
 User-agent: GPTBot
 User-agent: Google-Extended
 User-agent: CCBot
