@@ -99,12 +99,12 @@ Built from scratch to replace Google Analytics with metrics that are actually re
 | --- | --- |
 | Traffic and Conversion | Full funnel (Home > Draw Click > Info > Draw > Submit), step-by-step conversion rates, direct vs. referred visitor breakdown |
 | Drop-off Analysis | Home page bounce rate, info page drop-off, info page bounce rate, modal abandonment rate |
-| Drawing Behavior | Undo/redo frequency, popular brush sizes, brush size change frequency, average time before submitting, canvas clear frequency |
+| Drawing Behavior | Undo/redo frequency, popular brush sizes, brush size change frequency, typical time from first stroke to submitting, canvas clear frequency, completion rate |
 | Visitors | Unique sessions, page views, returning visitor rate (cross-session tracking) |
 | Activity Patterns | Hourly heatmap, day-of-week breakdown, monthly trends |
 | Submissions | Approval rate, status counts, exit button behavior (confirmed vs. cancelled) |
 
-Time range filtering supports last 7 days, 30 days, 90 days, or all-time views. The headline numbers are also public in the "By the numbers" box above, pulled live from a database function that only returns totals, never individual visits.
+Time range filtering supports the last 7, 30, 90, or 365 days, or all time. My own visits don't count: signing in to moderation marks my browser, and preview deploys and bots are skipped too. The headline numbers are also public in the "By the numbers" box above, pulled live from a database function that only returns totals, never individual visits.
 
 ![Statistics page including full funnel visualization from home page to submission](./drawing-canvas/statistics.jpg)
 
