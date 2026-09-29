@@ -159,7 +159,7 @@ No account creation, no email collection, no terms to accept.
 | Architecture | Single-file (~2800 lines), inline styles |
 | Target | iOS, Android, Web via Expo |
 
-## Results and Learnings
+## Results and Lessons
 
 Shipped a complete expense tracking app ready for App Store submission with full offline functionality, dark mode, 5 accent colors, and 24 currency support. The entire app lives in a single ~2800-line JavaScript file.
 
