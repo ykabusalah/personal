@@ -12,17 +12,13 @@ if (!fs.existsSync('dist/index.html')) {
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 fs.cpSync('dist', `${out}/static`, { recursive: true });
-// Old addresses keep working. The drawing site used to live at draw.ykabusalah.me: its home page
-// is /info here, and every other page kept its path. (www is sent to the plain address by the
-// domain settings in Vercel, not here, so the two can never disagree.) The old
-// Super.so site's pages (its About, skill tags, and project pages) go to their closest page here.
-const from = (host) => [{ type: 'host', value: host }];
+// Old addresses keep working: the old Super.so site's pages (its About, skill tags, and project
+// pages) go to their closest page here. (www is sent to the plain address by the domain settings
+// in Vercel, not here, so the two can never disagree.)
 const moved = (src, to) => ({ src, status: 308, headers: { Location: to } });
 const config = {
   version: 3,
   routes: [
-    { src: '^/$', has: from('draw.ykabusalah.me'), status: 308, headers: { Location: 'https://ykabusalah.me/info' } },
-    { src: '^/(.*)$', has: from('draw.ykabusalah.me'), status: 308, headers: { Location: 'https://ykabusalah.me/$1' } },
     moved('^/about-me/projects/?$', '/projects'),
     moved('^/about-me(/.*)?$', '/about'),
     moved('^/projects/(personal|personal-website)/?$', '/projects/ykabusalah-me'),

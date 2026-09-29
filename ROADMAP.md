@@ -54,7 +54,7 @@ The rest of the site:
 
 ## Launch checklist
 
-In this order. The new site goes on the existing `personal` Vercel project, where `draw.ykabusalah.me` already lives. The domain is at Porkbun, which also runs its DNS and my email forwarding.
+In this order. The new site goes on the existing `personal` Vercel project, the old drawing app's. The domain is at Porkbun, which also runs its DNS and my email forwarding.
 
 - [x] Fill every doodle spot for version 1 with a stand-in (`npm run doodles:mock`; see "The real doodles" above)
 - [ ] In the `personal` project on Vercel, go to Settings, then Git, and disconnect the GitHub repo, so pushes never build the site without my art
@@ -63,7 +63,7 @@ In this order. The new site goes on the existing `personal` Vercel project, wher
 - [x] In the project, go to Settings, then Domains, and add `ykabusalah.me` (Production) and `www.ykabusalah.me` (a 301 redirect to `ykabusalah.me`, with "Include apex and www variants" unchecked). The site itself doesn't redirect www, so the two can't loop.
 - [x] At Porkbun, change only the records Vercel asks for. Leave the `MX` records and the `TXT` record starting with `v=spf1` alone: they're my email forwarding for hello@ykabusalah.me.
 - [x] Run `npm run deploy`. Old Super.so addresses forward to their closest pages (the rules are in `scripts/vercel-output.mjs`).
-- [ ] `draw.ykabusalah.me` has no DNS record right now, so old draw links go nowhere. Add it in the project's Domains, then add the `CNAME` named `draw` that Vercel shows at Porkbun. Once it resolves, it forwards to the new site.
+- [x] Retire `draw.ykabusalah.me`: the canvas lives at `ykabusalah.me/draw` now, with its intro at `/info`. If the old address is still listed in the project's Domains, remove it.
 - [ ] In Supabase, go to the SQL editor and run `supabase/drawing-stats.sql` again, so By the numbers can show the finish rate and drawing time
 - [ ] In Supabase, go to Authentication, then URL Configuration: set the Site URL to `https://ykabusalah.me` and add `https://ykabusalah.me/**` to the redirect URLs, so account emails (like a password reset) link to the new site
 - [ ] Sign in at `ykabusalah.me/moderate` to check that moderation works, and change the moderator password while I'm there

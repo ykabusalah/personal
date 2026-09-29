@@ -41,7 +41,7 @@ By then the canvas felt like me, but the rest of the site didn't. It looked like
 - **Visitor drawings became the home page.** Every visit shows a random approved drawing, drawn in stroke by stroke.
 - **My own art moved in:** doodles in the margins, my portrait on About, and a sketchbook-style Art page
 - **Projects are written as PRDs,** the way I'd write them at work
-- **Everything is on ykabusalah.me.** Old Super.so links and draw.ykabusalah.me forward to their new pages.
+- **Everything is on ykabusalah.me.** The canvas moved to ykabusalah.me/draw, and old Super.so links forward to their new pages.
 
 The canvas, moderation, and analytics came along almost unchanged, and so did every drawing anyone has ever submitted.
 
