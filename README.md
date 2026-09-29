@@ -99,16 +99,17 @@ My art lives in `src/art/`, which isn't in this repo. Without it, the site still
 | `npm run preview` | Serves the built site locally |
 | `npm run deploy` | Builds, checks that no original art made it into the build, and uploads to Vercel |
 | `npm run deploy:preview` | The same, to a preview address instead of the live site |
+| `npm run ship` | Deploys, then pushes to GitHub, so both are up to date (stops if anything isn't committed) |
 | `npm run doodles:pull` | Brings finished doodles in from the doodle drawing page (`studio/`) |
 | `npm run doodles:mock` | Draws stand-ins for doodle spots that don't have their real doodle yet |
 | `npm run doodles:unmock` | Removes the stand-ins |
 
 ## Deploying
 
-The site is uploaded from my computer, not built from GitHub, because my art is only on my computer. Once `npx vercel login` and `npx vercel link` are done, every update is one command:
+The site is uploaded from my computer, not built from GitHub, because my art is only on my computer (so the Vercel project isn't connected to this repo). Once `npx vercel login` and `npx vercel link` are done, every update is one command, which puts the site live and pushes to GitHub:
 
 ```bash
-npm run deploy
+npm run ship
 ```
 
 ## How it's organized
