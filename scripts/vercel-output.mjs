@@ -12,6 +12,18 @@ if (!fs.existsSync('dist/index.html')) {
 fs.rmSync(out, { recursive: true, force: true });
 fs.mkdirSync(out, { recursive: true });
 fs.cpSync('dist', `${out}/static`, { recursive: true });
-fs.writeFileSync(`${out}/config.json`, `${JSON.stringify({ version: 3 }, null, 2)}\n`);
+// Old addresses keep working. The drawing site used to live at draw.ykabusalah.me: its home page
+// is /info here, and every other page kept its path. www goes to the plain address.
+const from = (host) => [{ type: 'host', value: host }];
+const config = {
+  version: 3,
+  routes: [
+    { src: '^/$', has: from('draw.ykabusalah.me'), status: 308, headers: { Location: 'https://ykabusalah.me/info' } },
+    { src: '^/(.*)$', has: from('draw.ykabusalah.me'), status: 308, headers: { Location: 'https://ykabusalah.me/$1' } },
+    { src: '^/(.*)$', has: from('www.ykabusalah.me'), status: 308, headers: { Location: 'https://ykabusalah.me/$1' } },
+    { handle: 'filesystem' },
+  ],
+};
+fs.writeFileSync(`${out}/config.json`, `${JSON.stringify(config, null, 2)}\n`);
 
 console.log('Packaged the built site for Vercel.');
