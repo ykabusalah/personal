@@ -6,6 +6,7 @@ import type { ImageMetadata } from 'astro';
 //   src/art/<slug>/cover.jpg        cover for an Art piece
 //   src/art/<slug>/pages/page-1.jpg comic pages, shown in number order
 //   src/art/doodles/<name>.png      small doodles for the doodle spots around the site
+//   src/art/doodles-mock/<name>.png stand-ins for spots whose doodle isn't drawn yet
 //   src/art/book-cover.jpg          my book's cover art
 //
 // Files load only when a page shows them. Loading everything up front would copy the art of
@@ -38,7 +39,7 @@ export const doodle = async (name: string) => {
   return path ? load(path) : undefined;
 };
 
-/** A stand-in from `npm run doodles:mock`. Only for previews while developing, never the live site. */
+/** A stand-in from `npm run doodles:mock`, used until a spot's real doodle is drawn. */
 export const mockDoodle = async (name: string) => {
   const path = find(`doodles-mock/${name}`);
   return path ? load(path) : undefined;
