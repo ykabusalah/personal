@@ -1,11 +1,14 @@
 ---
-import { Image } from 'astro:assets';
+import { getImage, Image } from 'astro:assets';
 import PageLayout from '../layouts/PageLayout.astro';
 import { getSection, hrefFor, KIND_LABEL, SECTIONS } from '../lib/work';
-import portrait from '../assets/portrait/portrait.png';
-import patchMask from '../assets/portrait/patch-mask.png';
-import doodles from '../data/portrait-doodles.json';
+import { portraitArt } from '../lib/art';
 import Doodle from '../components/Doodle.astro';
+
+// The portrait lives in src/art with my other art, so it never goes to GitHub. The page uses
+// resized copies only; the silhouette gets its own, since the build removes original files.
+const { photo: portrait, mask, doodles } = await portraitArt();
+const patchMask = mask ? await getImage({ src: mask, format: 'webp', width: Math.min(920, mask.width) }) : undefined;
 
 // Yousef's doodles from Portrait Studio: smooth each stroke and time its draw-on by its length.
 type Point = [number, number];
@@ -22,7 +25,7 @@ const toPath = (pts: Point[]) => {
 const lengthOf = (pts: Point[]) =>
   pts.slice(1).reduce((sum, [x, y], i) => sum + Math.hypot(x - pts[i][0], y - pts[i][1]), 0);
 let startAt = 0.4;
-const doodlePaths = (doodles.strokes as { ink: string; size: number; points: Point[] }[]).map((stroke) => {
+const doodlePaths = (doodles?.strokes ?? []).map((stroke) => {
   const duration = Math.min(0.9, Math.max(0.2, lengthOf(stroke.points) / 700));
   const path = { d: toPath(stroke.points), size: stroke.size, ink: stroke.ink, delay: startAt.toFixed(2), duration: duration.toFixed(2) };
   startAt += duration * 0.85;
@@ -44,8 +47,9 @@ const contacts = [
 
 <PageLayout title="About | Yousef's Personal Website" page="about">
   <header class="hero">
-  <figure class="portrait" style={`--patch-mask: url(${patchMask.src})`}>
-    <span class="patch" aria-hidden="true"></span>
+  {portrait && (
+  <figure class="portrait" style={patchMask ? `--patch-mask: url(${patchMask.src})` : undefined}>
+    {patchMask && <span class="patch" aria-hidden="true"></span>}
     <Image
       src={portrait}
       alt="Yousef in a bucket hat with a camera, on the trail at Volcán de Santa Ana"
@@ -55,6 +59,7 @@ const contacts = [
       quality={82}
       loading="eager"
     />
+    {doodles && (
     <svg class="doodles" viewBox={`0 0 ${doodles.width} ${doodles.height}`} aria-hidden="true">
       {doodlePaths.map((p) => (
         <path
@@ -66,7 +71,9 @@ const contacts = [
         />
       ))}
     </svg>
+    )}
   </figure>
+  )}
 
   <h1 class="page-title"><span class="mark">About Me</span></h1>
 

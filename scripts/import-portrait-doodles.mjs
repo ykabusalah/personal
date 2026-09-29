@@ -1,4 +1,4 @@
-// Turns an export of Portrait Studio strokes (one JSON file per stroke) into src/data/portrait-doodles.json.
+// Turns an export of Portrait Studio strokes (one JSON file per stroke) into src/art/portrait/doodles.json.
 // Usage: node scripts/import-portrait-doodles.mjs <folder-with-stroke-json-files>
 import fs from 'node:fs';
 import path from 'node:path';
@@ -37,5 +37,6 @@ const strokes = fs
   .sort((a, b) => a.createdAt - b.createdAt)
   .map(({ createdAt, ...stroke }) => stroke);
 
-fs.writeFileSync('src/data/portrait-doodles.json', JSON.stringify({ width: WIDTH, height: HEIGHT, strokes }));
+fs.mkdirSync('src/art/portrait', { recursive: true });
+fs.writeFileSync('src/art/portrait/doodles.json', JSON.stringify({ width: WIDTH, height: HEIGHT, strokes }));
 console.log(`Wrote ${strokes.length} strokes (${strokes.reduce((n, s) => n + s.points.length, 0)} points).`);

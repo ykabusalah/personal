@@ -45,6 +45,21 @@ export const mockDoodle = async (name: string) => {
   return path ? load(path) : undefined;
 };
 
+type PortraitDoodles = { width: number; height: number; strokes: { ink: string; size: number; points: [number, number][] }[] };
+const portraitStrokes = import.meta.glob<PortraitDoodles>('../art/portrait/doodles.json', { import: 'default' });
+
+/** My About portrait: the photo, its silhouette (for the color patch), and the pen strokes drawn on it. */
+export const portraitArt = async () => {
+  const photo = find('portrait/portrait');
+  const mask = find('portrait/patch-mask');
+  const strokes = portraitStrokes['../art/portrait/doodles.json'];
+  return {
+    photo: photo ? await load(photo) : undefined,
+    mask: mask ? await load(mask) : undefined,
+    doodles: strokes ? await strokes() : undefined,
+  };
+};
+
 export const bookCover = async () => {
   const path = find('book-cover');
   return path ? load(path) : undefined;
