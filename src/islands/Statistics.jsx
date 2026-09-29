@@ -245,404 +245,277 @@ export default function Statistics() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">Access Denied</h1>
-          <p className="text-gray-600 mb-6">Please sign in through the moderation panel.</p>
-          <button onClick={() => { window.location.href = '/moderate'; }} className="bg-gray-900 text-white px-6 py-3 rounded-lg hover:bg-gray-800 transition">
-            Go to Login
-          </button>
-        </div>
+      <div className="max-w-md">
+        <h1 className="page-title"><span className="mark">Stats</span></h1>
+        <p className="text-muted mb-8">Sign in through the moderation page to see these.</p>
+        <a href="/moderate" className="button">Go to sign in</a>
       </div>
     );
   }
 
-  const StatCard = ({ icon: Icon, label, value, subtext, color = "slate" }) => (
-    <div className={`bg-${color}-50 border border-${color}-200 rounded-2xl p-5`}>
-      <div className="flex items-center justify-between">
-        <div>
-          <p className={`text-sm font-medium text-${color}-600`}>{label}</p>
-          <p className={`text-3xl font-bold text-${color}-700 mt-1`}>{value}</p>
-          {subtext && <p className={`text-xs text-${color}-500 mt-1`}>{subtext}</p>}
-        </div>
-        <div className={`w-12 h-12 bg-${color}-100 rounded-xl flex items-center justify-center`}>
-          <Icon className={`w-6 h-6 text-${color}-600`} />
-        </div>
-      </div>
+  // A number in a box, and a label/value line; the pieces most of the page is made of.
+  const Tile = ({ icon: Icon, label, value, note }) => (
+    <div className="admin-card">
+      <p className="admin-label flex items-center gap-2 m-0"><Icon className="w-4 h-4" />{label}</p>
+      <p className="admin-num mt-2 mb-0">{value}</p>
+      {note && <p className="admin-label mt-1 mb-0">{note}</p>}
     </div>
   );
+  const Mini = ({ value, label, note }) => (
+    <div className="border border-line rounded-xl p-4 text-center">
+      <p className="font-display text-3xl leading-none m-0">{value}</p>
+      <p className="text-sm mt-2 mb-0">{label}</p>
+      {note && <p className="admin-label m-0">{note}</p>}
+    </div>
+  );
+  const Row = ({ label, value, strong }) => (
+    <div className="flex justify-between items-center gap-4 py-2 border-b border-line last:border-0">
+      <span className="text-muted">{label}</span>
+      <span className={`font-semibold ${strong ? 'text-accent-ink' : ''}`}>{value}</span>
+    </div>
+  );
+  // Busier hours and days get more of the accent color.
+  const heat = (share) => `color-mix(in srgb, var(--accent) ${Math.round(8 + share * 92)}%, #fff)`;
 
   const maxHour = stats ? Math.max(...Object.values(stats.hourCounts), 1) : 1;
   const maxDay = stats ? Math.max(...Object.values(stats.activityByDay), 1) : 1;
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button onClick={() => { window.location.href = '/moderate'; }} className="p-2 hover:bg-slate-100 rounded-lg transition">
-                <ArrowLeft className="w-5 h-5" />
-              </button>
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">Statistics Dashboard</h1>
-                <p className="text-sm text-slate-500">Analytics & Insights</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <select
-                value={timeRange}
-                onChange={(e) => setTimeRange(Number(e.target.value))}
-                className="px-4 py-2 border border-slate-200 rounded-lg bg-white text-sm focus:outline-none focus:ring-2 focus:ring-slate-200"
-              >
-                <option value={7}>Last 7 days</option>
-                <option value={30}>Last 30 days</option>
-                <option value={90}>Last 90 days</option>
-                <option value={365}>Last 365 days</option>
-                <option value={0}>All time</option>
-              </select>
-              <button onClick={fetchStats} disabled={loading} className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 rounded-lg hover:bg-slate-200 transition">
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
-          </div>
+    <>
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+        <div>
+          <h1 className="page-title !mb-2"><span className="mark">Stats</span></h1>
+          <p className="admin-label m-0">How people find the drawing canvas, and what they do there</p>
         </div>
-      </header>
+        <div className="flex flex-wrap gap-2">
+          <a href="/moderate" className="admin-btn no-underline">
+            <ArrowLeft />
+            Moderation
+          </a>
+          <select value={timeRange} onChange={(e) => setTimeRange(Number(e.target.value))} className="admin-btn" aria-label="Time range">
+            <option value={7}>Last 7 days</option>
+            <option value={30}>Last 30 days</option>
+            <option value={90}>Last 90 days</option>
+            <option value={365}>Last 365 days</option>
+            <option value={0}>All time</option>
+          </select>
+          <button onClick={fetchStats} disabled={loading} className="admin-btn" aria-label="Refresh">
+            <RefreshCw className={loading ? 'animate-spin' : ''} />
+          </button>
+        </div>
+      </div>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <RefreshCw className="w-8 h-8 animate-spin text-slate-400" />
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <RefreshCw className="w-8 h-8 animate-spin text-muted" />
+        </div>
+      ) : stats && (
+        <>
+          {/* Top Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
+            <Tile icon={Home} label="Home views" value={stats.homeViews} />
+            <Tile icon={MousePointer} label="Draw clicks" value={stats.drawLinkClicks} note={`${stats.homeClickThrough}% of home views`} />
+            <Tile icon={Users} label="Visits" value={stats.uniqueSessions} />
+            <Tile icon={Image} label="Submissions" value={stats.submissions} />
+            <Tile icon={TrendingUp} label="Full funnel" value={`${stats.fullFunnelRate}%`} note="home → submit" />
           </div>
-        ) : stats && (
-          <>
-            {/* Top Stats */}
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
-              <StatCard icon={Home} label="Home Views" value={stats.homeViews} color="indigo" />
-              <StatCard icon={MousePointer} label="Draw Clicks" value={stats.drawLinkClicks} subtext={`${stats.homeClickThrough}% CTR`} color="cyan" />
-              <StatCard icon={Users} label="Sessions" value={stats.uniqueSessions} color="blue" />
-              <StatCard icon={Image} label="Submissions" value={stats.submissions} color="emerald" />
-              <StatCard icon={TrendingUp} label="Full Funnel" value={`${stats.fullFunnelRate}%`} subtext="home → submit" color="violet" />
-            </div>
 
-            {/* Traffic Source & Step-by-Step Conversion */}
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
-              {/* Direct vs Referred */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6">
-                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <ExternalLink className="w-5 h-5" /> Traffic Source to Info Page
-                </h3>
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="text-center p-4 bg-indigo-50 rounded-xl">
-                    <p className="text-3xl font-bold text-indigo-700">{stats.referredToInfo}</p>
-                    <p className="text-sm text-indigo-600">From Home</p>
-                    <p className="text-xs text-indigo-500">{stats.referredRate}%</p>
-                  </div>
-                  <div className="text-center p-4 bg-slate-100 rounded-xl">
-                    <p className="text-3xl font-bold text-slate-700">{stats.directToInfo}</p>
-                    <p className="text-sm text-slate-600">Direct Visit</p>
-                    <p className="text-xs text-slate-500">{stats.directRate}%</p>
-                  </div>
-                </div>
-                <div className="h-3 bg-slate-100 rounded-full overflow-hidden flex">
-                  <div className="h-full bg-indigo-500" style={{ width: `${stats.referredRate}%` }} />
-                  <div className="h-full bg-slate-400" style={{ width: `${stats.directRate}%` }} />
-                </div>
+          {/* Traffic Source & Step-by-Step Conversion */}
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div className="admin-card">
+              <h3><ExternalLink /> How people get to the draw intro</h3>
+              <div className="grid grid-cols-2 gap-3 mb-4">
+                <Mini value={stats.referredToInfo} label="From Home" note={`${stats.referredRate}%`} />
+                <Mini value={stats.directToInfo} label="Straight there" note={`${stats.directRate}%`} />
               </div>
-
-              {/* Step-by-Step Conversion */}
-              <div className="bg-white rounded-2xl border border-slate-200 p-6">
-                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" /> Step-by-Step Conversion
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between p-2 bg-indigo-50 rounded-lg">
-                    <span className="text-sm text-slate-700">Home → Click</span>
-                    <span className="font-bold text-indigo-700">{stats.homeToClickRate}%</span>
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-blue-50 rounded-lg">
-                    <span className="text-sm text-slate-700">Click → Info</span>
-                    <span className="font-bold text-blue-700">{stats.clickToInfoRate}%</span>
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-cyan-50 rounded-lg">
-                    <span className="text-sm text-slate-700">Info → Draw</span>
-                    <span className="font-bold text-cyan-700">{stats.infoToDrawRate}%</span>
-                  </div>
-                  <div className="flex items-center justify-between p-2 bg-emerald-50 rounded-lg">
-                    <span className="text-sm text-slate-700">Draw → Submit</span>
-                    <span className="font-bold text-emerald-700">{stats.drawToSubmitRate}%</span>
-                  </div>
-                </div>
+              <div className="h-3 bg-line rounded-full overflow-hidden flex">
+                <div className="h-full bg-accent" style={{ width: `${stats.referredRate}%` }} />
               </div>
             </div>
 
-            {/* Full Funnel Visualization */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-8">
-              <h3 className="font-semibold text-slate-900 mb-4">Full Conversion Funnel</h3>
-              <div className="space-y-3">
-                {[
-                  { label: 'Home Page Views', value: stats.homeViews, pct: 100, color: 'bg-indigo-500' },
-                  { label: 'Draw Link Clicks', value: stats.drawLinkClicks, pct: stats.homeViews ? (stats.drawLinkClicks / stats.homeViews * 100) : 0, color: 'bg-blue-500' },
-                  { label: 'Info Page Views', value: stats.infoViews, pct: stats.homeViews ? (stats.infoViews / stats.homeViews * 100) : 0, color: 'bg-cyan-500' },
-                  { label: 'Draw Page Views', value: stats.drawViews, pct: stats.homeViews ? (stats.drawViews / stats.homeViews * 100) : 0, color: 'bg-teal-500' },
-                  { label: 'Submitted', value: stats.submissions, pct: stats.homeViews ? (stats.submissions / stats.homeViews * 100) : 0, color: 'bg-emerald-500' },
-                ].map((step, i) => (
-                  <div key={i}>
+            <div className="admin-card">
+              <h3><TrendingUp /> Step by step</h3>
+              <Row label="Home → clicked draw" value={`${stats.homeToClickRate}%`} />
+              <Row label="Clicked → draw intro" value={`${stats.clickToInfoRate}%`} />
+              <Row label="Draw intro → canvas" value={`${stats.infoToDrawRate}%`} />
+              <Row label="Canvas → submitted" value={`${stats.drawToSubmitRate}%`} strong />
+            </div>
+          </div>
+
+          {/* Full Funnel Visualization */}
+          <div className="admin-card mb-6">
+            <h3>The whole funnel</h3>
+            <div className="space-y-3">
+              {[
+                { label: 'Home page views', value: stats.homeViews },
+                { label: 'Draw link clicks', value: stats.drawLinkClicks },
+                { label: 'Draw intro views', value: stats.infoViews },
+                { label: 'Canvas views', value: stats.drawViews },
+                { label: 'Submitted', value: stats.submissions },
+              ].map((step) => {
+                const pct = stats.homeViews ? (step.value / stats.homeViews) * 100 : 0;
+                return (
+                  <div key={step.label}>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-slate-600">{step.label}</span>
-                      <span className="font-medium">{step.value} ({step.pct.toFixed(1)}%)</span>
+                      <span className="text-muted">{step.label}</span>
+                      <span className="font-medium">{step.value} ({pct.toFixed(1)}%)</span>
                     </div>
-                    <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                      <div className={`h-full ${step.color} rounded-full transition-all`} style={{ width: `${step.pct}%` }} />
+                    <div className="h-2 bg-line rounded-full overflow-hidden">
+                      <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${Math.min(pct, 100)}%` }} />
                     </div>
                   </div>
-                ))}
+                );
+              })}
+            </div>
+            <p className="admin-label mt-4 mb-0 text-center">
+              {stats.fullFunnelRate}% of home page views end in a submitted drawing
+            </p>
+          </div>
+
+          {/* Drop-off Analysis & Visitor Loyalty */}
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div className="admin-card">
+              <h3><LogOut /> Where people drop off</h3>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <Mini value={`${stats.bounceRateHome}%`} label="Left Home" note="didn't click draw" />
+                <Mini value={`${stats.clickToInfoDropoff}%`} label="Clicked, then left" note="stopped at the draw intro" />
+                <Mini value={`${stats.bounceRateInfo}%`} label="Left the draw intro" note="never opened the canvas" />
+                <Mini value={`${stats.modalAbandonRate}%`} label="Backed out of saving" note="closed the save box" />
               </div>
-              <p className="text-xs text-slate-500 mt-4 text-center">
-                Full funnel: {stats.fullFunnelRate}% of home visitors submit a drawing
+              <p className="admin-label text-center m-0">
+                {stats.clickedButLeftOnInfo} visits clicked draw but left on the draw intro
               </p>
             </div>
 
-            {/* Drop-off Analysis & Visitor Loyalty */}
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
-              <div className="bg-white rounded-2xl border border-slate-200 p-6">
-                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <LogOut className="w-5 h-5" /> Drop-off Analysis
-                </h3>
-                <div className="grid grid-cols-2 gap-3 mb-4">
-                  <div className="text-center p-3 bg-indigo-50 rounded-xl">
-                    <p className="text-2xl font-bold text-indigo-700">{stats.bounceRateHome}%</p>
-                    <p className="text-xs text-indigo-600">Home Bounce</p>
-                    <p className="text-xs text-indigo-500">Didn't click draw</p>
-                  </div>
-                  <div className="text-center p-3 bg-blue-50 rounded-xl">
-                    <p className="text-2xl font-bold text-blue-700">{stats.clickToInfoDropoff}%</p>
-                    <p className="text-xs text-blue-600">Info Drop-off</p>
-                    <p className="text-xs text-blue-500">Clicked but left on info</p>
-                  </div>
-                  <div className="text-center p-3 bg-amber-50 rounded-xl">
-                    <p className="text-2xl font-bold text-amber-700">{stats.bounceRateInfo}%</p>
-                    <p className="text-xs text-amber-600">Info Bounce</p>
-                    <p className="text-xs text-amber-500">Didn't go to draw</p>
-                  </div>
-                  <div className="text-center p-3 bg-rose-50 rounded-xl">
-                    <p className="text-2xl font-bold text-rose-700">{stats.modalAbandonRate}%</p>
-                    <p className="text-xs text-rose-600">Modal Abandon</p>
-                    <p className="text-xs text-rose-500">Didn't submit</p>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-500 text-center">
-                  {stats.clickedButLeftOnInfo} visitors clicked draw but left on info page
-                </p>
+            <div className="admin-card">
+              <h3><UserCheck /> Coming back</h3>
+              <div className="grid grid-cols-2 gap-3 mb-3">
+                <Mini value={stats.totalVisitors} label="Visitors" note="all time" />
+                <Mini value={`${stats.returningRate}%`} label="Came back" note="on another day" />
               </div>
+              <p className="admin-label text-center m-0">
+                {stats.returningVisitors} visitors have come back more than once
+              </p>
+            </div>
+          </div>
 
-              <div className="bg-white rounded-2xl border border-slate-200 p-6">
-                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <UserCheck className="w-5 h-5" /> Visitor Loyalty
-                </h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="text-center p-4 bg-blue-50 rounded-xl">
-                    <p className="text-3xl font-bold text-blue-700">{stats.totalVisitors}</p>
-                    <p className="text-sm text-blue-600">Total Visitors</p>
-                  </div>
-                  <div className="text-center p-4 bg-emerald-50 rounded-xl">
-                    <p className="text-3xl font-bold text-emerald-700">{stats.returningRate}%</p>
-                    <p className="text-sm text-emerald-600">Returning Rate</p>
-                  </div>
-                </div>
-                <p className="text-xs text-slate-500 mt-3 text-center">
-                  {stats.returningVisitors} visitors have come back multiple times (all time)
-                </p>
-              </div>
+          {/* Drawing Behavior */}
+          <div className="grid md:grid-cols-3 gap-6 mb-6">
+            <div className="admin-card">
+              <h3><Undo2 /> Undo and redo</h3>
+              <Row label="Undos" value={stats.undoCount} />
+              <Row label="Redos" value={stats.redoCount} />
+              <Row label="Undos per drawing visit" value={stats.undoPerSession} strong />
             </div>
 
-            {/* Drawing Behavior */}
-            <div className="grid md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-white rounded-2xl border border-slate-200 p-6">
-                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <Undo2 className="w-5 h-5" /> Undo/Redo Usage
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-600">Total Undos</span>
-                    <span className="font-semibold">{stats.undoCount}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-600">Total Redos</span>
-                    <span className="font-semibold">{stats.redoCount}</span>
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t">
-                    <span className="text-slate-600">Undos per Drawing Visit</span>
-                    <span className="font-semibold text-violet-600">{stats.undoPerSession}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-slate-200 p-6">
-                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <Paintbrush className="w-5 h-5" /> Brush Size
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-600">Most Popular Size</span>
-                    <span className="font-semibold text-lg">{stats.mostPopularBrushSize}px</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-600">Total Changes</span>
-                    <span className="font-semibold">{stats.brushChanges}</span>
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t">
-                    <span className="text-slate-600">Changes per Drawing Visit</span>
-                    <span className="font-semibold text-violet-600">{stats.brushChangesPerSession}</span>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-white rounded-2xl border border-slate-200 p-6">
-                <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                  <Clock className="w-5 h-5" /> Time & Actions
-                </h3>
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-600">Typical Time to Submit</span>
-                    <span className="font-semibold">{stats.timeToSubmit}</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-slate-600">Canvas Clears</span>
-                    <span className="font-semibold">{stats.canvasClears}</span>
-                  </div>
-                  <div className="flex justify-between items-center pt-2 border-t">
-                    <span className="text-slate-600">Completion Rate</span>
-                    <span className="font-semibold text-emerald-600">{stats.completionRate}%</span>
-                  </div>
-                </div>
-              </div>
+            <div className="admin-card">
+              <h3><Paintbrush /> Brush size</h3>
+              <Row label="Most picked size" value={`${stats.mostPopularBrushSize}px`} />
+              <Row label="Size changes" value={stats.brushChanges} />
+              <Row label="Changes per drawing visit" value={stats.brushChangesPerSession} strong />
             </div>
 
-            {/* Approval Stats */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-8">
-              <h3 className="font-semibold text-slate-900 mb-4">Approval Stats (All Time)</h3>
-              <div className="flex items-center gap-6 mb-4">
-                <div className="text-center">
-                  <p className="text-4xl font-bold text-emerald-600">{stats.approvalRate}%</p>
-                  <p className="text-sm text-slate-500">Approval Rate</p>
-                </div>
-                <div className="flex-1 space-y-2">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-emerald-600">Approved</span>
-                    <span className="font-medium">{stats.approved}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-rose-600">Rejected</span>
-                    <span className="font-medium">{stats.rejected}</span>
-                  </div>
-                  <div className="flex justify-between text-sm">
-                    <span className="text-amber-600">Pending</span>
-                    <span className="font-medium">{stats.pending}</span>
-                  </div>
-                </div>
+            <div className="admin-card">
+              <h3><Clock /> Finishing</h3>
+              <Row label="Typical time to submit" value={stats.timeToSubmit} />
+              <Row label="Canvas clears" value={stats.canvasClears} />
+              <Row label="Finished their drawing" value={`${stats.completionRate}%`} strong />
+            </div>
+          </div>
+
+          {/* Approval Stats */}
+          <div className="admin-card mb-6">
+            <h3>Approvals (all time)</h3>
+            <div className="flex items-center gap-8 mb-4">
+              <div className="text-center">
+                <p className="admin-num !text-5xl m-0">{stats.approvalRate}%</p>
+                <p className="admin-label mt-1 mb-0">approval rate</p>
               </div>
-              <div className="h-3 bg-slate-100 rounded-full overflow-hidden flex">
-                <div className="h-full bg-emerald-500" style={{ width: `${stats.totalDrawings ? (stats.approved / stats.totalDrawings * 100) : 0}%` }} />
-                <div className="h-full bg-rose-500" style={{ width: `${stats.totalDrawings ? (stats.rejected / stats.totalDrawings * 100) : 0}%` }} />
-                <div className="h-full bg-amber-500" style={{ width: `${stats.totalDrawings ? (stats.pending / stats.totalDrawings * 100) : 0}%` }} />
+              <div className="flex-1">
+                <Row label={<><span className="inline-block w-2.5 h-2.5 rounded-full bg-accent mr-2" />Approved</>} value={stats.approved} />
+                <Row label={<><span className="inline-block w-2.5 h-2.5 rounded-full bg-ink mr-2" />Rejected</>} value={stats.rejected} />
+                <Row label={<><span className="inline-block w-2.5 h-2.5 rounded-full bg-line mr-2" />Waiting</>} value={stats.pending} />
               </div>
             </div>
+            <div className="h-3 bg-line rounded-full overflow-hidden flex">
+              <div className="h-full bg-accent" style={{ width: `${stats.totalDrawings ? (stats.approved / stats.totalDrawings * 100) : 0}%` }} />
+              <div className="h-full bg-ink" style={{ width: `${stats.totalDrawings ? (stats.rejected / stats.totalDrawings * 100) : 0}%` }} />
+            </div>
+          </div>
 
-            {/* Activity Charts */}
-            <div className="grid md:grid-cols-2 gap-6 mb-8">
-              <div className="bg-white rounded-2xl border border-slate-200 p-6">
-                <h3 className="font-semibold text-slate-900 mb-4">Activity by Hour</h3>
-                <div className="flex gap-1">
-                  {Array.from({ length: 24 }, (_, hour) => {
-                    const count = stats.hourCounts[hour] || 0;
-                    const intensity = count / maxHour;
+          {/* Activity Charts */}
+          <div className="grid md:grid-cols-2 gap-6 mb-6">
+            <div className="admin-card">
+              <h3>Busiest hours</h3>
+              <div className="flex gap-1">
+                {Array.from({ length: 24 }, (_, hour) => {
+                  const count = stats.hourCounts[hour] || 0;
+                  return (
+                    <div key={hour} className="flex-1 text-center">
+                      <div className="h-16 rounded mb-1" style={{ backgroundColor: heat(count / maxHour) }} title={`${hour}:00, ${count} events`} />
+                      <span className="text-xs text-muted">{hour % 6 === 0 ? hour : ''}</span>
+                    </div>
+                  );
+                })}
+              </div>
+              <p className="admin-label mt-2 mb-0 text-center">Hour of the day, in your time zone</p>
+            </div>
+
+            <div className="admin-card">
+              <h3>Busiest days</h3>
+              <div className="flex gap-2">
+                {stats.dayNames.map((day, i) => {
+                  const count = stats.activityByDay[i] || 0;
+                  return (
+                    <div key={day} className="flex-1 text-center">
+                      <div className="h-20 rounded-lg mb-2 flex items-end justify-center pb-2" style={{ backgroundColor: heat(count / maxDay) }}>
+                        <span className="text-xs font-medium">{count}</span>
+                      </div>
+                      <span className="text-xs text-muted">{day}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
+          {/* Activity by Month */}
+          <div className="admin-card mb-6">
+            <h3><Calendar /> Month by month (all time)</h3>
+            {Object.keys(stats.activityByMonth).length > 0 ? (
+              <div className="space-y-2">
+                {Object.entries(stats.activityByMonth)
+                  .sort((a, b) => new Date(a[0]) - new Date(b[0]))
+                  .map(([month, count]) => {
+                    const maxMonth = Math.max(...Object.values(stats.activityByMonth));
                     return (
-                      <div key={hour} className="flex-1 text-center">
-                        <div
-                          className="h-16 rounded mb-1 transition-colors"
-                          style={{ backgroundColor: `rgba(99, 102, 241, ${0.1 + intensity * 0.9})` }}
-                          title={`${hour}:00 - ${count} events`}
-                        />
-                        <span className="text-xs text-slate-400">{hour % 6 === 0 ? hour : ''}</span>
+                      <div key={month}>
+                        <div className="flex justify-between text-sm mb-1">
+                          <span className="text-muted">{month}</span>
+                          <span className="font-medium">{count} events</span>
+                        </div>
+                        <div className="h-2 bg-line rounded-full overflow-hidden">
+                          <div className="h-full bg-accent rounded-full" style={{ width: `${(count / maxMonth) * 100}%` }} />
+                        </div>
                       </div>
                     );
                   })}
-                </div>
-                <p className="text-xs text-slate-500 mt-2 text-center">Hour of day (24h)</p>
               </div>
+            ) : (
+              <p className="text-muted text-sm m-0">No monthly data yet</p>
+            )}
+          </div>
 
-              <div className="bg-white rounded-2xl border border-slate-200 p-6">
-                <h3 className="font-semibold text-slate-900 mb-4">Activity by Day of Week</h3>
-                <div className="flex gap-2">
-                  {stats.dayNames.map((day, i) => {
-                    const count = stats.activityByDay[i] || 0;
-                    const intensity = count / maxDay;
-                    return (
-                      <div key={day} className="flex-1 text-center">
-                        <div
-                          className="h-20 rounded-lg mb-2 transition-colors flex items-end justify-center pb-2"
-                          style={{ backgroundColor: `rgba(16, 185, 129, ${0.1 + intensity * 0.9})` }}
-                        >
-                          <span className="text-xs font-medium" style={{ color: intensity > 0.5 ? 'white' : '#64748b' }}>
-                            {count}
-                          </span>
-                        </div>
-                        <span className="text-xs font-medium text-slate-600">{day}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
+          {/* Exit Behavior */}
+          <div className="admin-card">
+            <h3>The exit button</h3>
+            <div className="grid grid-cols-2 gap-3">
+              <Mini value={stats.exitConfirmed} label="Left the canvas" />
+              <Mini value={stats.exitCancelled} label="Changed their mind" note="and kept drawing" />
             </div>
-
-            {/* Activity by Month */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 mb-8">
-              <h3 className="font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                <Calendar className="w-5 h-5" /> Activity by Month (All Time)
-              </h3>
-              {Object.keys(stats.activityByMonth).length > 0 ? (
-                <div className="space-y-2">
-                  {Object.entries(stats.activityByMonth)
-                    .sort((a, b) => new Date(a[0]) - new Date(b[0]))
-                    .map(([month, count]) => {
-                      const maxMonth = Math.max(...Object.values(stats.activityByMonth));
-                      const pct = (count / maxMonth) * 100;
-                      return (
-                        <div key={month}>
-                          <div className="flex justify-between text-sm mb-1">
-                            <span className="text-slate-600">{month}</span>
-                            <span className="font-medium">{count} events</span>
-                          </div>
-                          <div className="h-2 bg-slate-100 rounded-full overflow-hidden">
-                            <div className="h-full bg-violet-500 rounded-full" style={{ width: `${pct}%` }} />
-                          </div>
-                        </div>
-                      );
-                    })}
-                </div>
-              ) : (
-                <p className="text-slate-500 text-sm">No monthly data yet</p>
-              )}
-            </div>
-
-            {/* Exit Behavior */}
-            <div className="bg-white rounded-2xl border border-slate-200 p-6">
-              <h3 className="font-semibold text-slate-900 mb-4">Exit Button Behavior</h3>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center p-4 bg-rose-50 rounded-xl">
-                  <p className="text-3xl font-bold text-rose-700">{stats.exitConfirmed}</p>
-                  <p className="text-sm text-rose-600">Confirmed Exits</p>
-                </div>
-                <div className="text-center p-4 bg-emerald-50 rounded-xl">
-                  <p className="text-3xl font-bold text-emerald-700">{stats.exitCancelled}</p>
-                  <p className="text-sm text-emerald-600">Cancelled (Stayed)</p>
-                </div>
-              </div>
-            </div>
-          </>
-        )}
-      </main>
-    </div>
+          </div>
+        </>
+      )}
+    </>
   );
 }

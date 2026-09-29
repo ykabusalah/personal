@@ -123,243 +123,180 @@ export default function ModerationPanel() {
   // Login Screen
   if (!user) {
     return (
-      <div className="min-h-screen bg-white flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          <div className="mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Moderation Panel</h1>
-            <p className="text-gray-600 text-lg">Sign in to review submissions</p>
-          </div>
-          
-          <form onSubmit={handleLogin} className="space-y-6">
-            {loginError && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                {loginError}
-              </div>
-            )}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
-              <input
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition"
-                placeholder="admin@example.com"
-                required
-                disabled={loading}
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition"
-                placeholder="••••••••"
-                required
-                disabled={loading}
-              />
-            </div>
-            <button
-              type="submit"
+      <div className="max-w-md">
+        <h1 className="page-title"><span className="mark">Moderation</span></h1>
+        <p className="text-muted mb-8">Sign in to review submissions.</p>
+
+        <form onSubmit={handleLogin} className="space-y-5">
+          {loginError && (
+            <p className="border border-line border-l-4 border-l-accent rounded-lg px-4 py-3 text-sm">
+              {loginError}
+            </p>
+          )}
+          <label className="block">
+            <span className="admin-label block mb-2">Email</span>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              autoComplete="username"
+              required
               disabled={loading}
-              className="w-full py-4 bg-gray-900 text-white font-medium rounded-lg text-lg hover:bg-gray-800 transition-colors duration-200 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Signing In...' : 'Sign In'}
-            </button>
-          </form>
-        </div>
+            />
+          </label>
+          <label className="block">
+            <span className="admin-label block mb-2">Password</span>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              autoComplete="current-password"
+              required
+              disabled={loading}
+            />
+          </label>
+          <button type="submit" disabled={loading} className="button w-full justify-center disabled:opacity-50">
+            {loading ? 'Signing in...' : 'Sign in'}
+          </button>
+        </form>
       </div>
     );
   }
 
+  const tiles = [
+    { label: 'Waiting on me', value: stats.pending, icon: Clock },
+    { label: 'Approved', value: stats.approved, icon: Check },
+    { label: 'Rejected', value: stats.rejected, icon: X },
+  ];
+
   // Main Panel
   return (
-    <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-40">
-        <div className="max-w-7xl mx-auto px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <img 
-                src="/favicon-96x96.png"
-                alt="Logo" 
-                className="w-10 h-10 rounded-xl"
-              />
-              <div>
-                <h1 className="text-xl font-bold text-slate-900">Moderation Panel</h1>
-                <p className="text-sm text-slate-500">{user.email}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => { window.location.href = '/stats'; }}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-violet-100 text-violet-700 rounded-lg hover:bg-violet-200 transition"
-              >
-                <BarChart3 className="w-4 h-4" />
-                Stats
-              </button>
-              <button
-                onClick={() => { fetchDrawings(); fetchStats(); }}
-                disabled={loading}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition disabled:opacity-50"
-              >
-                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                Refresh
-              </button>
-              <button
-                onClick={handleLogout}
-                className="inline-flex items-center gap-2 px-4 py-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition"
-              >
-                <LogOut className="w-4 h-4" />
-                Sign Out
-              </button>
-            </div>
-          </div>
+    <>
+      <div className="flex flex-wrap items-end justify-between gap-4 mb-8">
+        <div>
+          <h1 className="page-title !mb-2"><span className="mark">Moderation</span></h1>
+          <p className="admin-label m-0">Signed in as {user.email}</p>
         </div>
-      </header>
-
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-3 gap-4 mb-8">
-          <div className="bg-amber-50 border border-amber-200 rounded-2xl p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-amber-600">Pending Review</p>
-                <p className="text-3xl font-bold text-amber-700 mt-1">{stats.pending}</p>
-              </div>
-              <div className="w-12 h-12 bg-amber-100 rounded-xl flex items-center justify-center">
-                <Clock className="w-6 h-6 text-amber-600" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-emerald-600">Approved</p>
-                <p className="text-3xl font-bold text-emerald-700 mt-1">{stats.approved}</p>
-              </div>
-              <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-                <Check className="w-6 h-6 text-emerald-600" />
-              </div>
-            </div>
-          </div>
-          <div className="bg-rose-50 border border-rose-200 rounded-2xl p-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-rose-600">Rejected</p>
-                <p className="text-3xl font-bold text-rose-700 mt-1">{stats.rejected}</p>
-              </div>
-              <div className="w-12 h-12 bg-rose-100 rounded-xl flex items-center justify-center">
-                <X className="w-6 h-6 text-rose-600" />
-              </div>
-            </div>
-          </div>
+        <div className="flex flex-wrap gap-2">
+          <a href="/stats" className="admin-btn no-underline">
+            <BarChart3 />
+            Stats
+          </a>
+          <button onClick={() => { fetchDrawings(); fetchStats(); }} disabled={loading} className="admin-btn">
+            <RefreshCw className={loading ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+          <button onClick={handleLogout} className="admin-btn">
+            <LogOut />
+            Sign out
+          </button>
         </div>
+      </div>
 
-        {/* Drawings Grid */}
-        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
-            <h2 className="font-semibold text-slate-900">Pending Submissions</h2>
-            <span className="text-sm text-slate-500">{drawings.length} items</span>
+      {/* Totals */}
+      <div className="grid grid-cols-3 gap-3 mb-10">
+        {tiles.map(({ label, value, icon: Icon }) => (
+          <div key={label} className="admin-card">
+            <p className="admin-label flex items-center gap-2 m-0"><Icon className="w-4 h-4" />{label}</p>
+            <p className="admin-num mt-2 mb-0">{value}</p>
           </div>
+        ))}
+      </div>
 
-          {loading ? (
-            <div className="p-12 text-center">
-              <RefreshCw className="w-8 h-8 text-slate-400 animate-spin mx-auto mb-3" />
-              <p className="text-slate-500">Loading submissions...</p>
-            </div>
-          ) : drawings.length === 0 ? (
-            <div className="p-12 text-center">
-              <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Check className="w-8 h-8 text-slate-400" />
-              </div>
-              <p className="text-slate-600 font-medium">All caught up!</p>
-              <p className="text-slate-400 text-sm mt-1">No pending drawings to review</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
-              {drawings.map((drawing) => (
-                <div
-                  key={drawing.id}
-                  className="group bg-slate-50 rounded-xl overflow-hidden border border-slate-200 hover:border-slate-300 hover:shadow-lg transition-all duration-200"
-                >
-                  {/* Image Preview */}
-                  <div 
-                    className="aspect-square bg-white border-b border-slate-200 cursor-pointer overflow-hidden"
-                    onClick={() => setSelectedImage(drawing)}
+      {/* Drawings Grid */}
+      <div className="flex items-baseline justify-between mb-4">
+        <h2 className="section-title !m-0">Waiting for review</h2>
+        <span className="admin-label">{drawings.length} {drawings.length === 1 ? 'drawing' : 'drawings'}</span>
+      </div>
+
+      {loading ? (
+        <div className="admin-card text-center py-12">
+          <RefreshCw className="w-7 h-7 text-muted animate-spin mx-auto mb-3" />
+          <p className="text-muted m-0">Loading submissions...</p>
+        </div>
+      ) : drawings.length === 0 ? (
+        <div className="admin-card text-center py-12">
+          <p className="font-hand text-3xl m-0">All caught up!</p>
+          <p className="admin-label mt-1 mb-0">No drawings waiting on you.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          {drawings.map((drawing) => (
+            <div key={drawing.id} className="group admin-card !p-0 overflow-hidden">
+              {/* Image Preview */}
+              <button
+                type="button"
+                className="block w-full aspect-square bg-white border-b border-line cursor-zoom-in overflow-hidden"
+                onClick={() => setSelectedImage(drawing)}
+              >
+                <img
+                  src={drawing.image_url}
+                  alt={`Drawing by ${drawing.name || 'Anonymous'}`}
+                  className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
+                />
+              </button>
+
+              {/* Info & Actions */}
+              <div className="p-4">
+                <p className="flex items-center gap-2 font-medium truncate m-0">
+                  <User className="w-4 h-4 text-muted" />
+                  {drawing.name || 'Anonymous'}
+                </p>
+                <p className="admin-label flex items-center gap-2 mt-1 mb-4">
+                  <Clock className="w-3 h-3" />
+                  {formatDate(drawing.created_at)}
+                </p>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => updateStatus(drawing.id, 'approved')}
+                    disabled={processingIds.has(drawing.id)}
+                    className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-ink text-white font-medium rounded-lg hover:opacity-85 transition disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <img
-                      src={drawing.image_url}
-                      alt="Drawing submission"
-                      className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300"
-                    />
-                  </div>
-                  
-                  {/* Info & Actions */}
-                  <div className="p-4">
-                    <div className="flex items-center gap-2 mb-3">
-                      <User className="w-4 h-4 text-slate-400" />
-                      <span className="font-medium text-slate-900 truncate">
-                        {drawing.name || 'Anonymous'}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-500 mb-4">
-                      <Clock className="w-3 h-3" />
-                      {formatDate(drawing.created_at)}
-                    </div>
-                    
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => updateStatus(drawing.id, 'approved')}
-                        disabled={processingIds.has(drawing.id)}
-                        className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-500 text-white font-medium rounded-lg hover:bg-emerald-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <Check className="w-4 h-4" />
-                        {processingIds.has(drawing.id) ? '...' : 'Approve'}
-                      </button>
-                      <button
-                        onClick={() => updateStatus(drawing.id, 'rejected')}
-                        disabled={processingIds.has(drawing.id)}
-                        className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-rose-500 text-white font-medium rounded-lg hover:bg-rose-600 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        <X className="w-4 h-4" />
-                        {processingIds.has(drawing.id) ? '...' : 'Reject'}
-                      </button>
-                    </div>
-                  </div>
+                    <Check className="w-4 h-4" />
+                    {processingIds.has(drawing.id) ? '...' : 'Approve'}
+                  </button>
+                  <button
+                    onClick={() => updateStatus(drawing.id, 'rejected')}
+                    disabled={processingIds.has(drawing.id)}
+                    className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-line font-medium rounded-lg hover:border-ink transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    <X className="w-4 h-4" />
+                    {processingIds.has(drawing.id) ? '...' : 'Reject'}
+                  </button>
                 </div>
-              ))}
+              </div>
             </div>
-          )}
+          ))}
         </div>
-      </main>
+      )}
 
-      {/* Image Preview Modal */}
+      {/* Image Preview Modal. Drawings have see-through backgrounds, so they sit on white. */}
       {selectedImage && (
-        <div 
-          className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-8"
+        <div
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-8"
           onClick={() => setSelectedImage(null)}
         >
-          <div className="relative max-w-4xl max-h-full">
+          <div className="relative max-w-4xl max-h-full bg-white rounded-xl overflow-hidden">
             <img
               src={selectedImage.image_url}
-              alt="Full size preview"
-              className="max-w-full max-h-[80vh] object-contain rounded-lg"
+              alt={`Drawing by ${selectedImage.name || 'Anonymous'}`}
+              className="max-w-full max-h-[80vh] object-contain"
             />
+            <div className="border-t border-line px-4 py-3">
+              <p className="font-medium m-0">{selectedImage.name || 'Anonymous'}</p>
+              <p className="admin-label m-0">{formatDate(selectedImage.created_at)}</p>
+            </div>
             <button
               onClick={() => setSelectedImage(null)}
-              className="absolute -top-4 -right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center shadow-lg hover:bg-slate-100 transition"
+              aria-label="Close"
+              className="absolute top-3 right-3 w-9 h-9 bg-white border border-line rounded-full flex items-center justify-center hover:border-ink transition"
             >
               <X className="w-5 h-5" />
             </button>
-            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/60 to-transparent p-4 rounded-b-lg">
-              <p className="text-white font-medium">{selectedImage.name || 'Anonymous'}</p>
-              <p className="text-white/70 text-sm">{formatDate(selectedImage.created_at)}</p>
-            </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

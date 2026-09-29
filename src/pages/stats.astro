@@ -1,8 +1,11 @@
 ---
 import AppLayout from '../layouts/AppLayout.astro';
 import Statistics from '../islands/Statistics.jsx';
+import '../styles/admin.css';
 ---
 
-<AppLayout title="Statistics" noindex>
-  <Statistics client:only="react" />
+<AppLayout title="Statistics" noindex header>
+  <main class="admin">
+    <Statistics client:only="react" />
+  </main>
 </AppLayout>
