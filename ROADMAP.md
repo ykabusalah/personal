@@ -4,11 +4,11 @@ What's planned after the first version of the site. Launch steps are at the bott
 
 ## The real doodles
 
-Version 1 ships with stand-in doodles in every spot (made by `npm run doodles:mock`, kept in `src/art/doodles-mock/`). While they're up, the site doesn't say every drawing is made by hand: commit `1777817b` took that line out of the footer and reworded the ykabusalah.me write-up.
+Version 1 ships with stand-in doodles in every spot (made by `npm run doodles:mock`, kept in `src/art/doodles-mock/`). While they're up, the site doesn't say every drawing is made by hand: commit `1777817b` took that line out of the footer and reworded the ykabusalah.me write-up, and `36c69fdb` took it out of `robots.txt`.
 
 - [ ] Get each spot's real doodle: place it from the Doodle Studio and run `npm run doodles:pull`, or save it as `src/art/doodles/<spot>.png` (spots are listed in `src/data/doodle-spots.js`). A real doodle replaces its stand-in right away.
 - [ ] Once every spot has its real doodle, run `npm run doodles:unmock` to delete the stand-ins.
-- [ ] Then run `git revert 1777817b` to bring back the footer line and the write-up's original wording, and deploy.
+- [ ] Then run `git revert 1777817b 36c69fdb` to bring back the footer line, the write-up's original wording, and the `robots.txt` line, and deploy.
 
 ## Next: dark mode
 
@@ -55,18 +55,30 @@ The rest of the site:
 
 ## Launch checklist
 
+In this order. The new site goes on the existing `personal` Vercel project, where `draw.ykabusalah.me` already lives. The domain is at Porkbun, which also runs its DNS and my email forwarding.
+
 - [x] Fill every doodle spot for version 1 with a stand-in (`npm run doodles:mock`; see "The real doodles" above)
-In this order:
-
-The new site goes on the existing `personal` Vercel project, the one the old drawing app is on, so `draw.ykabusalah.me` is already attached.
-
 - [ ] In the `personal` project on Vercel, go to Settings, then Git, and disconnect the GitHub repo, so pushes never build the site without my art
 - [ ] Run `npx vercel link` and link to the existing `personal` project
 - [ ] Run `npm run deploy:preview` and look over the preview address it prints (the live sites don't change yet)
-- [ ] In the project, go to Settings, then Domains, and add `ykabusalah.me` and `www.ykabusalah.me`
-- [ ] At the domain registrar, replace Super.so's DNS records with the ones Vercel shows (usually an `A` record for `@` to `76.76.21.21`, and a `CNAME` for `www` to `cname.vercel-dns.com`)
-- [ ] As soon as Vercel shows the domain as valid, run `npm run deploy`. The new site goes live, and `draw.ykabusalah.me` starts forwarding to it (the rules are in `scripts/vercel-output.mjs`).
+- [ ] In the project, go to Settings, then Domains, and add `ykabusalah.me` and `www.ykabusalah.me`. Super.so runs on Vercel too, so Vercel will ask for a `TXT` record (named `_vercel`) to prove the domain is mine: add it at Porkbun.
+- [ ] At Porkbun, change only the records Vercel asks for: the `www` `CNAME` (it points to `cname.super.so` now), and the `@` `A` record only if Vercel shows an address other than `76.76.21.21`. Leave the `MX` records and the `TXT` record starting with `v=spf1` alone: they're my email forwarding for hello@ykabusalah.me.
+- [ ] As soon as Vercel shows the domain as valid, run `npm run deploy`. The new site goes live, `draw.ykabusalah.me` starts forwarding to it, and old Super.so addresses forward to their closest pages (the rules are in `scripts/vercel-output.mjs`).
+- [ ] In Supabase, go to Authentication, then URL Configuration: set the Site URL to `https://ykabusalah.me` and add `https://ykabusalah.me/**` to the redirect URLs, so account emails (like a password reset) link to the new site
+- [ ] Sign in at `ykabusalah.me/moderate` to check that moderation works, and change the moderator password while I'm there
+- [ ] In the `personal` project's Settings, delete the old app's environment variables (the `REACT_APP_` ones). The new site doesn't use them.
+- [ ] Decide whether my About photo files (`src/assets/portrait/` and `src/data/portrait-doodles.json`) should reach GitHub before pushing
 - [ ] Push to GitHub: `git push --follow-tags origin main`. This also uploads the `before-redesign` tag, so the old site stays one click away. Not before the site is live: Super.so loads my heads from GitHub `main`, and they'd break.
 - [ ] On GitHub, update the repo's About: description, website (`https://ykabusalah.me`), and topics
-- [ ] Once ykabusalah.me shows the new site, cancel Super.so
-- [ ] Remove my head drawings from GitHub: the `icons` folder in older commits
+- [ ] Once ykabusalah.me shows the new site, remove the custom domain in Super.so's settings, then cancel Super.so
+- [ ] Optional: in Google Search Console, verify the domain with a `TXT` record at Porkbun and submit `https://ykabusalah.me/sitemap.xml`
+- [ ] Optional: remove my head drawings from GitHub's history (the `icons` folder in older commits). That means rewriting history and force-pushing, and the `before-redesign` tag would then show the old site without them.
+
+## Keeping it running
+
+- **My art only lives on this computer.** `src/art/` isn't on GitHub, and the site can't be built with my art without it. It sits inside OneDrive, so keep OneDrive syncing this folder. Same for `.env` and `.env.studio`.
+- **Updating the site:** make changes, then run `npm run deploy`. If it says I'm not logged in, run `npx vercel login` again.
+- **New visitor drawings** show up on Home as soon as I approve them. They get their sharp vector version the next time I deploy, so deploy now and then after approving a batch.
+- **Supabase stays awake** from visits, plus a GitHub workflow that checks in every two days (`.github/workflows/keep-alive.yml`). GitHub pauses scheduled workflows in repos with no commits for 60 days: if I get that email, turn it back on under the repo's Actions tab.
+- **The seasonal heads and accent colors** switch on their own by date (`src/lib/seasonal.ts`).
+- **The domain renews at Porkbun:** keep auto-renew on.
