@@ -82,7 +82,15 @@ export const DOODLE_PAGES = [
     { idea: 'a little creature peeking in' },
     { idea: 'an eraser and some smudges' },
   ] },
-  { number: 15, key: 'thank-you', label: 'Thank you', spots: [{ idea: 'a celebrating character', width: 120 }] },
+  { number: 15, key: 'thank-you', label: 'Thank you', spots: [
+    { idea: 'a celebrating character', width: 120 },
+    { idea: 'a party popper, mid-pop' },
+    { idea: 'a bunch of balloons' },
+    { idea: 'bunting that says YAY!', width: 120 },
+    { idea: 'a prize ribbon' },
+    { idea: 'fireworks' },
+    { idea: 'a drawing, framed and hung up' },
+  ] },
 ];
 
 /** a, b, ... z, then aa, ab, ... */

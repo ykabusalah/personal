@@ -1,11 +1,29 @@
 ---
 import PageLayout from '../layouts/PageLayout.astro';
 import Doodle from '../components/Doodle.astro';
+import { spotsFor } from '../data/doodle-spots.js';
+
+// A little party on both sides once a drawing is in. Spots 15a to 15g in src/data/doodle-spots.js,
+// in this order. lane: 0 hugs the screen edge, 1 sits just outside the text. top is from the top of the title.
+const LAYOUT = [
+  { side: 'r', lane: 0.75, top: -20, tilt: -5, phone: true },
+  { side: 'l', lane: 0.7, top: -30, tilt: 6, phone: true },
+  { side: 'l', lane: 0.15, top: 90, tilt: -7 },
+  { side: 'r', lane: 0.2, top: 150, tilt: 4 },
+  { side: 'l', lane: 0.8, top: 200, tilt: 3 },
+  { side: 'r', lane: 0.85, top: 250, tilt: -6, phone: true },
+  { side: 'l', lane: 0.25, top: 300, tilt: -4 },
+];
+const SPOTS = spotsFor('thank-you').map((spot, i) => ({ ...spot, ...LAYOUT[i] }));
 ---
 
 <PageLayout title="Thank you | Yousef's Personal Website" page="thank_you">
   <section class="thanks">
-    <Doodle side="right" top="20px" tilt={-5} mobile="inline" spot="15a" />
+    <div class="spots" aria-hidden="true">
+      {SPOTS.map((s) => (
+        <span class:list={['spot', s.side, s.phone && 'phone']} style={`--lane:${s.lane};--top:${s.top}px;--tilt:${s.tilt}deg`}><Doodle spot={s.id} /></span>
+      ))}
+    </div>
     <h1 class="page-title">🎉 <span class="mark">Thank You!</span></h1>
     <p class="lede">
       Your drawing was submitted successfully. If it's selected, it will appear on the main site with your name at the bottom right. Thanks for contributing!
@@ -15,7 +33,49 @@ import Doodle from '../components/Doodle.astro';
 </PageLayout>
 
 <style>
-  .thanks { position: relative; }
+  .thanks {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .thanks > :not(.spots) { max-width: 100%; }
+
+  /* Phones and narrow windows: three doodles in a row under the button. */
+  .spots {
+    order: 10;
+    display: flex;
+    gap: 20px;
+  }
+
+  .spot { display: none; transform: rotate(var(--tilt)); }
+  .spot.phone { display: block; transform: rotate(var(--tilt)) scale(0.8); }
+
+  /* Spots with no drawing yet are empty, so they take no room. */
+  .spot.phone:not(:empty) { margin-top: 32px; }
+
+  /* Wide screens: spread through the white space beside the text.
+     50% - 50vw is the screen edge; --room is the white space on each side, less a doodle and a gap. */
+  @media (min-width: 1100px) {
+    .spots {
+      --room: calc((100vw - 680px) / 2 - 164px);
+      display: contents;
+    }
+
+    .spot,
+    .spot.phone,
+    .spot.phone:not(:empty) {
+      display: block;
+      position: absolute;
+      top: var(--top);
+      margin: 0;
+      transform: rotate(var(--tilt));
+    }
+
+    .spot.l { left: calc(50% - 50vw + 24px + var(--room) * var(--lane)); }
+    .spot.r { right: calc(50% - 50vw + 24px + var(--room) * var(--lane)); }
+  }
 
   .page-title { margin-bottom: 24px; }
 

@@ -142,6 +142,7 @@ const GLYPHS = {
   '₺': { w: 70, s: [[[28, 2], [28, 96], [44, 98], [60, 88], [66, 68]], [[10, 50], [52, 32]], [[10, 70], [52, 52]]] },
   '₱': { w: 80, s: [[[20, 100], [20, 4], [48, 4], [64, 14], [64, 34], [50, 46], [20, 46]], [[4, 18], [76, 18]], [[4, 32], [76, 32]]] },
   '฿': { w: 72, s: [[[16, 4], [16, 96]], [[16, 4], [44, 4], [58, 12], [58, 32], [46, 44], [16, 46]], [[16, 46], [48, 46], [64, 58], [64, 82], [50, 96], [16, 96]], [[32, -8], [32, 108]]] },
+  '!': { w: 30, s: [[[15, 0], [15, 66]], [[15, 94]]] },
   '?': { w: 76, s: [[[16, 26], [22, 8], [40, 0], [58, 6], [64, 22], [56, 38], [40, 50], [38, 70]], [[38, 92]]] },
   // The UAE dirham, as written: alef with hamza below, a dot, and dal.
   'د.إ': { w: 88, s: [[[12, 6], [12, 82]], [[4, 96], [14, 90], [8, 100], [20, 98]], [[40, 80]], [[58, 38], [72, 56], [72, 74], [66, 80], [46, 80]]] },
@@ -1165,6 +1166,98 @@ const DRAWINGS = {
     }
     p.line([[40, 20], [50, 30], [40, 40], [50, 50]], { width: 2.4 });
     p.line([[162, 116], [172, 124], [162, 132], [172, 140]], { width: 2.4 });
+  },
+  '15b': (p) => {
+    // A party popper, mid-pop.
+    const pose = { x: 40, y: 170, turn: -48 };
+    const cone = place([[0, 0], [86, -28], [86, 28]], pose);
+    p.shape(cone, { straight: true, width: 3.8 });
+    p.shape(place(ellipsePoly(86, 0, 9, 28), pose), { width: 3.4 });
+    for (const x of [30, 56]) p.line(place([[x, -x * 0.33 + 1], [x - 10, (x - 10) * 0.33 - 1]], pose), { width: 2.8, straight: true });
+    p.hatch(place([[56, -18.5], [86, -28], [86, 28], [46, 15]], pose), { angle: 10, gap: 5 });
+    p.line([[110, 92], [124, 70], [112, 56], [130, 40], [122, 22]], { width: 3 });
+    p.line([[116, 100], [140, 96], [148, 80], [168, 84], [182, 70]], { width: 3 });
+    p.line([[104, 88], [96, 64], [104, 48], [92, 30]], { width: 2.6 });
+    for (const [x, y, t] of [[150, 30, 20], [178, 44, -40], [164, 112, 60], [140, 56, -10], [78, 40, 45], [184, 108, 15], [154, 12, -60]]) {
+      p.shape(place([[-5, -2.5], [5, -2.5], [5, 2.5], [-5, 2.5]], { x, y, turn: t }), { straight: true, width: 2.2, fill: INK });
+    }
+    for (const [x, y] of [[132, 116], [100, 22], [174, 136], [66, 64]]) p.dot(x, y, 3);
+    p.shape(sparkle(168, 18, 10), { width: 2.6, shake: 0.4 });
+  },
+  '15c': (p) => {
+    // A bunch of balloons.
+    for (const [x0, y0, bend] of [[68, 112, -10], [132, 102, 12], [104, 138, 4]]) {
+      p.line([[x0, y0], [x0 + bend + (100 - x0) * 0.3, y0 + (186 - y0) * 0.45], [100 + bend * 0.4, 186]], { width: 2.2, shake: 1.6 });
+    }
+    const balloons = [[68, 72, 28, 36], [132, 62, 30, 38], [104, 104, 25, 31]];
+    for (const [x, y, rx, ry] of balloons) {
+      p.ellipse(x, y, rx, ry, { width: 3.8, fill: WHITE, overshoot: 0.2 });
+      p.shape([[x - 5, y + ry + 6], [x, y + ry - 1], [x + 5, y + ry + 6]], { straight: true, width: 2.6 });
+      p.line(arc(x, y, rx * 0.6, ry * 0.65, deg(200), deg(245), 5), { width: 2.4, shake: 0.4 });
+    }
+    p.hatch(ellipsePoly(104, 104, 23, 29), { angle: 50, gap: 5.5 });
+    p.line([[88, 186], [100, 180], [112, 188]], { width: 2.6 });
+  },
+  '15d': (p) => {
+    // Bunting with YAY! on it.
+    const sag = (t) => [12 + 176 * t, 40 + 110 * t * (1 - t) + 10 * t];
+    p.line(Array.from({ length: 9 }, (_, i) => sag(i / 8)), { width: 3, shake: 0.8 });
+    const letters = ['', 'Y', 'A', 'Y', '!', ''];
+    letters.forEach((ch, i) => {
+      const [x0, y0] = sag(0.1 + i * 0.16);
+      const [x1, y1] = sag(0.21 + i * 0.16);
+      const tip = [(x0 + x1) / 2 + p.jit(2), (y0 + y1) / 2 + 48 + p.jit(4)];
+      const flag = [[x0, y0], [x1, y1], tip];
+      p.shape(flag, { straight: true, width: 3.2 });
+      if (ch) p.text(ch, (x0 + x1 + tip[0]) / 3, (y0 + y1 + tip[1]) / 3 - 2, 17, { width: 2.8 });
+      else p.hatch(flag, { angle: i ? -30 : 30, gap: 4.5 });
+    });
+    for (const [x, y] of [[26, 108], [176, 112]]) p.shape(sparkle(x, y, 8), { width: 2.4, shake: 0.4 });
+  },
+  '15e': (p) => {
+    // A prize ribbon with a star.
+    p.shape([[86, 128], [66, 188], [78, 180], [88, 192], [104, 134]], { straight: true, width: 3.4 });
+    p.shape([[112, 128], [134, 186], [120, 180], [112, 192], [96, 134]], { straight: true, width: 3.4 });
+    const rosette = Array.from({ length: 28 }, (_, i) => at(100, 88, i % 2 ? 50 : 42, deg(i * (360 / 28))));
+    p.shape(rosette, { width: 3.4, shake: 0.6 });
+    p.circle(100, 88, 32, { width: 3.6, fill: WHITE });
+    p.shape(star5(100, 90, 20), { straight: true, width: 3.2, shake: 0.8 });
+    p.hatch(star5(100, 90, 20), { angle: -20, gap: 4.2 });
+    p.hatch([[86, 134], [104, 134], [88, 192], [78, 180], [66, 188]], { angle: 70, gap: 6, width: 1.8 });
+  },
+  '15f': (p) => {
+    // Fireworks.
+    p.dashed([[64, 196], [70, 160], [76, 118]], { width: 2.6 });
+    for (const [cx, cy, n, r0, r1] of [[76, 74, 12, 12, 44], [152, 118, 9, 8, 30], [158, 34, 7, 6, 20]]) {
+      const turn = p.random() * 30;
+      for (let i = 0; i < n; i++) {
+        const a = deg(turn + (i * 360) / n);
+        p.line([at(cx, cy, r0, a), at(cx, cy, r1, a + 0.08)], { width: r1 > 40 ? 3.4 : 2.8, shake: 0.6 });
+        p.dot(...at(cx, cy, r1 + 8, a + 0.1), r1 > 40 ? 3 : 2.2);
+      }
+    }
+    p.shape(sparkle(28, 28, 9), { width: 2.4, shake: 0.4 });
+    p.shape(sparkle(186, 176, 7), { width: 2.2, shake: 0.4 });
+  },
+  '15g': (p) => {
+    // A drawing, framed and hung up.
+    p.line([[58, 70], [100, 30], [142, 70]], { width: 2.6, straight: true });
+    p.dot(100, 28, 4);
+    p.rect(38, 64, 124, 102, { r: 3, width: 4 });
+    p.rect(52, 78, 96, 74, { r: 2, width: 2.8 });
+    for (const [a, b] of [[[38, 64], [52, 78]], [[162, 64], [148, 78]], [[38, 166], [52, 152]], [[162, 166], [148, 152]]]) {
+      p.line([a, b], { width: 2.4, shake: 0.3, straight: true });
+    }
+    p.circle(76, 100, 9, { width: 2.8 });
+    for (let i = 0; i < 7; i++) {
+      const a = deg(i * (360 / 7) + 10);
+      p.line([at(76, 100, 13, a), at(76, 100, 18, a)], { width: 2.2, shake: 0.3 });
+    }
+    p.line([[54, 144], [80, 126], [104, 138], [128, 118], [146, 132]], { width: 2.8 });
+    p.hatch([[54, 150], [54, 144], [80, 126], [104, 138], [128, 118], [146, 132], [146, 150]], { angle: 40, gap: 5.5, width: 1.8 });
+    p.shape(sparkle(178, 50, 11), { width: 2.6, shake: 0.4 });
+    p.shape(sparkle(22, 132, 8), { width: 2.4, shake: 0.4 });
+    for (const [x, y] of [[176, 150], [26, 70]]) p.dot(x, y, 2.8);
   },
 };
 
