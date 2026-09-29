@@ -61,15 +61,17 @@ In this order. The new site goes on the existing `personal` Vercel project, wher
 - [ ] In the `personal` project on Vercel, go to Settings, then Git, and disconnect the GitHub repo, so pushes never build the site without my art
 - [ ] Run `npx vercel link` and link to the existing `personal` project
 - [ ] Run `npm run deploy:preview` and look over the preview address it prints (the live sites don't change yet)
-- [ ] In the project, go to Settings, then Domains, and add `ykabusalah.me` and `www.ykabusalah.me`. Super.so runs on Vercel too, so Vercel will ask for a `TXT` record (named `_vercel`) to prove the domain is mine: add it at Porkbun.
-- [ ] At Porkbun, change only the records Vercel asks for: the `www` `CNAME` (it points to `cname.super.so` now), and the `@` `A` record only if Vercel shows an address other than `76.76.21.21`. Leave the `MX` records and the `TXT` record starting with `v=spf1` alone: they're my email forwarding for hello@ykabusalah.me.
-- [ ] As soon as Vercel shows the domain as valid, run `npm run deploy`. The new site goes live, `draw.ykabusalah.me` starts forwarding to it, and old Super.so addresses forward to their closest pages (the rules are in `scripts/vercel-output.mjs`).
+- [x] In the project, go to Settings, then Domains, and add `ykabusalah.me` (Production) and `www.ykabusalah.me` (a 301 redirect to `ykabusalah.me`, with "Include apex and www variants" unchecked). The site itself doesn't redirect www, so the two can't loop.
+- [x] At Porkbun, change only the records Vercel asks for. Leave the `MX` records and the `TXT` record starting with `v=spf1` alone: they're my email forwarding for hello@ykabusalah.me.
+- [x] Run `npm run deploy`. Old Super.so addresses forward to their closest pages (the rules are in `scripts/vercel-output.mjs`).
+- [ ] `draw.ykabusalah.me` has no DNS record right now, so old draw links go nowhere. Add it in the project's Domains, then add the `CNAME` named `draw` that Vercel shows at Porkbun. Once it resolves, it forwards to the new site.
+- [ ] In Supabase, go to the SQL editor and run `supabase/drawing-stats.sql` again, so By the numbers can show the finish rate and drawing time
 - [ ] In Supabase, go to Authentication, then URL Configuration: set the Site URL to `https://ykabusalah.me` and add `https://ykabusalah.me/**` to the redirect URLs, so account emails (like a password reset) link to the new site
 - [ ] Sign in at `ykabusalah.me/moderate` to check that moderation works, and change the moderator password while I'm there
 - [ ] In the `personal` project's Settings, delete the old app's environment variables (the `REACT_APP_` ones). The new site doesn't use them.
-- [ ] Push to GitHub: `git push --force-with-lease --follow-tags origin main`. My art was removed from the whole history, so this replaces GitHub's history with the cleaned one (that's why it's a force push), and it uploads the `before-redesign` tag so the old site stays one click away. Not before the site is live: Super.so loads my heads from GitHub `main`, and they'd break.
+- [x] Push to GitHub: `git push --force-with-lease --follow-tags origin main`. My art was removed from the whole history, so this replaces GitHub's history with the cleaned one (that's why it's a force push), and it uploads the `before-redesign` tag so the old site stays one click away. Not before the site is live: Super.so loads my heads from GitHub `main`, and they'd break.
 - [ ] On GitHub, update the repo's About: description, website (`https://ykabusalah.me`), and topics
-- [ ] Once ykabusalah.me shows the new site, remove the custom domain in Super.so's settings, then cancel Super.so
+- [ ] Once ykabusalah.me shows the new site, remove the custom domain in Super.so's settings, then cancel Super.so. In Notion, turn off "Publish to web" on the old site's pages too, or they stay public at a notion.site address.
 - [ ] Optional: in Google Search Console, verify the domain with a `TXT` record at Porkbun and submit `https://ykabusalah.me/sitemap.xml`
 ## Keeping it running
 
