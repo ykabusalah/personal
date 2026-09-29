@@ -12,6 +12,7 @@
     "astro": "astro",
     "check-dist": "node scripts/check-dist.mjs",
     "deploy": "astro build && node scripts/check-dist.mjs && node scripts/vercel-output.mjs && npx --yes vercel deploy --prebuilt --prod",
+    "deploy:preview": "astro build && node scripts/check-dist.mjs && node scripts/vercel-output.mjs && npx --yes vercel deploy --prebuilt",
     "studio": "node scripts/studio.mjs serve",
     "studio:deploy": "node scripts/studio.mjs build && cd studio && npx --yes vercel deploy --prebuilt --prod",
     "doodles:pull": "node scripts/pull-doodles.mjs",

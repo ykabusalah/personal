@@ -58,12 +58,14 @@ The rest of the site:
 - [x] Fill every doodle spot for version 1 with a stand-in (`npm run doodles:mock`; see "The real doodles" above)
 In this order:
 
-- [ ] Run `npx vercel login`, then `npx vercel link`: create a new project, and don't connect the GitHub repo
-- [ ] Run `npm run deploy` and look over the `vercel.app` address it prints
-- [ ] In the new Vercel project, go to Settings, then Domains, and add `ykabusalah.me` and `www.ykabusalah.me`
+The new site goes on the existing `personal` Vercel project, the one the old drawing app is on, so `draw.ykabusalah.me` is already attached.
+
+- [ ] In the `personal` project on Vercel, go to Settings, then Git, and disconnect the GitHub repo, so pushes never build the site without my art
+- [ ] Run `npx vercel link` and link to the existing `personal` project
+- [ ] Run `npm run deploy:preview` and look over the preview address it prints (the live sites don't change yet)
+- [ ] In the project, go to Settings, then Domains, and add `ykabusalah.me` and `www.ykabusalah.me`
 - [ ] At the domain registrar, replace Super.so's DNS records with the ones Vercel shows (usually an `A` record for `@` to `76.76.21.21`, and a `CNAME` for `www` to `cname.vercel-dns.com`)
-- [ ] Move `draw.ykabusalah.me`: remove it from the old drawing site's host, add it to the new Vercel project, and point its DNS where Vercel says. Old links then forward on their own (the rules are in `scripts/vercel-output.mjs`).
-- [ ] Turn off the old drawing site's automatic deploys from GitHub (or delete that old site), so pushing the new code doesn't rebuild it
+- [ ] As soon as Vercel shows the domain as valid, run `npm run deploy`. The new site goes live, and `draw.ykabusalah.me` starts forwarding to it (the rules are in `scripts/vercel-output.mjs`).
 - [ ] Push to GitHub: `git push origin main`
 - [ ] On GitHub, update the repo's About: description, website (`https://ykabusalah.me`), and topics
 - [ ] Once ykabusalah.me shows the new site, cancel Super.so
