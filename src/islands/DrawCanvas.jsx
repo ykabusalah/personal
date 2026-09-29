@@ -28,26 +28,13 @@ import {
 
 // Phones and tablets. They draw with the screen turned sideways, so every drawing has the same
 // wide shape as one made on a computer and fills the Home page the same way.
-const detectDeviceType = () => {
-  const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-
-  const isDesktopOS = /Windows NT|Macintosh|Mac OS X|Linux x86_64|Linux i686|CrOS/i.test(userAgent)
-                      && !/Android/i.test(userAgent);
-
-  const isMobilePhone = /Android.*Mobile|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-
-  const isIPad = /iPad/i.test(userAgent) ||
-               (navigator.platform === 'MacIntel' &&
-                navigator.maxTouchPoints > 1 &&
-                !window.matchMedia('(pointer: fine)').matches);
-
-  const isAndroidTablet = /Android/i.test(userAgent) && !/Mobile/i.test(userAgent);
-
-  const isMobile = !isDesktopOS && (isMobilePhone || isIPad || isAndroidTablet);
-  const isMobileOrTablet = isMobile || isIPad;
-
-  return isMobileOrTablet;
-};
+// A finger as the main pointer is what makes a phone or tablet; the name check backs it up in
+// browsers that don't say. (Checking names alone got iPhones wrong: they call themselves
+// "like Mac OS X", so they were treated as computers and told their window was too small.)
+const detectDeviceType = () =>
+  window.matchMedia('(pointer: coarse)').matches ||
+  /Android|iPhone|iPod|iPad|webOS|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+  (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1 && !window.matchMedia('(pointer: fine)').matches);
 
 // Computers need a window at least this big to draw in.
 const MIN_WIDTH = 800;
