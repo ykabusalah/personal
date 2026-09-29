@@ -75,6 +75,10 @@ export default function App() {
   const [showResizeMessage, setShowResizeMessage] = useState(false);
   // Resizing a canvas resets its pen settings, so this counts resizes to set them again.
   const [canvasVersion, setCanvasVersion] = useState(0);
+  // Sending a drawing. The ref stops a second tap from slipping in before the screen updates.
+  const sendingRef = useRef(false);
+  const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
 
   const handleToolChange = useCallback((newTool) => {
     trackToolChange(newTool, tool);
@@ -141,6 +145,14 @@ export default function App() {
     setShowModal(true);
   }, []);
 
+  // Back to drawing, unless the drawing is already on its way.
+  const closeModal = useCallback(() => {
+    if (sendingRef.current) return;
+    trackModalClose();
+    setShowModal(false);
+    setSendError('');
+  }, []);
+
   const handleExitClick = () => {
     setShowExitPrompt(true);
   };
@@ -162,8 +174,7 @@ export default function App() {
 
       if (e.key === 'Escape') {
         if (showModal) {
-          trackModalClose();
-          setShowModal(false);
+          closeModal();
           return;
         }
         if (showExitPrompt) {
@@ -233,7 +244,7 @@ export default function App() {
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [showModal, showExitPrompt, handleToolChange, handleUndo, handleRedo, handleSaveClick, clearCanvas]);
+  }, [showModal, showExitPrompt, handleToolChange, handleUndo, handleRedo, handleSaveClick, clearCanvas, closeModal]);
 
   // Size the canvas once, when the page opens. Resizing a canvas wipes it, so after this it only
   // changes size when the window does (below), and the drawing is copied over when it does.
@@ -358,48 +369,61 @@ export default function App() {
     setIsDrawing(true);
   };
 
-  const handleSave = async () => {
-    const canvas = canvasRef.current;
-    canvas.toBlob(async (blob) => {
-      const filename = `drawing-${Date.now()}.png`;
-      const { data, error } = await supabase
-        .storage
-        .from('drawing-bucket')
-        .upload(filename, blob, {
-          contentType: 'image/png',
-          cacheControl: '3600',
-          upsert: false
-        });
+  // Sends the drawing once, however many times the button's tapped. On a slow phone connection a
+  // second tap used to send it again, and that copy, cut off when the page moved on to the thank-you
+  // page, popped up "Load failed".
+  const handleSave = () => {
+    if (sendingRef.current) return;
+    sendingRef.current = true;
+    setSending(true);
+    setSendError('');
 
-      if (error) {
-        trackSubmitError(error.message);
-        alert('Upload error: ' + error.message);
-        return;
-      }
+    const fail = (message) => {
+      trackSubmitError(message);
+      setSendError("That didn't go through. Check your connection and try again.");
+      sendingRef.current = false;
+      setSending(false);
+    };
 
-      const { data: urlData } = supabase
-        .storage
-        .from('drawing-bucket')
-        .getPublicUrl(filename);
+    canvasRef.current.toBlob(async (blob) => {
+      try {
+        const filename = `drawing-${Date.now()}.png`;
+        const { error } = await supabase
+          .storage
+          .from('drawing-bucket')
+          .upload(filename, blob, {
+            contentType: 'image/png',
+            cacheControl: '3600',
+            upsert: false
+          });
+        if (error) return fail(error.message);
 
-      const { error: insertError } = await supabase
-        .from('drawings')
-        .insert([{ name, image_url: urlData.publicUrl, status: 'pending' }]);
+        const { data: urlData } = supabase
+          .storage
+          .from('drawing-bucket')
+          .getPublicUrl(filename);
 
-      if (insertError) {
-        trackSubmitError(insertError.message);
-        alert("Error saving metadata to Supabase.");
-        return;
+        const { error: insertError } = await supabase
+          .from('drawings')
+          .insert([{ name, image_url: urlData.publicUrl, status: 'pending' }]);
+        if (insertError) return fail(insertError.message);
+      } catch (err) {
+        return fail(err.message);
       }
 
       trackSubmitSuccess(name.length > 0);
-
-      clearCanvas();
-      setShowModal(false);
       confetti();
       window.location.href = '/thank-you';
     }, 'image/png');
   };
+
+  // Popups look like the rest of the site: a white card with a thin border, a serif title, and the
+  // accent color on the main button. max-h-full keeps a card scrollable on a phone on its side.
+  const popup = 'fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50 p-4 font-body text-ink';
+  const card = 'bg-white rounded-xl border border-line shadow-xl w-full max-w-md max-h-full overflow-auto p-6';
+  const title = 'font-display text-4xl leading-tight mb-2';
+  const primaryButton = 'px-5 py-2.5 rounded-lg bg-accent text-on-accent font-medium hover:opacity-90 transition-opacity disabled:opacity-60 disabled:cursor-wait';
+  const secondaryButton = 'px-4 py-2.5 rounded-lg border border-line bg-white hover:border-ink transition-colors disabled:opacity-60';
 
   // The toolbar: one column on computers, two on short screens like a phone on its side.
   const toolbarClass = compact
@@ -497,38 +521,57 @@ export default function App() {
       </div>
 
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow w-[90%] max-w-md text-black">
-            <h2 className="text-xl font-bold mb-4">Submit Your Drawing</h2>
+        <div className={popup} onClick={(e) => e.target === e.currentTarget && closeModal()}>
+          <form
+            className={card}
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSave();
+            }}
+          >
+            <h2 className={title}>Submit your drawing</h2>
+            <p className="text-sm text-muted mb-5">
+              If it makes the cut, it shows up on the Home page with your name in the corner.
+            </p>
+            <label className="block text-sm text-muted mb-2" htmlFor="drawing-name">Your name (optional)</label>
             <input
+              id="drawing-name"
               type="text"
-              placeholder="Your Name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded mb-4"
+              autoComplete="name"
+              disabled={sending}
+              className="w-full px-3.5 py-3 border border-line rounded-lg mb-5 focus:outline-none focus:border-ink"
             />
-            <div className="flex justify-between items-center">
-              <a href="/terms.html" target="_blank" className="text-sm underline">
-                Terms & Conditions
-              </a>
-              <button
-                onClick={handleSave}
-                className="bg-black text-white px-4 py-2 rounded"
-              >
-                I agree & Submit
+            {sendError && (
+              <p className="border border-line border-l-4 border-l-accent rounded-lg px-4 py-3 text-sm mb-5" role="alert">
+                {sendError}
+              </p>
+            )}
+            <p className="text-xs text-muted mb-4">
+              By submitting, you agree to the{' '}
+              <a href="/terms.html" target="_blank" className="underline underline-offset-2">Terms & Conditions</a>.
+            </p>
+            <div className="flex justify-end gap-2">
+              <button type="button" onClick={closeModal} disabled={sending} className={secondaryButton}>
+                Keep drawing
+              </button>
+              <button type="submit" disabled={sending} className={primaryButton}>
+                {sending ? 'Sending...' : 'I agree & submit'}
               </button>
             </div>
-          </div>
+          </form>
         </div>
       )}
 
       {showExitPrompt && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded shadow w-[90%] max-w-md text-black">
-            <h2 className="text-xl font-bold mb-4">Are you sure you'd like to leave?</h2>
-            <div className="flex justify-end space-x-4">
-              <button onClick={confirmExit} className="px-4 py-2 bg-black text-white rounded hover:bg-gray-800">Yes</button>
-              <button onClick={cancelExit} className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">No</button>
+        <div className={popup} onClick={(e) => e.target === e.currentTarget && cancelExit()}>
+          <div className={card}>
+            <h2 className={title}>Leave the canvas?</h2>
+            <p className="text-sm text-muted mb-6">Your drawing won't be saved.</p>
+            <div className="flex justify-end gap-2">
+              <button onClick={confirmExit} className={secondaryButton}>Leave</button>
+              <button onClick={cancelExit} className={primaryButton}>Keep drawing</button>
             </div>
           </div>
         </div>
@@ -536,7 +579,7 @@ export default function App() {
 
       {/* Phones held upright: turn sideways to draw. The phone in the picture turns to show how. */}
       {isMobile && !isFullscreen && (
-        <div className="fixed inset-0 bg-white flex flex-col items-center justify-center gap-4 z-50 p-8 text-center">
+        <div className="fixed inset-0 bg-white flex flex-col items-center justify-center gap-4 z-50 p-8 text-center font-body text-ink">
           <svg className="w-28 h-28" viewBox="0 0 64 64" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d="M46 5.8 A28 28 0 0 0 7.8 16" stroke="var(--accent)" strokeWidth="2.5" />
             <path d="M12.3 13.9 L7.8 16 L7.4 11" stroke="var(--accent)" strokeWidth="2.5" />
@@ -546,45 +589,33 @@ export default function App() {
             </g>
           </svg>
           <h2 className="font-display text-4xl leading-tight">Turn your phone sideways</h2>
-          <p className="text-gray-600 max-w-xs">
+          <p className="text-muted max-w-xs">
             {hasDrawingContent
               ? "Your drawing's safe. Turn it back to keep going."
               : 'You get the whole screen to draw on, the same shape as the Home page.'}
           </p>
-          <a href="/info" className="text-sm text-gray-600 underline">Go back</a>
+          <a href="/info" className="text-sm text-muted underline underline-offset-2">Go back</a>
         </div>
       )}
 
       {!isMobile && showResizeMessage && hasDrawingContent && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded shadow w-[90%] max-w-lg text-black text-center">
-            <h2 className="text-2xl font-bold mb-4">🎨 Keep Drawing!</h2>
-            <p className="text-lg mb-4">
-              Your masterpiece is safely preserved!
-            </p>
-            <p className="text-sm text-gray-600 mb-6">
-              Go back to full-screen to finish your drawing.
-            </p>
-            <p className="text-xs text-gray-500">
-              Minimum size: 800px wide × 600px tall
-            </p>
+        <div className={popup}>
+          <div className={`${card} text-center`}>
+            <h2 className={title}>🎨 Keep drawing!</h2>
+            <p className="mb-2">Your masterpiece is safely preserved.</p>
+            <p className="text-sm text-muted mb-4">Make the window full screen again to finish it.</p>
+            <p className="text-xs text-muted">Minimum size: 800px wide × 600px tall</p>
           </div>
         </div>
       )}
 
       {!isMobile && !isFullscreen && !showResizeMessage && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded shadow w-[90%] max-w-lg text-black text-center">
-            <h2 className="text-2xl font-bold mb-4">🔍 Window Too Small</h2>
-            <p className="text-lg mb-4">
-              Please make your browser window fullscreen or larger to draw properly.
-            </p>
-            <p className="text-sm text-gray-600 mb-6">
-              This ensures your drawing looks great when displayed on the website!
-            </p>
-            <p className="text-xs text-gray-500">
-              Minimum size: 800px wide × 600px tall
-            </p>
+        <div className={popup}>
+          <div className={`${card} text-center`}>
+            <h2 className={title}>🔍 Window too small</h2>
+            <p className="mb-2">Make your browser window full screen, or bigger, to draw.</p>
+            <p className="text-sm text-muted mb-4">That way your drawing looks great when it's shown on the site.</p>
+            <p className="text-xs text-muted">Minimum size: 800px wide × 600px tall</p>
           </div>
         </div>
       )}

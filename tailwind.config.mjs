@@ -15,6 +15,7 @@ export default {
         'accent-soft': 'color-mix(in srgb, var(--accent) 14%, #fff)',
       },
       fontFamily: {
+        body: 'var(--font-body)',
         display: 'var(--font-display)',
         hand: 'var(--font-hand)',
       },
