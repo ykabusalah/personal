@@ -98,6 +98,14 @@ _legacy/          the old drawing app, from before the rebuild
 
 Supabase holds visitor drawings (`drawings`: name, image, and `pending`, `approved`, or `rejected`) and analytics events (`analytics`). Row-level security lets visitors submit and read approved drawings, and only my moderator account can review them or read analytics. The setup is in `supabase/`.
 
+## Before the redesign
+
+The site used to be two pieces: a Notion page styled with [Super.so](https://super.so) at ykabusalah.me, and a separate React drawing app at draw.ykabusalah.me, tied together by passing visitor IDs through links. This repo held the drawing app.
+
+- **The old version:** the [`before-redesign`](https://github.com/ykabusalah/personal/tree/before-redesign) tag is the repo exactly as it was.
+- **Everything that changed:** [before-redesign...main](https://github.com/ykabusalah/personal/compare/before-redesign...main) shows the redesign commit by commit.
+- **The old drawing app's code** also lives on in [`_legacy/`](_legacy/).
+
 ## Roadmap
 
 See [ROADMAP.md](ROADMAP.md).
