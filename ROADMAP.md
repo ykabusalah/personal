@@ -4,20 +4,20 @@ What's planned after the first version of the site. Launch steps are at the bott
 
 ## The real doodles
 
-Version 1 ships with stand-in doodles in every spot (made by `npm run doodles:mock`, kept in `src/art/doodles-mock/`). While they're up, the site doesn't say every drawing is made by hand: commit `1777817b` took that line out of the footer and reworded the ykabusalah.me write-up, and `36c69fdb` took it out of `robots.txt`.
+Version 1 ships with stand-in doodles in every spot (made by `npm run doodles:mock`, kept in `src/art/doodles-mock/`). While they're up, the site doesn't say every drawing is made by hand: commit `006591ca` took that line out of the footer and reworded the ykabusalah.me write-up, and `712c2ffc` took it out of `robots.txt`.
 
 - [ ] Get each spot's real doodle: place it from the Doodle Studio and run `npm run doodles:pull`, or save it as `src/art/doodles/<spot>.png` (spots are listed in `src/data/doodle-spots.js`). A real doodle replaces its stand-in right away.
 - [ ] Once every spot has its real doodle, run `npm run doodles:unmock` to delete the stand-ins.
-- [ ] Then run `git revert 1777817b 36c69fdb` to bring back the footer line, the write-up's original wording, and the `robots.txt` line, and deploy.
+- [ ] Then run `git revert 006591ca 712c2ffc` to bring back the footer line, the write-up's original wording, and the `robots.txt` line, and deploy.
 
 ## Next: dark mode
 
 Built and tried in September 2026, then taken out so the first version can launch without it. The working version is saved in git, so it doesn't have to be rebuilt from scratch:
 
-- `c6fcad7c` adds the dark colors and the chalkboard drawings
-- `7f335309` makes light the default and adds a switch to the menu
+- `a26e37ed` adds the dark colors and the chalkboard drawings
+- `1f93cb7e` makes light the default and adds a switch to the menu
 
-Start from those with `git show c6fcad7c` and `git show 7f335309`.
+Start from those with `git show a26e37ed` and `git show 1f93cb7e`.
 
 ### What stays the same
 
@@ -67,13 +67,10 @@ In this order. The new site goes on the existing `personal` Vercel project, wher
 - [ ] In Supabase, go to Authentication, then URL Configuration: set the Site URL to `https://ykabusalah.me` and add `https://ykabusalah.me/**` to the redirect URLs, so account emails (like a password reset) link to the new site
 - [ ] Sign in at `ykabusalah.me/moderate` to check that moderation works, and change the moderator password while I'm there
 - [ ] In the `personal` project's Settings, delete the old app's environment variables (the `REACT_APP_` ones). The new site doesn't use them.
-- [ ] Decide whether my About photo files (`src/assets/portrait/` and `src/data/portrait-doodles.json`) should reach GitHub before pushing
-- [ ] Push to GitHub: `git push --follow-tags origin main`. This also uploads the `before-redesign` tag, so the old site stays one click away. Not before the site is live: Super.so loads my heads from GitHub `main`, and they'd break.
+- [ ] Push to GitHub: `git push --force-with-lease --follow-tags origin main`. My art was removed from the whole history, so this replaces GitHub's history with the cleaned one (that's why it's a force push), and it uploads the `before-redesign` tag so the old site stays one click away. Not before the site is live: Super.so loads my heads from GitHub `main`, and they'd break.
 - [ ] On GitHub, update the repo's About: description, website (`https://ykabusalah.me`), and topics
 - [ ] Once ykabusalah.me shows the new site, remove the custom domain in Super.so's settings, then cancel Super.so
 - [ ] Optional: in Google Search Console, verify the domain with a `TXT` record at Porkbun and submit `https://ykabusalah.me/sitemap.xml`
-- [ ] Optional: remove my head drawings from GitHub's history (the `icons` folder in older commits). That means rewriting history and force-pushing, and the `before-redesign` tag would then show the old site without them.
-
 ## Keeping it running
 
 - **My art only lives on this computer.** `src/art/` isn't on GitHub, and the site can't be built with my art without it. It sits inside OneDrive, so keep OneDrive syncing this folder. Same for `.env` and `.env.studio`.
