@@ -66,7 +66,7 @@ The new site goes on the existing `personal` Vercel project, the one the old dra
 - [ ] In the project, go to Settings, then Domains, and add `ykabusalah.me` and `www.ykabusalah.me`
 - [ ] At the domain registrar, replace Super.so's DNS records with the ones Vercel shows (usually an `A` record for `@` to `76.76.21.21`, and a `CNAME` for `www` to `cname.vercel-dns.com`)
 - [ ] As soon as Vercel shows the domain as valid, run `npm run deploy`. The new site goes live, and `draw.ykabusalah.me` starts forwarding to it (the rules are in `scripts/vercel-output.mjs`).
-- [ ] Push to GitHub: `git push origin main`
+- [ ] Push to GitHub: `git push --follow-tags origin main`. This also uploads the `before-redesign` tag, so the old site stays one click away. Not before the site is live: Super.so loads my heads from GitHub `main`, and they'd break.
 - [ ] On GitHub, update the repo's About: description, website (`https://ykabusalah.me`), and topics
 - [ ] Once ykabusalah.me shows the new site, cancel Super.so
 - [ ] Remove my head drawings from GitHub: the `icons` folder in older commits
