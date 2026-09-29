@@ -29,6 +29,10 @@ const {
   description = "Yousef Abu-Salah. AI Product Manager bringing the beauty of art into technology to tell unique stories and build experiences that can change the world.",
   noindex = false,
 } = Astro.props;
+
+// For link previews (LinkedIn, texts, Slack): this page's address and a small picture to show.
+const pageUrl = new URL(Astro.url.pathname.replace(/(.)\/$/, '$1'), Astro.site);
+const previewImage = new URL('/apple-touch-icon.png', Astro.site);
 ---
 
 <meta charset="utf-8" />
@@ -56,6 +60,14 @@ const {
 </script>
 <title>{title}</title>
 <meta name="description" content={description} />
+<link rel="canonical" href={pageUrl} />
+<meta property="og:type" content="website" />
+<meta property="og:site_name" content="Yousef Abu-Salah" />
+<meta property="og:title" content={title} />
+<meta property="og:description" content={description} />
+<meta property="og:url" content={pageUrl} />
+<meta property="og:image" content={previewImage} />
+<meta name="twitter:card" content="summary" />
 <!-- noai and noimageai ask AI scrapers not to train on anything here. -->
 <meta name="robots" content={noindex ? 'noindex, noai, noimageai' : 'noai, noimageai'} />
 <link rel="icon" href="/favicon-96x96.png" type="image/png" sizes="96x96" />

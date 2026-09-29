@@ -58,6 +58,7 @@ const tagTallScreenshots = {
 
 // https://astro.build/config
 export default defineConfig({
+  site: 'https://ykabusalah.me',
   integrations: [react(), keepArtOriginalsOut],
   markdown: { processor: satteri({ hastPlugins: [tagTallScreenshots] }) },
 });

@@ -1,0 +1,24 @@
+---
+import PageLayout from '../layouts/PageLayout.astro';
+
+// Shown for any address that doesn't exist (see scripts/vercel-output.mjs).
+---
+
+<PageLayout title="Page not found | Yousef's Personal Website" page="not_found">
+  <h1 class="page-title"><span class="mark">Nothing here</span></h1>
+  <p class="lede">
+    This page moved or never existed. You might be looking for my <a href="/projects">projects</a>, my <a href="/art">art</a>, or a <a href="/info">drawing to make</a>.
+  </p>
+  <a class="button" href="/">Back to Home</a>
+</PageLayout>
+
+<style>
+  .page-title { margin-bottom: 24px; }
+
+  .lede {
+    max-width: 52ch;
+    margin: 0 0 28px;
+    font-size: 19px;
+    line-height: 1.55;
+  }
+</style>

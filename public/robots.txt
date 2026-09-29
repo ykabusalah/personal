@@ -17,3 +17,5 @@ User-agent: Diffbot
 User-agent: ImagesiftBot
 User-agent: Omgilibot
 Disallow: /
+
+Sitemap: https://ykabusalah.me/sitemap.xml
