@@ -1,7 +1,7 @@
 ---
 title: ykabusalah.me
 kind: project
-summary: My personal website, rebuilt from scratch so everything on it is drawn by hand. Visitors draw the home page, my doodles draw themselves in as you scroll, and the head in the corner changes with the seasons.
+summary: My personal website, rebuilt from scratch around drawing. Visitors draw the home page, doodles draw themselves in as you scroll, and the head in the corner changes with the seasons.
 stack: [Astro, React, Supabase, TailwindCSS, sharp, potrace, Vercel]
 github: https://github.com/ykabusalah/personal
 live: /info
@@ -19,7 +19,7 @@ Personal portfolio sites are passive. Visitors scroll, maybe read a project desc
 
 Mine had a second problem: it didn't look like me. It lived on Super.so, a Notion-based site builder, so it looked like every other Notion site. I draw, and I care about art and storytelling, but you couldn't tell that from the site. The drawing canvas I'd built lived on its own subdomain, stitched to the portfolio by passing visitor IDs through URLs.
 
-So I rebuilt the whole site from scratch around one idea: everything you see is drawn by a person. Visitors draw the home page. My doodles fill the white space and draw themselves in as you scroll. The head in the top corner is a drawing of me that changes with the seasons. No stock images and no AI-generated art anywhere.
+So I rebuilt the whole site from scratch around drawing. Visitors draw the home page. Doodles fill the white space and draw themselves in as you scroll. The head in the top corner is a drawing of me that changes with the seasons.
 
 ## Goals
 
@@ -27,7 +27,7 @@ So I rebuilt the whole site from scratch around one idea: everything you see is 
 | --- | --- |
 | Visitors engage with the site beyond passive scrolling | Click-through rate from home page to drawing canvas |
 | Users who start drawing complete and submit artwork | Drawing completion rate (started drawing vs. submitted), modal abandonment rate |
-| The site feels hand-made and personal, not like a template | Every drawing and illustration on the site is made by a person: zero stock or AI-generated art |
+| The site feels personal, not like a template | Every page is custom-built, with no templates or stock images |
 | My art stays mine | Original files never leave my computer, and the site only serves resized copies |
 | Pages load instantly | Pages are plain HTML, with JavaScript only where something moves |
 | Full visibility into user behavior across the entire funnel | Complete conversion funnel: Home > Draw Click > Info > Draw > Submit, with step-by-step conversion rates |
@@ -146,12 +146,12 @@ The original version lived in two places: the portfolio on Super.so and the draw
 
 ## Results and Lessons
 
-Shipped a fully hand-drawn personal site: visitor drawings as the home page, an end-to-end drawing and moderation flow, a custom analytics system, doodles that draw themselves in, and a head that changes with the seasons. Every piece of art on it was made by a person.
+Shipped a personal site built around drawing: visitor drawings as the home page, an end-to-end drawing and moderation flow, a custom analytics system, doodles that draw themselves in, and a head that changes with the seasons.
 
 Key takeaways:
 
 - **Make the users' work the star.** My first redesign put my intro in a card over the drawing, and it hid the drawing. If visitors are the ones making the art, the art gets the whole page and I get the corner.
-- **Hand-made has to go all the way down.** One template-looking page or stock icon breaks the whole idea, so even the favicon and the accent colors come from drawings.
+- **Small details carry the idea.** One template-looking page or stock icon breaks it, so even the favicon and the accent colors come from my drawings.
 - **Upscaling isn't free.** A drawing that looks fine at its original size looks blurry at 3x. Tracing to vectors at build time fixed it without making visitors download anything extra.
 - **Ad blockers block more than ads.** The "Sorry, I'm in the way" button stopped working for anyone with an ad blocker, because its code shared a file named "analytics." Keeping page features apart from tracking fixed it.
 - **Protect the originals, not just the page.** Hiding the right-click menu is easy. The real protection is that full-size files never leave my computer in the first place.
