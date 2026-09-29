@@ -38,6 +38,12 @@ export const doodle = async (name: string) => {
   return path ? load(path) : undefined;
 };
 
+/** A stand-in from `npm run doodles:mock`. Only for previews while developing, never the live site. */
+export const mockDoodle = async (name: string) => {
+  const path = find(`doodles-mock/${name}`);
+  return path ? load(path) : undefined;
+};
+
 export const bookCover = async () => {
   const path = find('book-cover');
   return path ? load(path) : undefined;

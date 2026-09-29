@@ -14,7 +14,9 @@
     "deploy": "astro build && node scripts/check-dist.mjs && node scripts/vercel-output.mjs && npx --yes vercel deploy --prebuilt --prod",
     "studio": "node scripts/studio.mjs serve",
     "studio:deploy": "node scripts/studio.mjs build && cd studio && npx --yes vercel deploy --prebuilt --prod",
-    "doodles:pull": "node scripts/pull-doodles.mjs"
+    "doodles:pull": "node scripts/pull-doodles.mjs",
+    "doodles:mock": "node scripts/mock-doodles.mjs",
+    "doodles:unmock": "node scripts/mock-doodles.mjs --remove"
   },
   "dependencies": {
     "@astrojs/react": "^6.0.6",

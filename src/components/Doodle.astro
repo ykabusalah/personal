@@ -1,6 +1,6 @@
 ---
 import { Image } from 'astro:assets';
-import { doodle } from '../lib/art';
+import { doodle, mockDoodle } from '../lib/art';
 import { spotById } from '../data/doodle-spots.js';
 
 interface Props {
@@ -47,7 +47,11 @@ const width = Astro.props.width ?? found?.width ?? 88;
 // this one instead, e.g. 'doodle1'. null shows each spot's placeholder while developing.
 const TEST_DOODLE: string | null = null;
 
-const match = (await doodle(name)) ?? (kind === 'doodle' && TEST_DOODLE ? await doodle(TEST_DOODLE) : undefined);
+// Stand-ins from `npm run doodles:mock` fill empty spots, but only while developing: the live
+// site shows real, hand-drawn doodles and nothing else. `npm run doodles:unmock` removes them.
+const standIn = import.meta.env.DEV && kind === 'doodle' ? await mockDoodle(name) : undefined;
+
+const match = (await doodle(name)) ?? standIn ?? (kind === 'doodle' && TEST_DOODLE ? await doodle(TEST_DOODLE) : undefined);
 
 // Empty spots only show while developing, so a placeholder can never ship to the live site.
 const showPlaceholder = !match && import.meta.env.DEV;
