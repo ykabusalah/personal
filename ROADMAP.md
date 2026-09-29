@@ -2,6 +2,14 @@
 
 What's planned after the first version of the site. Launch steps are at the bottom.
 
+## The real doodles
+
+Version 1 ships with stand-in doodles in every spot (made by `npm run doodles:mock`, kept in `src/art/doodles-mock/`). While they're up, the site doesn't say every drawing is made by hand: commit `1777817b` took that line out of the footer and reworded the ykabusalah.me write-up.
+
+- [ ] Get each spot's real doodle: place it from the Doodle Studio and run `npm run doodles:pull`, or save it as `src/art/doodles/<spot>.png` (spots are listed in `src/data/doodle-spots.js`). A real doodle replaces its stand-in right away.
+- [ ] Once every spot has its real doodle, run `npm run doodles:unmock` to delete the stand-ins.
+- [ ] Then run `git revert 1777817b` to bring back the footer line and the write-up's original wording, and deploy.
+
 ## Next: dark mode
 
 Built and tried in September 2026, then taken out so the first version can launch without it. The working version is saved in git, so it doesn't have to be rebuilt from scratch:
@@ -47,7 +55,7 @@ The rest of the site:
 
 ## Launch checklist
 
-- [ ] Draw the doodles for every spot (1a, 1b, and so on, listed in `src/data/doodle-spots.js`) and put them in `src/art/doodles/`, or place them from the Doodle Studio and run `npm run doodles:pull`
+- [x] Fill every doodle spot for version 1 with a stand-in (`npm run doodles:mock`; see "The real doodles" above)
 - [ ] Run `npx vercel login`, then `npx vercel link`: create a new project, and don't connect the GitHub repo
 - [ ] Run `npm run deploy` and look over the `vercel.app` preview
 - [ ] Point ykabusalah.me at the new Vercel project
