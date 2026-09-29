@@ -56,9 +56,15 @@ The rest of the site:
 ## Launch checklist
 
 - [x] Fill every doodle spot for version 1 with a stand-in (`npm run doodles:mock`; see "The real doodles" above)
+In this order:
+
 - [ ] Run `npx vercel login`, then `npx vercel link`: create a new project, and don't connect the GitHub repo
-- [ ] Run `npm run deploy` and look over the `vercel.app` preview
-- [ ] Point ykabusalah.me at the new Vercel project
-- [ ] Send draw.ykabusalah.me to ykabusalah.me/info so old links keep working
-- [ ] Cancel Super.so
-- [ ] Remove my head drawings from GitHub: the `icons` folder on `main`, and their copies in older commits
+- [ ] Run `npm run deploy` and look over the `vercel.app` address it prints
+- [ ] In the new Vercel project, go to Settings, then Domains, and add `ykabusalah.me` and `www.ykabusalah.me`
+- [ ] At the domain registrar, replace Super.so's DNS records with the ones Vercel shows (usually an `A` record for `@` to `76.76.21.21`, and a `CNAME` for `www` to `cname.vercel-dns.com`)
+- [ ] Move `draw.ykabusalah.me`: remove it from the old drawing site's host, add it to the new Vercel project, and point its DNS where Vercel says. Old links then forward on their own (the rules are in `scripts/vercel-output.mjs`).
+- [ ] Turn off the old drawing site's automatic deploys from GitHub (or delete that old site), so pushing the new code doesn't rebuild it
+- [ ] Push to GitHub: `git push origin main`
+- [ ] On GitHub, update the repo's About: description, website (`https://ykabusalah.me`), and topics
+- [ ] Once ykabusalah.me shows the new site, cancel Super.so
+- [ ] Remove my head drawings from GitHub: the `icons` folder in older commits
