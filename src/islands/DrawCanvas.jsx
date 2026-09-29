@@ -26,25 +26,47 @@ import {
 } from '../lib/events';
 
 
+// Phones and tablets. They draw with the screen turned sideways, so every drawing has the same
+// wide shape as one made on a computer and fills the Home page the same way.
 const detectDeviceType = () => {
   const userAgent = navigator.userAgent || navigator.vendor || window.opera;
-  
-  const isDesktopOS = /Windows NT|Macintosh|Mac OS X|Linux x86_64|Linux i686|CrOS/i.test(userAgent) 
+
+  const isDesktopOS = /Windows NT|Macintosh|Mac OS X|Linux x86_64|Linux i686|CrOS/i.test(userAgent)
                       && !/Android/i.test(userAgent);
-  
+
   const isMobilePhone = /Android.*Mobile|webOS|iPhone|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-  
-  const isIPad = /iPad/i.test(userAgent) || 
-               (navigator.platform === 'MacIntel' && 
-                navigator.maxTouchPoints > 1 && 
+
+  const isIPad = /iPad/i.test(userAgent) ||
+               (navigator.platform === 'MacIntel' &&
+                navigator.maxTouchPoints > 1 &&
                 !window.matchMedia('(pointer: fine)').matches);
-  
+
   const isAndroidTablet = /Android/i.test(userAgent) && !/Mobile/i.test(userAgent);
-  
+
   const isMobile = !isDesktopOS && (isMobilePhone || isIPad || isAndroidTablet);
   const isMobileOrTablet = isMobile || isIPad;
-  
+
   return isMobileOrTablet;
+};
+
+// Computers need a window at least this big to draw in.
+const MIN_WIDTH = 800;
+const MIN_HEIGHT = 600;
+
+// Screens shorter than this (phones on their side) get the two-column toolbar, which fits.
+const COMPACT_HEIGHT = 520;
+
+/** Redraw saved pixels on a canvas of a new size, scaled evenly from the top left so they never stretch. */
+const drawScaled = (ctx, imageData) => {
+  const copy = document.createElement('canvas');
+  copy.width = imageData.width;
+  copy.height = imageData.height;
+  copy.getContext('2d').putImageData(imageData, 0, 0);
+  const scale = Math.min(ctx.canvas.width / copy.width, ctx.canvas.height / copy.height);
+  ctx.save();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.drawImage(copy, 0, 0, copy.width * scale, copy.height * scale);
+  ctx.restore();
 };
 
 export default function App() {
@@ -60,10 +82,12 @@ export default function App() {
   const [redoStack, setRedoStack] = useState([]);
   const [isFullscreen, setIsFullscreen] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [compact, setCompact] = useState(false);
   const [hasDrawingContent, setHasDrawingContent] = useState(false);
   const [savedDrawingData, setSavedDrawingData] = useState(null);
   const [showResizeMessage, setShowResizeMessage] = useState(false);
-  const [sessionTracked, setSessionTracked] = useState(false);
+  // Resizing a canvas resets its pen settings, so this counts resizes to set them again.
+  const [canvasVersion, setCanvasVersion] = useState(0);
 
   const handleToolChange = useCallback((newTool) => {
     trackToolChange(newTool, tool);
@@ -78,18 +102,18 @@ export default function App() {
   const handleUndo = useCallback(() => {
     setUndoStack((prevUndo) => {
       if (prevUndo.length === 0) return prevUndo;
-      
+
       trackUndo();
-      
+
       const canvas = canvasRef.current;
       const ctx = ctxRef.current;
-      
+
       const currentState = ctx.getImageData(0, 0, canvas.width, canvas.height);
       setRedoStack((prev) => [...prev, currentState]);
-      
+
       const lastState = prevUndo[prevUndo.length - 1];
       ctx.putImageData(lastState, 0, 0);
-      
+
       return prevUndo.slice(0, -1);
     });
   }, []);
@@ -97,25 +121,25 @@ export default function App() {
   const handleRedo = useCallback(() => {
     setRedoStack((prevRedo) => {
       if (prevRedo.length === 0) return prevRedo;
-      
+
       trackRedo();
-      
+
       const canvas = canvasRef.current;
       const ctx = ctxRef.current;
-      
+
       const currentState = ctx.getImageData(0, 0, canvas.width, canvas.height);
       setUndoStack((prev) => [...prev, currentState]);
-      
+
       const redoState = prevRedo[prevRedo.length - 1];
       ctx.putImageData(redoState, 0, 0);
-      
+
       return prevRedo.slice(0, -1);
     });
   }, []);
 
   const clearCanvas = useCallback(() => {
     trackClear();
-    
+
     const canvas = canvasRef.current;
     ctxRef.current.clearRect(0, 0, canvas.width, canvas.height);
     setUndoStack([]);
@@ -133,12 +157,12 @@ export default function App() {
   const handleExitClick = () => {
     setShowExitPrompt(true);
   };
-  
+
   const confirmExit = () => {
     trackExit(true);
     window.location.href = "https://filmishmish.substack.com/";
   };
-  
+
   const cancelExit = () => {
     trackExit(false);
     setShowExitPrompt(false);
@@ -148,7 +172,7 @@ export default function App() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      
+
       if (e.key === 'Escape') {
         if (showModal) {
           trackModalClose();
@@ -160,7 +184,7 @@ export default function App() {
           return;
         }
       }
-      
+
       if (showModal || showExitPrompt) return;
 
       const isMac = navigator.platform.toUpperCase().indexOf('MAC') >= 0;
@@ -224,36 +248,39 @@ export default function App() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showModal, showExitPrompt, handleToolChange, handleUndo, handleRedo, handleSaveClick, clearCanvas]);
 
+  // Size the canvas once, when the page opens. Resizing a canvas wipes it, so after this it only
+  // changes size when the window does (below), and the drawing is copied over when it does.
   useEffect(() => {
-    if (!sessionTracked) {
-      trackPageView('draw');
-      setSessionTracked(true);
-    }
+    trackPageView('draw');
 
     const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    ctx.lineCap = 'round';
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
-    ctxRef.current = ctx;
+    ctxRef.current = canvas.getContext('2d');
+    setCanvasVersion((v) => v + 1);
 
-    const checkScreenSize = () => {
+    const stopDrawing = () => setIsDrawing(false);
+    window.addEventListener('pointerup', stopDrawing);
+    return () => window.removeEventListener('pointerup', stopDrawing);
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+
+    // `before` is the drawing as it was before a resize, at its full size.
+    const checkScreenSize = (before) => {
       const isActualMobile = detectDeviceType();
       setIsMobile(isActualMobile);
+      setCompact(window.innerHeight < COMPACT_HEIGHT);
 
-      if (isActualMobile) {
-        setIsFullscreen(false);
-        setShowResizeMessage(false);
-        return;
-      }
+      // Phones and tablets draw sideways; computers need a big enough window.
+      const newIsFullscreen = isActualMobile
+        ? window.innerWidth > window.innerHeight
+        : window.innerWidth >= MIN_WIDTH && window.innerHeight >= MIN_HEIGHT;
 
-      const minWidth = 800;
-      const minHeight = 600;
-      const newIsFullscreen = window.innerWidth >= minWidth && window.innerHeight >= minHeight;
-      
       if (hasDrawingContent) {
         if (isFullscreen && !newIsFullscreen) {
-          saveDrawingForResize();
+          saveDrawingForResize(before);
           setShowResizeMessage(true);
         } else if (!isFullscreen && newIsFullscreen && savedDrawingData) {
           setTimeout(() => {
@@ -263,92 +290,61 @@ export default function App() {
           }, 200);
         }
       }
-      
+
       setIsFullscreen(newIsFullscreen);
     };
 
     const handleResize = () => {
-      const tempImageData = hasDrawingContent && ctxRef.current ? 
-        ctxRef.current.getImageData(0, 0, canvas.width, canvas.height) : null;
-      
+      const before = hasDrawingContent && ctxRef.current
+        ? ctxRef.current.getImageData(0, 0, canvas.width, canvas.height)
+        : null;
+
       canvas.width = window.innerWidth;
       canvas.height = window.innerHeight;
-      
-      if (tempImageData && hasDrawingContent) {
-        const tempCanvas = document.createElement('canvas');
-        const tempCtx = tempCanvas.getContext('2d');
-        tempCanvas.width = tempImageData.width;
-        tempCanvas.height = tempImageData.height;
-        tempCtx.putImageData(tempImageData, 0, 0);
-        
-        ctxRef.current.drawImage(
-          tempCanvas, 
-          0, 0, tempCanvas.width, tempCanvas.height, 
-          0, 0, canvas.width, canvas.height
-        );
-      }
-      
-      checkScreenSize();
+      if (before) drawScaled(ctxRef.current, before);
+      setCanvasVersion((v) => v + 1);
+
+      checkScreenSize(before);
     };
 
-    setTimeout(checkScreenSize, 100);
-    
+    const firstCheck = setTimeout(() => checkScreenSize(null), 100);
     window.addEventListener('resize', handleResize);
-    window.addEventListener('pointerup', () => setIsDrawing(false));
-    
+
     return () => {
+      clearTimeout(firstCheck);
       window.removeEventListener('resize', handleResize);
-      window.removeEventListener('pointerup', () => setIsDrawing(false));
     };
-  }, [isFullscreen, hasDrawingContent, savedDrawingData, sessionTracked]);
+  }, [isFullscreen, hasDrawingContent, savedDrawingData]);
 
+  // The pen. Set again after every resize, since resizing the canvas resets it.
   useEffect(() => {
-    if (ctxRef.current) {
-      ctxRef.current.globalCompositeOperation =
-        tool === 'eraser' ? 'destination-out' : 'source-over';
-      ctxRef.current.strokeStyle = tool === 'eraser' ? '#fff' : '#000';
-      ctxRef.current.lineWidth = brushSize;
-    }
-  }, [tool, brushSize]);
+    const ctx = ctxRef.current;
+    if (!ctx) return;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.globalCompositeOperation = tool === 'eraser' ? 'destination-out' : 'source-over';
+    ctx.strokeStyle = tool === 'eraser' ? '#fff' : '#000';
+    ctx.lineWidth = brushSize;
+  }, [tool, brushSize, canvasVersion]);
 
-  const saveDrawingForResize = () => {
-    if (canvasRef.current && ctxRef.current) {
-      const canvas = canvasRef.current;
-      const ctx = ctxRef.current;
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      setSavedDrawingData({
-        imageData,
-        width: canvas.width,
-        height: canvas.height,
-        undoStack: [...undoStack],
-        redoStack: [...redoStack]
-      });
-    }
+  const saveDrawingForResize = (imageData) => {
+    const canvas = canvasRef.current;
+    if (!canvas || !ctxRef.current) return;
+    setSavedDrawingData({
+      imageData: imageData ?? ctxRef.current.getImageData(0, 0, canvas.width, canvas.height),
+      undoStack: [...undoStack],
+      redoStack: [...redoStack]
+    });
   };
 
   const restoreDrawingAfterResize = () => {
-    if (canvasRef.current && ctxRef.current && savedDrawingData) {
-      const canvas = canvasRef.current;
-      const ctx = ctxRef.current;
-      
-      const tempCanvas = document.createElement('canvas');
-      const tempCtx = tempCanvas.getContext('2d');
-      tempCanvas.width = savedDrawingData.width;
-      tempCanvas.height = savedDrawingData.height;
-      
-      tempCtx.putImageData(savedDrawingData.imageData, 0, 0);
-      
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.drawImage(
-        tempCanvas, 
-        0, 0, tempCanvas.width, tempCanvas.height, 
-        0, 0, canvas.width, canvas.height
-      );
-      
-      setUndoStack(savedDrawingData.undoStack);
-      setRedoStack(savedDrawingData.redoStack);
-      setHasDrawingContent(true);
-    }
+    const ctx = ctxRef.current;
+    if (!ctx || !savedDrawingData) return;
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    drawScaled(ctx, savedDrawingData.imageData);
+    setUndoStack(savedDrawingData.undoStack);
+    setRedoStack(savedDrawingData.redoStack);
+    setHasDrawingContent(true);
   };
 
   const saveState = () => {
@@ -361,10 +357,11 @@ export default function App() {
   };
 
   const handleDrawingStart = (e) => {
-    if (!isFullscreen) return;
-    
+    // One finger draws; a second one touching down doesn't start another line.
+    if (!isFullscreen || !e.isPrimary) return;
+
     trackDrawingStart(tool, brushSize);
-    
+
     saveState();
     const rect = canvasRef.current.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -417,8 +414,28 @@ export default function App() {
     }, 'image/png');
   };
 
+  // The toolbar: one column on computers, two on short screens like a phone on its side.
+  const toolbarClass = compact
+    ? 'grid grid-cols-2 gap-px bg-black border border-black rounded overflow-hidden'
+    : 'flex flex-col items-center border border-black rounded overflow-hidden';
+  const cell = compact ? 'w-12 h-11' : 'w-16 h-12 border-b border-black last:border-b-0';
+  // Unavailable buttons fade their icon, not the whole button, so the lines between buttons stay solid.
+  const pressable = 'bg-white text-black active:bg-black active:text-white transition-colors duration-150 disabled:text-black/40 disabled:active:bg-white disabled:cursor-not-allowed';
+  const tools = [
+    { name: 'pencil', title: 'Pencil (P)', Icon: Pencil },
+    { name: 'eraser', title: 'Eraser (E)', Icon: Eraser },
+  ];
+  const actions = [
+    { title: 'Undo (Ctrl+Z)', Icon: Undo2, onClick: handleUndo, disabled: undoStack.length === 0 },
+    { title: 'Redo (Ctrl+Shift+Z)', Icon: Redo2, onClick: handleRedo, disabled: redoStack.length === 0 },
+    { title: 'Clear (Delete)', Icon: Trash2, onClick: clearCanvas },
+    { title: 'Save (Ctrl+S)', Icon: Save, onClick: handleSaveClick },
+    { title: 'Exit (Esc to cancel)', Icon: X, onClick: handleExitClick, wide: true },
+  ];
+
   return (
-    <div className="w-screen h-screen bg-white relative touch-none">
+    // overflow-hidden: while a phone is upright, the still-wide canvas mustn't make the page zoom out.
+    <div className="w-screen h-screen bg-white relative touch-none overflow-hidden">
       <canvas
         ref={canvasRef}
         onPointerDown={handleDrawingStart}
@@ -427,7 +444,7 @@ export default function App() {
           setIsDrawing(false);
         }}
         onPointerMove={(e) => {
-          if (!isDrawing || !isFullscreen) return;
+          if (!isDrawing || !isFullscreen || !e.isPrimary) return;
           const rect = canvasRef.current.getBoundingClientRect();
           const x = e.clientX - rect.left;
           const y = e.clientY - rect.top;
@@ -439,18 +456,21 @@ export default function App() {
       />
 
       <div className="fixed top-1/2 right-4 -translate-y-1/2 transform z-40">
-        <div className="flex flex-col items-center border border-black rounded overflow-hidden">
+        <div className={toolbarClass}>
 
-          <div className="w-16 h-20 flex justify-center items-center p-2 border-b border-black bg-white" title="Brush Size ( [ / ] )">
+          <div
+            className={compact ? 'row-span-2 w-12 flex justify-center items-center bg-white' : 'w-16 h-20 flex justify-center items-center p-2 border-b border-black bg-white'}
+            title="Brush Size ( [ / ] )"
+          >
             <div className="relative h-16 w-6 flex justify-center">
-              <div 
+              <div
                 className="absolute inset-0 pointer-events-none"
                 style={{
                   background: 'linear-gradient(to bottom, transparent 0%, transparent 5%, #e5e7eb 5%, #e5e7eb 95%, transparent 95%)',
                   clipPath: 'polygon(15% 5%, 85% 5%, 50% 95%)'
                 }}
               />
-              
+
               <input
                 type="range"
                 min="1"
@@ -463,68 +483,29 @@ export default function App() {
             </div>
           </div>
 
-          <button
-            className={`w-16 h-12 flex items-center justify-center border-b border-black ${tool === 'pencil' ? 'bg-black text-white' : ''}`}
-            title="Pencil (P)"
-            onClick={() => handleToolChange('pencil')}
-          >
-            <Pencil className="w-5 h-5" />
-          </button>
+          {tools.map(({ name: toolName, title, Icon }) => (
+            <button
+              key={toolName}
+              className={`${cell} flex items-center justify-center ${tool === toolName ? 'bg-black text-white' : 'bg-white'}`}
+              title={title}
+              onClick={() => handleToolChange(toolName)}
+            >
+              <Icon className="w-5 h-5" />
+            </button>
+          ))}
 
-          <button
-            className={`w-16 h-12 flex items-center justify-center border-b border-black ${tool === 'eraser' ? 'bg-black text-white' : ''}`}
-            title="Eraser (E)"
-            onClick={() => handleToolChange('eraser')}
-          >
-            <Eraser className="w-5 h-5" />
-          </button>
-
-          <button
-            type="button"
-            className="w-16 h-12 flex items-center justify-center border-b border-black bg-white text-black active:bg-black active:text-white transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Undo (Ctrl+Z)"
-            onClick={handleUndo}
-            disabled={undoStack.length === 0}
-          >
-            <Undo2 className="w-5 h-5" />
-          </button>
-
-          <button
-            type="button"
-            className="w-16 h-12 flex items-center justify-center border-b border-black bg-white text-black active:bg-black active:text-white transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Redo (Ctrl+Shift+Z)"
-            onClick={handleRedo}
-            disabled={redoStack.length === 0}
-          >
-            <Redo2 className="w-5 h-5" />
-          </button>
-
-          <button
-            type="button"
-            className="w-16 h-12 flex items-center justify-center border-b border-black bg-white text-black active:bg-black active:text-white transition-colors duration-150"
-            title="Clear (Delete)"
-            onClick={clearCanvas}
-          >
-            <Trash2 className="w-5 h-5" />
-          </button>
-
-          <button
-            type="button"
-            className="w-16 h-12 flex items-center justify-center border-b border-black bg-white text-black active:bg-black active:text-white transition-colors duration-150"
-            title="Save (Ctrl+S)"
-            onClick={handleSaveClick}
-          >
-            <Save className="w-5 h-5" />
-          </button>
-
-          <button
-            type="button"
-            className="w-16 h-12 flex items-center justify-center bg-white text-black active:bg-black active:text-white transition-colors duration-150"
-            title="Exit (Esc to cancel)"
-            onClick={handleExitClick}
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {actions.map(({ title, Icon, onClick, disabled, wide }) => (
+            <button
+              key={title}
+              type="button"
+              className={`${cell} ${compact && wide ? 'col-span-2 !w-auto' : ''} flex items-center justify-center ${pressable}`}
+              title={title}
+              onClick={onClick}
+              disabled={disabled}
+            >
+              <Icon className="w-5 h-5" />
+            </button>
+          ))}
         </div>
       </div>
 
@@ -553,7 +534,7 @@ export default function App() {
           </div>
         </div>
       )}
-    
+
       {showExitPrompt && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded shadow w-[90%] max-w-md text-black">
@@ -566,7 +547,28 @@ export default function App() {
         </div>
       )}
 
-      {showResizeMessage && hasDrawingContent && (
+      {/* Phones held upright: turn sideways to draw. The phone in the picture turns to show how. */}
+      {isMobile && !isFullscreen && (
+        <div className="fixed inset-0 bg-white flex flex-col items-center justify-center gap-4 z-50 p-8 text-center">
+          <svg className="w-28 h-28" viewBox="0 0 64 64" fill="none" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <path d="M46 5.8 A28 28 0 0 0 7.8 16" stroke="var(--accent)" strokeWidth="2.5" />
+            <path d="M12.3 13.9 L7.8 16 L7.4 11" stroke="var(--accent)" strokeWidth="2.5" />
+            <g className="turn-phone" stroke="currentColor" strokeWidth="2.5">
+              <rect x="21" y="9" width="22" height="42" rx="4" fill="#fff" />
+              <path d="M29 45.5h6" />
+            </g>
+          </svg>
+          <h2 className="font-display text-4xl leading-tight">Turn your phone sideways</h2>
+          <p className="text-gray-600 max-w-xs">
+            {hasDrawingContent
+              ? "Your drawing's safe. Turn it back to keep going."
+              : 'You get the whole screen to draw on, the same shape as the Home page.'}
+          </p>
+          <a href="/info" className="text-sm text-gray-600 underline">Go back</a>
+        </div>
+      )}
+
+      {!isMobile && showResizeMessage && hasDrawingContent && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded shadow w-[90%] max-w-lg text-black text-center">
             <h2 className="text-2xl font-bold mb-4">🎨 Keep Drawing!</h2>
@@ -583,39 +585,19 @@ export default function App() {
         </div>
       )}
 
-      {!isFullscreen && !showResizeMessage && (
+      {!isMobile && !isFullscreen && !showResizeMessage && (
         <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
           <div className="bg-white p-8 rounded shadow w-[90%] max-w-lg text-black text-center">
-            {isMobile ? (
-              <>
-                <h2 className="text-2xl font-bold mb-4">📱 Mobile Device Detected</h2>
-                <p className="text-lg mb-4">
-                  The experience is far better on PC. I promise!
-                </p>
-                <p className="text-sm text-gray-600 mb-6">
-                  Please visit this page on a desktop or laptop computer for the best drawing experience.
-                </p>
-                <button
-                  onClick={confirmExit}
-                  className="bg-black text-white px-6 py-3 rounded hover:bg-gray-800"
-                >
-                  Go Back
-                </button>
-              </>
-            ) : (
-              <>
-                <h2 className="text-2xl font-bold mb-4">🔍 Window Too Small</h2>
-                <p className="text-lg mb-4">
-                  Please make your browser window fullscreen or larger to draw properly.
-                </p>
-                <p className="text-sm text-gray-600 mb-6">
-                  This ensures your drawing looks great when displayed on the website!
-                </p>
-                <p className="text-xs text-gray-500">
-                  Minimum size: 800px wide × 600px tall
-                </p>
-              </>
-            )}
+            <h2 className="text-2xl font-bold mb-4">🔍 Window Too Small</h2>
+            <p className="text-lg mb-4">
+              Please make your browser window fullscreen or larger to draw properly.
+            </p>
+            <p className="text-sm text-gray-600 mb-6">
+              This ensures your drawing looks great when displayed on the website!
+            </p>
+            <p className="text-xs text-gray-500">
+              Minimum size: 800px wide × 600px tall
+            </p>
           </div>
         </div>
       )}

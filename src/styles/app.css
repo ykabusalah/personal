@@ -6,6 +6,23 @@ body {
   background: #fff;
 }
 
+/* The canvas's "turn your phone sideways" prompt: the phone turns, holds there, and turns back. */
+.turn-phone {
+  transform-box: view-box;
+  transform-origin: 32px 30px;
+  animation: turn-sideways 2.8s ease-in-out infinite;
+}
+
+@keyframes turn-sideways {
+  0%, 15% { transform: rotate(0deg); }
+  45%, 80% { transform: rotate(-90deg); }
+  100% { transform: rotate(0deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .turn-phone { animation: none; transform: rotate(-90deg); }
+}
+
 /* Triangle brush size slider */
 .brush-slider-triangle {
   -webkit-appearance: none;

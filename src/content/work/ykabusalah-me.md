@@ -56,7 +56,7 @@ A short "Hello and Welcome" page explaining the idea, with a live tally of drawi
 
 ### 3. The Drawing Canvas
 
-A full-viewport canvas that spans edge to edge, keeps your strokes when the window resizes, and tells you when the window's too small to draw in. Phone visitors get a prompt to switch to a computer.
+A full-viewport canvas that spans edge to edge, keeps your strokes when the window resizes, and tells you when the window's too small to draw in. Phones draw sideways: hold one upright and a little animation asks you to turn it, then the canvas fills the screen in the same wide shape as on a computer, so every drawing fits the Home page. Turn it back mid-drawing and your drawing waits for you.
 
 ![Responsive, edge-to-edge drawing canvas](./drawing-canvas/drawing_screen.jpg)
 
@@ -162,7 +162,6 @@ Key takeaways:
 
 - Dark mode, with drawings turning into chalk on a chalkboard
 - My own handwriting as the site's handwritten font
-- Mobile drawing support with a touch-friendly canvas
 - Color picker and more brush types
 - Public gallery of approved drawings
 - Social sharing for submitted artwork

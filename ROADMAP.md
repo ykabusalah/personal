@@ -43,7 +43,6 @@ Start from those with `git show a26e37ed` and `git show 1f93cb7e`.
 
 From the drawing site's own roadmap:
 
-- Drawing on phones, with a touch-friendly canvas
 - A color picker and more brush types
 - A public gallery of every approved drawing
 - Sharing a submitted drawing
@@ -76,7 +75,7 @@ In this order. The new site goes on the existing `personal` Vercel project, wher
 ## Keeping it running
 
 - **My art only lives on this computer.** `src/art/` isn't on GitHub, and the site can't be built with my art without it. It sits inside OneDrive, so keep OneDrive syncing this folder. Same for `.env` and `.env.studio`.
-- **Updating the site:** make changes, then run `npm run deploy`. If it says I'm not logged in, run `npx vercel login` again.
+- **Updating the site:** commit my changes, then run `npm run ship`. It puts the site live and pushes to GitHub. If it says I'm not logged in, run `npx vercel login` again.
 - **New visitor drawings** show up on Home as soon as I approve them. They get their sharp vector version the next time I deploy, so deploy now and then after approving a batch.
 - **Supabase stays awake** from visits, plus a GitHub workflow that checks in every two days (`.github/workflows/keep-alive.yml`). GitHub pauses scheduled workflows in repos with no commits for 60 days: if I get that email, turn it back on under the repo's Actions tab.
 - **The seasonal heads and accent colors** switch on their own by date (`src/lib/seasonal.ts`).
