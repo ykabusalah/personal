@@ -22,6 +22,25 @@ export const SEASONAL_SCHEDULE = [
 export const FALLBACK_ICON = 'base.png';
 export const FALLBACK_ACCENT = '#ff5533';
 
+/**
+ * Heads whose hats would run off the edge of the screen get moved, and if needed shrunk, so the
+ * whole drawing shows. x and y move it right and down, as a share of the corner box's width and
+ * height; size scales it (1 is the usual size). Heads not listed stay where they are.
+ */
+const HEAD_FIT: Record<string, { x?: number; y?: number; size?: number }> = {
+  'minishcap.png': { y: 0.2, size: 0.78 }, // Ezlo's tall cap and beak, cut off at the top
+  'mysteryofmew.png': { x: 0.2, size: 0.8 }, // the wide brim, cut off on the left (smaller so it clears the menu)
+  'onepiece.png': { x: 0.16, y: 0.06 }, // brim at the left edge and top on phones
+  'jojo.png': { y: 0.06 }, // cap touching the top on phones
+  'santa.png': { y: 0.06 }, // hat touching the top on phones
+};
+
+/** CSS variables that place a head in the corner (see SeasonalLogo.astro). */
+export function headFit(icon: string): string {
+  const { x = 0, y = 0, size = 1 } = HEAD_FIT[icon] ?? {};
+  return `--head-x:${x * 100}%;--head-y:${y * 100}%;--head-size:${size}`;
+}
+
 const dayKey = (date: Date) => (date.getMonth() + 1) * 100 + date.getDate();
 
 function current(date: Date) {

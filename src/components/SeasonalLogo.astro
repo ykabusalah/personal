@@ -1,7 +1,7 @@
 ---
 import { getImage } from 'astro:assets';
 import type { ImageMetadata } from 'astro';
-import { seasonalIcon } from '../lib/seasonal';
+import { headFit, seasonalIcon } from '../lib/seasonal';
 
 // My head drawings live in src/art/seasonal (kept out of git). The sources are 2000px; ship small webp copies instead.
 const sources = import.meta.glob<{ default: ImageMetadata }>('../art/seasonal/*.png', { eager: true });
@@ -15,12 +15,12 @@ for (const [path, mod] of Object.entries(sources)) {
 const initial = urls[seasonalIcon()];
 ---
 
-<a href="/" class="seasonal-logo" aria-label="Home" data-seasonal-urls={JSON.stringify(urls)}>
+<a href="/" class="seasonal-logo" aria-label="Home" data-seasonal-urls={JSON.stringify(urls)} style={headFit(seasonalIcon())}>
   {initial && <img class="art-image" src={initial} alt="" width="480" height="504" draggable="false" />}
 </a>
 
 <script>
-  import { seasonalIcon } from '../lib/seasonal';
+  import { headFit, seasonalIcon } from '../lib/seasonal';
 
   const link = document.querySelector<HTMLAnchorElement>('[data-seasonal-urls]');
   if (link) {
@@ -28,8 +28,12 @@ const initial = urls[seasonalIcon()];
     const img = link.querySelector('img');
     // While developing, ?season=halloween (or any head's name) previews that season's head.
     const forced = import.meta.env.DEV && new URLSearchParams(location.search).get('season');
-    const current = urls[forced ? `${forced}.png` : seasonalIcon()];
-    if (img && current && !img.src.endsWith(current)) img.src = current;
+    const icon = forced ? `${forced}.png` : seasonalIcon();
+    const current = urls[icon];
+    if (img && current && !img.src.endsWith(current)) {
+      img.src = current;
+      link.setAttribute('style', headFit(icon));
+    }
 
     // On Home, clicking the head reloads the page for a new visitor drawing.
     link.addEventListener('click', (event) => {
@@ -60,12 +64,13 @@ const initial = urls[seasonalIcon()];
     height: 100%;
     object-fit: cover;
     pointer-events: none;
-    transform: scale(2.14);
+    /* A head whose hat would run off the screen is moved or shrunk a little (HEAD_FIT in lib/seasonal.ts). */
+    transform: translate(var(--head-x, 0%), var(--head-y, 0%)) scale(calc(2.14 * var(--head-size, 1)));
     transform-origin: 49% 52%;
     transition: transform 0.2s ease;
   }
 
-  .seasonal-logo:hover img { transform: scale(2.24); }
+  .seasonal-logo:hover img { transform: translate(var(--head-x, 0%), var(--head-y, 0%)) scale(calc(2.24 * var(--head-size, 1))); }
 
   /* Shrink a little once the page scrolls so the fixed head stays out of the way (where supported). */
   @supports (animation-timeline: scroll()) {
