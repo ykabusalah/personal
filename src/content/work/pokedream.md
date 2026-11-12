@@ -1,13 +1,13 @@
 ---
 title: pokédream
 kind: project
-summary: Describe your dream Pokémon and get a fully realized creature with balanced stats, a moveset, lore, and a Pokédex entry. Daily challenges, weekly tournaments, and achievements keep the community coming back.
+summary: Describe your dream Pokémon and get a fully realized creature with balanced stats, a moveset, lore, and a Pokédex entry. Daily challenges, two-week tournaments, and achievements keep the community coming back.
 stack: [React, Vite, TailwindCSS, Python, FastAPI, Replicate API, Claude API, Render]
 github: https://github.com/ykabusalah/pokedream
 live: https://pokedream-orpin.vercel.app/
 role: "Solo: product, design, and code"
 timeline: Dec 2025 to Feb 2026
-outcome: Shipped a live fan community with a shared Pokédex, weekly tournaments, daily challenges, and 20 achievements.
+outcome: Shipped a live fan community with a shared Pokédex, two-week tournaments, daily challenges, and 20 achievements.
 order: 3
 cover: ./pokedream/global_pokedex.jpg
 coverAlt: "Pokédex grid view with type filter buttons active"
@@ -17,7 +17,7 @@ coverAlt: "Pokédex grid view with type filter buttons active"
 
 Pokémon fan communities have always created custom creatures, but the process is fragmented. You need an artist for visuals, game design knowledge for balanced stats, and deep lore familiarity to make something that feels authentic. Most fan-made Pokémon end up as either cool art with no game mechanics, or spreadsheets of stats with no visual identity. And once they're made, there's nowhere for them to go.
 
-PokéDream turns that into a community. Users describe their dream Pokémon in plain text and receive a fully realized creature: unique artwork, balanced competitive stats, a move-set pulled from an 800+ move database, lore, and a Pokédex entry. Then every creation joins a shared Pokédex, competes in weekly tournaments, and counts toward achievements and daily challenges that give people a reason to come back after their first creation.
+PokéDream turns that into a community. Users describe their dream Pokémon in plain text and receive a fully realized creature: unique artwork, balanced competitive stats, a move-set pulled from a 200-move database, lore, and a Pokédex entry. Then every creation joins a shared Pokédex, competes in two-week tournaments, and counts toward achievements and daily challenges that give people a reason to come back after their first creation.
 
 ## Goals
 
@@ -46,9 +46,9 @@ Every created Pokémon joins a shared, browsable database. Features include type
 
 *Pokémon detail page with stats, moves, and lore sections*
 
-### 2. Weekly Tournaments
+### 2. Two-Week Tournaments
 
-16-Pokémon bracket competitions auto-generated from recent entries. Users vote head-to-head but cannot vote for their own Pokémon. Winners advance through the bracket and enter a Hall of Fame with categories for Tournament Champion, Fan Favorite (highest vote differential), and Professor's Choice (manually inducted for exceptional creativity).
+16-Pokémon bracket competitions auto-generated from recent entries. Each runs for two weeks in four rounds, and the next one starts as soon as the last ends. Users vote head-to-head but cannot vote for their own Pokémon. Winners advance through the bracket and enter a Hall of Fame with categories for Tournament Champion, Fan Favorite (highest vote differential), and Professor's Choice (manually inducted for exceptional creativity).
 
 ![Tournament bracket view with voting buttons on active matchups](./pokedream/tournament.jpg)
 
@@ -64,7 +64,7 @@ Rotating challenges that encourage creative constraints. Types include type comb
 
 ### 4. Trainer Profiles and Achievements
 
-Each user gets a profile tracking their creative history: total created, shinies found, favorite type, type distribution breakdown, session time, and lifetime time on platform. A 20-badge achievement system unlocks with animated popup notifications across categories: creation milestones (1, 5, 25, 100 Pokémon), shiny hunting, type mastery, and dedication streaks.
+Each user gets a profile tracking their creative history: total created, shinies found, favorite type, type distribution breakdown, daily challenges completed, votes cast, session time, and lifetime time on platform. A 20-badge achievement system unlocks with animated popup notifications across categories: creation milestones (from 1 to 100 Pokémon), shiny hunting, type variety, and type specialists.
 
 ![Trainer profile with stats cards and achievement grid](./pokedream/trainer_profile.jpg)
 
@@ -90,9 +90,9 @@ Creating a complete Pokémon requires orchestrating two AI systems in sequence:
 
 1. **Stats and lore generation (Claude).** Receives the concept, types, cultural inspiration, and evolution tier. Returns balanced stats within the tier's BST range, two abilities plus a hidden ability, a Pokédex entry, and extended lore.
 2. **Name generation (Claude).** Generates a unique name, cross-referenced against the existing database to prevent duplicates.
-3. **Moveset assembly.** Pulls type-appropriate moves from an 800+ move database across level-up, TM, and egg move categories.
-4. **Image generation (Replicate, Flux Schnell model).** Structured prompt with retry logic for NSFW filter triggers. Pipeline ordering matters here: generating stats before images lets the image prompt incorporate the Pokémon's name and personality.
-5. **Shiny roll.** 1/4,096 chance, matching the authentic mainline Pokémon odds. Modified image prompt adds alternate coloration if triggered.
+3. **Moveset assembly.** Pulls type-appropriate moves from a 200-move database across level-up, TM, and egg move categories.
+4. **Shiny roll.** 1/4,096 chance, matching the authentic mainline Pokémon odds. Rolled before the artwork, so a shiny is drawn in alternate colors.
+5. **Image generation (Replicate, Flux Schnell model).** Structured prompt with retry logic for NSFW filter triggers. Pipeline ordering matters here: generating stats before images lets the image prompt incorporate the Pokémon's name and personality.
 6. **Database persistence.** Assigns a sequential Pokédex number and stores the complete Pokémon object.
 
 ![Generation in progress with step indicators](./pokedream/pokemon_creation.jpg)
